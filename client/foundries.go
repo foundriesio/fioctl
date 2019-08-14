@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	tuf "github.com/theupdateframework/notary/tuf/data"
 )
 
 type Api struct {
@@ -30,16 +32,17 @@ type DeviceList struct {
 	Next    *string  `json:"next"`
 }
 
+type TufCustom struct {
+	HardwareIds  []string `json:"hardwareIds"`
+	TargetFormat string  `json:"targetFormat"`
+}
+
 func NewApiClient(serverUrl, apiToken string) *Api {
 	api := Api{strings.TrimRight(serverUrl, "/"), apiToken}
 	return &api
 }
 
-func (a *Api) DeviceList() (*DeviceList, error) {
-	return a.DeviceListCont(a.serverUrl + "/ota/devices/")
-}
-
-func (a *Api) DeviceListCont(url string) (*DeviceList, error) {
+func (a *Api) Get(url string) (*[]byte, error) {
 	client := http.Client{
 		Timeout: time.Second * 2,
 	}
@@ -65,11 +68,51 @@ func (a *Api) DeviceListCont(url string) (*DeviceList, error) {
 	if res.StatusCode != 200 {
 		return nil, fmt.Errorf("Unable to get '%s': HTTP_%d\n=%s", url, res.StatusCode, body)
 	}
+	return &body, nil
+}
+
+func (a *Api) DeviceList() (*DeviceList, error) {
+	return a.DeviceListCont(a.serverUrl + "/ota/devices/")
+}
+
+func (a *Api) DeviceListCont(url string) (*DeviceList, error) {
+	body, err := a.Get(url)
+	if err != nil {
+		return nil, err
+	}
 
 	devices := DeviceList{}
-	err = json.Unmarshal(body, &devices)
+	err = json.Unmarshal(*body, &devices)
 	if err != nil {
 		return nil, err
 	}
 	return &devices, nil
+}
+
+func (a *Api) TargetsListRaw(factory string) (*[]byte, error) {
+	url := a.serverUrl + "/ota/repo/" + factory + "/api/v1/user_repo/targets.json"
+	return a.Get(url)
+}
+
+func (a *Api) TargetsList(factory string) (*tuf.SignedTargets, error) {
+	body, err := a.TargetsListRaw(factory)
+	if err != nil {
+		return nil, err
+	}
+	targets := tuf.SignedTargets{}
+	err = json.Unmarshal(*body, &targets)
+	if err != nil {
+		return nil, err
+	}
+
+	return &targets, nil
+}
+
+func (a *Api) TargetCustom(target tuf.FileMeta) (*TufCustom, error) {
+	custom := TufCustom{}
+	err := json.Unmarshal(*target.Custom, &custom)
+	if err != nil {
+		return nil, err
+	}
+	return &custom, nil
 }
