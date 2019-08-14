@@ -36,6 +36,7 @@ func init() {
 	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "Print verbose logging")
 
 	rootCmd.PersistentFlags().StringP("token", "t", "", "API token from https://app.foundries.io/settings/tokens/")
+	rootCmd.MarkPersistentFlagRequired("token")
 
 	if err := viper.BindPFlags(rootCmd.PersistentFlags()); err != nil {
 		fmt.Println(err)
