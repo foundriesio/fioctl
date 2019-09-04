@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -55,6 +56,9 @@ func doTargetsList(cmd *cobra.Command, args []string) {
 			fmt.Printf("ERROR: %s\n", err)
 		} else {
 			fmt.Printf("\tformat:%s\n", custom.TargetFormat)
+			if len(custom.Tags) > 0 {
+				fmt.Printf("\ttags:%s\n", strings.Join(custom.Tags, ","))
+			}
 		}
 	}
 }
