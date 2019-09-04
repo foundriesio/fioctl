@@ -114,6 +114,36 @@ func (a *Api) Patch(url string, data []byte) (*[]byte, error) {
 	return &body, nil
 }
 
+func (a *Api) Delete(url string, data []byte) (*[]byte, error) {
+	client := http.Client{
+		Timeout: time.Second * 10,
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, url, bytes.NewBuffer(data))
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("User-Agent", "fioctl")
+	req.Header.Set("OSF-TOKEN", a.apiToken)
+	req.Header.Set("Content-Type", "application/json")
+
+	res, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	if res.StatusCode != 202 {
+		return nil, fmt.Errorf("Unable to DELETE '%s': HTTP_%d\n=%s", url, res.StatusCode, body)
+	}
+	return &body, nil
+}
+
 func (a *Api) DeviceList() (*DeviceList, error) {
 	return a.DeviceListCont(a.serverUrl + "/ota/devices/")
 }
@@ -181,6 +211,33 @@ func (a *Api) TargetUpdateTags(factory string, target_names []string, tag_names 
 
 	url := a.serverUrl + "/ota/factories/" + factory + "/targets/"
 	resp, err := a.Patch(url, data)
+	if err != nil {
+		return "", err
+	}
+
+	type PatchResp struct {
+		JobServUrl string `json:"jobserv-url"`
+	}
+	pr := PatchResp{}
+	if err := json.Unmarshal(*resp, &pr); err != nil {
+		return "", err
+	}
+	return pr.JobServUrl + "runs/UpdateTargets/console.log", nil
+}
+
+func (a *Api) TargetDeleteTargets(factory string, target_names []string) (string, error) {
+	type Update struct {
+		Targets []string `json:"targets"`
+	}
+	update := Update{}
+	update.Targets = target_names
+	data, err := json.Marshal(update)
+	if err != nil {
+		return "", err
+	}
+
+	url := a.serverUrl + "/ota/factories/" + factory + "/targets/"
+	resp, err := a.Delete(url, data)
 	if err != nil {
 		return "", err
 	}

@@ -11,7 +11,7 @@ import (
 
 var targetsTagCmd = &cobra.Command{
 	Use:   "tag <target> [<target>...]",
-	Short: "Apply a comman separated list of tags to one or more targets.",
+	Short: "Apply a comma separated list of tags to one or more targets.",
 	Run:   doTargetsTag,
 	Args:  cobra.MinimumNArgs(1),
 }
@@ -40,16 +40,16 @@ func doTargetsTag(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	for idx := range args {
-		if target, ok := targets.Signed.Targets[args[idx]]; ok {
+	for _, name := range args {
+		if target, ok := targets.Signed.Targets[name]; ok {
 			custom, err := api.TargetCustom(target)
 			if err != nil {
 				fmt.Printf("ERROR: %s\n", err)
 				os.Exit(1)
 			}
-			fmt.Printf("Changing tags of %s from %s -> %s\n", args[idx], custom.Tags, tags)
+			fmt.Printf("Changing tags of %s from %s -> %s\n", name, custom.Tags, tags)
 		} else {
-			fmt.Printf("Target(%s) not found in targets.json\n", args[idx])
+			fmt.Printf("Target(%s) not found in targets.json\n", name)
 			os.Exit(1)
 		}
 	}
