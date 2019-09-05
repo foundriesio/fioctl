@@ -39,6 +39,7 @@ type TufCustom struct {
 	HardwareIds  []string `json:"hardwareIds,omitempty"`
 	Tags         []string `json:"tags,omitempty"`
 	TargetFormat string   `json:"targetFormat,omitempty"`
+	Version      string   `json:"version,omitempty"`
 }
 
 func NewApiClient(serverUrl, apiToken string) *Api {

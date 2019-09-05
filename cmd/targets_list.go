@@ -55,6 +55,7 @@ func doTargetsList(cmd *cobra.Command, args []string) {
 		if err != nil {
 			fmt.Printf("ERROR: %s\n", err)
 		} else {
+			fmt.Printf("\tversion:%s\n", custom.Version)
 			fmt.Printf("\tformat:%s\n", custom.TargetFormat)
 			if len(custom.Tags) > 0 {
 				fmt.Printf("\ttags:%s\n", strings.Join(custom.Tags, ","))

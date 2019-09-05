@@ -20,6 +20,7 @@ func init() {
 	targetsCmd.AddCommand(targetsTagCmd)
 	targetsTagCmd.PersistentFlags().StringP("tags", "T", "", "comma,separate,list")
 	targetsTagCmd.PersistentFlags().BoolP("no-tail", "", false, "Don't tail output of CI Job")
+	targetsTagCmd.PersistentFlags().BoolP("by-version", "", false, "Apply tags to all targets matching the given version(s)")
 
 	targetsCmd.MarkPersistentFlagRequired("tags")
 
@@ -40,21 +41,42 @@ func doTargetsTag(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	for _, name := range args {
-		if target, ok := targets.Signed.Targets[name]; ok {
+	var target_names []string
+	if viper.GetBool("by-version") {
+		target_names = make([]string, 0, 10)
+		for name, target := range targets.Signed.Targets {
 			custom, err := api.TargetCustom(target)
 			if err != nil {
 				fmt.Printf("ERROR: %s\n", err)
-				os.Exit(1)
+			} else {
+				if intersectionInSlices([]string{custom.Version}, args) {
+					target_names = append(target_names, name)
+					fmt.Printf("Changing tags of %s from %s -> %s\n", name, custom.Tags, tags)
+				}
 			}
-			fmt.Printf("Changing tags of %s from %s -> %s\n", name, custom.Tags, tags)
-		} else {
-			fmt.Printf("Target(%s) not found in targets.json\n", name)
+		}
+		if len(target_names) == 0 {
+			fmt.Println("ERROR: no targets found matching the given versions")
 			os.Exit(1)
 		}
+	} else {
+		for _, name := range args {
+			if target, ok := targets.Signed.Targets[name]; ok {
+				custom, err := api.TargetCustom(target)
+				if err != nil {
+					fmt.Printf("ERROR: %s\n", err)
+					os.Exit(1)
+				}
+				fmt.Printf("Changing tags of %s from %s -> %s\n", name, custom.Tags, tags)
+			} else {
+				fmt.Printf("Target(%s) not found in targets.json\n", name)
+				os.Exit(1)
+			}
+		}
+		target_names = args
 	}
 
-	url, err := api.TargetUpdateTags(factory, args, tags)
+	url, err := api.TargetUpdateTags(factory, target_names, tags)
 	if err != nil {
 		fmt.Printf("ERROR: %s\n", err)
 		os.Exit(1)
