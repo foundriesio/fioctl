@@ -1,7 +1,7 @@
 COMMIT:=$(shell git log -1 --pretty=format:%h)$(shell git diff --quiet || echo '_')
 
 # Use linker flags to provide commit info
-LDFLAGS=-ldflags "-X=main.Commit=$(COMMIT)"
+LDFLAGS=-ldflags "-X=github.com/foundriesio/fioctl/cmd.Commit=$(COMMIT)"
 
 build: fioctl-linux-amd64 fioctl-windows-amd64 fioctl-darwin-amd64
 	@true
