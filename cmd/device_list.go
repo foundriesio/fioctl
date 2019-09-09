@@ -46,6 +46,7 @@ func doDeviceList(cmd *cobra.Command, args []string) {
 			fmt.Printf("\tUUID:\t\t%s\n", device.Uuid)
 			fmt.Printf("\tOwner:\t\t%s\n", device.Owner)
 			fmt.Printf("\tFactory:\t%s\n", device.Factory)
+			fmt.Printf("\tTarget:\t\t%s / sha256(%s)\n", device.TargetName, device.OstreeHash)
 			fmt.Printf("\tOstree Hash:\t%s\n", device.OstreeHash)
 			fmt.Printf("\tCreated:\t%s\n", device.CreatedAt)
 			fmt.Printf("\tLast Seen:\t%s\n", device.LastSeen)

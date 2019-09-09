@@ -20,14 +20,15 @@ type Api struct {
 }
 
 type Device struct {
-	Uuid       string `json:"uuid"`
-	Name       string `json:"name"`
-	Owner      string `json:"owner"`
-	Factory    string `json:"factory"`
-	CreatedAt  string `json:"created-at"`
-	LastSeen   string `json:"last-seen"`
-	OstreeHash string `json:"ostree-hash"`
+	Uuid       string   `json:"uuid"`
+	Name       string   `json:"name"`
+	Owner      string   `json:"owner"`
+	Factory    string   `json:"factory"`
+	CreatedAt  string   `json:"created-at"`
+	LastSeen   string   `json:"last-seen"`
+	OstreeHash string   `json:"ostree-hash"`
 	DockerApps []string `json:"docker-apps,omitempty"`
+	TargetName string   `json:"target-name"`
 }
 
 type DeviceList struct {
