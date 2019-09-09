@@ -27,6 +27,7 @@ type Device struct {
 	CreatedAt  string `json:"created-at"`
 	LastSeen   string `json:"last-seen"`
 	OstreeHash string `json:"ostree-hash"`
+	DockerApps []string `json:"docker-apps,omitempty"`
 }
 
 type DeviceList struct {

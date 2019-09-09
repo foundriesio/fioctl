@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -48,6 +49,9 @@ func doDeviceList(cmd *cobra.Command, args []string) {
 			fmt.Printf("\tOstree Hash:\t%s\n", device.OstreeHash)
 			fmt.Printf("\tCreated:\t%s\n", device.CreatedAt)
 			fmt.Printf("\tLast Seen:\t%s\n", device.LastSeen)
+			if len(device.DockerApps) > 0 {
+				fmt.Printf("\tDocker Apps:\t%s\n", strings.Join(device.DockerApps, ","))
+			}
 		}
 	}
 }
