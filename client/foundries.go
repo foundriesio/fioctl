@@ -141,7 +141,7 @@ func (a *Api) Delete(url string, data []byte) (*[]byte, error) {
 		return nil, err
 	}
 
-	if res.StatusCode != 202 {
+	if res.StatusCode != 202 && res.StatusCode != 200 {
 		return nil, fmt.Errorf("Unable to DELETE '%s': HTTP_%d\n=%s", url, res.StatusCode, body)
 	}
 	return &body, nil
@@ -163,6 +163,12 @@ func (a *Api) DeviceListCont(url string) (*DeviceList, error) {
 		return nil, err
 	}
 	return &devices, nil
+}
+
+func (a *Api) DeviceDelete(device string) error {
+	bytes := []byte{}
+	_, err := a.Delete(a.serverUrl+"/ota/devices/"+device+"/", bytes)
+	return err
 }
 
 func (a *Api) TargetsListRaw(factory string) (*[]byte, error) {
