@@ -16,7 +16,6 @@ var targetsCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(targetsCmd)
 	targetsCmd.PersistentFlags().StringP("factory", "f", "", "Factory to list targets for")
-	targetsCmd.MarkPersistentFlagRequired("factory")
 
 	if err := viper.BindPFlags(targetsCmd.PersistentFlags()); err != nil {
 		fmt.Println(err)
