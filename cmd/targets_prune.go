@@ -19,12 +19,14 @@ var targetsPruneCmd = &cobra.Command{
 var (
 	pruneNoTail bool
 	pruneByTag  bool
+	pruneDryRun bool
 )
 
 func init() {
 	targetsCmd.AddCommand(targetsPruneCmd)
 	targetsPruneCmd.Flags().BoolVarP(&pruneNoTail, "no-tail", "", false, "Don't tail output of CI Job")
 	targetsPruneCmd.Flags().BoolVarP(&pruneByTag, "by-tag", "", false, "Prune all targets by tags instead of name")
+	targetsPruneCmd.Flags().BoolVarP(&pruneDryRun, "dryrun", "", false, "Only show what would be pruned")
 }
 
 func intersectionInSlices(list1, list2 []string) bool {
@@ -71,6 +73,11 @@ func doTargetsPrune(cmd *cobra.Command, args []string) {
 		target_names = args
 	}
 	fmt.Printf("Deleting targets: %s\n", strings.Join(target_names, ","))
+	if pruneDryRun {
+		fmt.Println("Dry run, exiting")
+		return
+	}
+
 	url, err := api.TargetDeleteTargets(factory, target_names)
 	if err != nil {
 		fmt.Printf("ERROR: %s\n", err)
