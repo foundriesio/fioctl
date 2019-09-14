@@ -17,20 +17,18 @@ var targetListCmd = &cobra.Command{
 	Run:   doTargetsList,
 }
 
+var listRaw bool
+
 func init() {
 	targetsCmd.AddCommand(targetListCmd)
-	targetListCmd.PersistentFlags().BoolP("raw", "r", false, "Print raw targets.json")
-	if err := viper.BindPFlags(targetListCmd.PersistentFlags()); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
+	targetListCmd.Flags().BoolVarP(&listRaw, "raw", "r", false, "Print raw targets.json")
 }
 
 func doTargetsList(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 	logrus.Debugf("Listing targets for %s", factory)
 
-	if viper.GetBool("raw") {
+	if listRaw {
 		body, err := api.TargetsListRaw(factory)
 		if err != nil {
 			fmt.Print("ERROR: ")

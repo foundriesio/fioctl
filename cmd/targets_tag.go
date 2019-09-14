@@ -16,23 +16,23 @@ var targetsTagCmd = &cobra.Command{
 	Args:  cobra.MinimumNArgs(1),
 }
 
+var (
+	tagTags      string
+	tagNoTail    bool
+	tagByVersion bool
+)
+
 func init() {
 	targetsCmd.AddCommand(targetsTagCmd)
-	targetsTagCmd.PersistentFlags().StringP("tags", "T", "", "comma,separate,list")
-	targetsTagCmd.PersistentFlags().BoolP("no-tail", "", false, "Don't tail output of CI Job")
-	targetsTagCmd.PersistentFlags().BoolP("by-version", "", false, "Apply tags to all targets matching the given version(s)")
-
-	targetsCmd.MarkPersistentFlagRequired("tags")
-
-	if err := viper.BindPFlags(targetsTagCmd.PersistentFlags()); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
+	targetsTagCmd.Flags().StringVarP(&tagTags, "tags", "T", "", "comma,separate,list")
+	targetsTagCmd.Flags().BoolVarP(&tagNoTail, "no-tail", "", false, "Don't tail output of CI Job")
+	targetsTagCmd.Flags().BoolVarP(&tagByVersion, "by-version", "", false, "Apply tags to all targets matching the given version(s)")
 }
 
 func doTargetsTag(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
-	tags := strings.Split(viper.GetString("tags"), ",")
+	tags := strings.Split(tagTags, ",")
+	fmt.Println(tags)
 
 	targets, err := api.TargetsList(factory)
 	if err != nil {
@@ -42,7 +42,7 @@ func doTargetsTag(cmd *cobra.Command, args []string) {
 	}
 
 	var target_names []string
-	if viper.GetBool("by-version") {
+	if tagByVersion {
 		target_names = make([]string, 0, 10)
 		for name, target := range targets.Signed.Targets {
 			custom, err := api.TargetCustom(target)
@@ -82,7 +82,7 @@ func doTargetsTag(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 	fmt.Printf("CI URL: %s\n", url)
-	if !viper.GetBool("no-tail") {
+	if !tagNoTail {
 		api.JobservTail(url)
 	}
 }

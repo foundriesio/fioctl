@@ -16,15 +16,15 @@ var targetsPruneCmd = &cobra.Command{
 	Args:  cobra.MinimumNArgs(1),
 }
 
+var (
+	pruneNoTail bool
+	pruneByTag  bool
+)
+
 func init() {
 	targetsCmd.AddCommand(targetsPruneCmd)
-	targetsPruneCmd.PersistentFlags().BoolP("no-tail", "", false, "Don't tail output of CI Job")
-	targetsPruneCmd.PersistentFlags().BoolP("by-tag", "", false, "Prune all targets by tags instead of name")
-
-	if err := viper.BindPFlags(targetsPruneCmd.PersistentFlags()); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
+	targetsPruneCmd.Flags().BoolVarP(&pruneNoTail, "no-tail", "", false, "Don't tail output of CI Job")
+	targetsPruneCmd.Flags().BoolVarP(&pruneByTag, "by-tag", "", false, "Prune all targets by tags instead of name")
 }
 
 func intersectionInSlices(list1, list2 []string) bool {
@@ -49,7 +49,7 @@ func doTargetsPrune(cmd *cobra.Command, args []string) {
 	}
 
 	var target_names []string
-	if viper.GetBool("by-tag") {
+	if pruneByTag {
 		target_names = make([]string, 0, 10)
 		for name, target := range targets.Signed.Targets {
 			custom, err := api.TargetCustom(target)
@@ -77,7 +77,7 @@ func doTargetsPrune(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 	fmt.Printf("CI URL: %s\n", url)
-	if !viper.GetBool("no-tail") {
+	if !pruneNoTail {
 		api.JobservTail(url)
 	}
 }
