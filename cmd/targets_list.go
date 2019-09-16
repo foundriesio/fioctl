@@ -73,5 +73,17 @@ func doTargetsList(cmd *cobra.Command, args []string) {
 		if len(custom.Tags) > 0 {
 			fmt.Printf("\ttags:%s\n", strings.Join(custom.Tags, ","))
 		}
+		if len(custom.DockerApps) > 0 {
+			fmt.Printf("\tdocker-apps:")
+			idx := 0
+			for name, app := range custom.DockerApps {
+				if idx > 0 {
+					fmt.Printf(",")
+				}
+				fmt.Printf("%s=%s", name, app.FileName)
+				idx += 1
+			}
+			fmt.Printf("\n")
+		}
 	}
 }

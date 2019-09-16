@@ -37,11 +37,16 @@ type DeviceList struct {
 	Next    *string  `json:"next"`
 }
 
+type DockerApp struct {
+	FileName string `json:"filename"`
+}
+
 type TufCustom struct {
-	HardwareIds  []string `json:"hardwareIds,omitempty"`
-	Tags         []string `json:"tags,omitempty"`
-	TargetFormat string   `json:"targetFormat,omitempty"`
-	Version      string   `json:"version,omitempty"`
+	HardwareIds  []string             `json:"hardwareIds,omitempty"`
+	Tags         []string             `json:"tags,omitempty"`
+	TargetFormat string               `json:"targetFormat,omitempty"`
+	Version      string               `json:"version,omitempty"`
+	DockerApps   map[string]DockerApp `json:"docker_apps,omitempty"`
 }
 
 func NewApiClient(serverUrl, apiToken string) *Api {
