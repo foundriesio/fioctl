@@ -44,7 +44,12 @@ func doDeviceList(cmd *cobra.Command, args []string) {
 			os.Exit(1)
 		}
 		for _, device := range dl.Devices {
-			fmt.Println("=", device.Name)
+			fmt.Printf("= %s", device.Name)
+			if device.Network != nil {
+				fmt.Printf("\tHostname(%s) IPv4(%s) MAC(%s)\n", device.Network.Hostname, device.Network.Ipv4, device.Network.MAC)
+			} else {
+				fmt.Printf("\n")
+			}
 			fmt.Printf("\tUUID:\t\t%s\n", device.Uuid)
 			fmt.Printf("\tOwner:\t\t%s\n", device.Owner)
 			fmt.Printf("\tFactory:\t%s\n", device.Factory)

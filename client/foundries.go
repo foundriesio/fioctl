@@ -19,6 +19,12 @@ type Api struct {
 	apiToken  string
 }
 
+type NetInfo struct {
+	Hostname string `json:"hostname"`
+	Ipv4     string `json:"local_ipv4"`
+	MAC      string `json:"mac"`
+}
+
 type Device struct {
 	Uuid       string   `json:"uuid"`
 	Name       string   `json:"name"`
@@ -28,6 +34,7 @@ type Device struct {
 	LastSeen   string   `json:"last-seen"`
 	OstreeHash string   `json:"ostree-hash"`
 	DockerApps []string `json:"docker-apps,omitempty"`
+	Network    *NetInfo `json:"network-info,omitempty"`
 	TargetName string   `json:"target-name"`
 }
 
