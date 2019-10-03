@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -12,9 +13,10 @@ import (
 )
 
 var deviceListCmd = &cobra.Command{
-	Use:   "list",
-	Short: "List devices registered to factories.",
+	Use:   "list [pattern]",
+	Short: "List devices registered to factories. Optionally include filepath style patterns to limit to device names. eg device-*",
 	Run:   doDeviceList,
+	Args:  cobra.MinimumNArgs(0),
 }
 var deviceNoShared bool
 
@@ -44,6 +46,17 @@ func doDeviceList(cmd *cobra.Command, args []string) {
 			os.Exit(1)
 		}
 		for _, device := range dl.Devices {
+			if len(args) > 0 {
+				match := false
+				for _, arg := range args {
+					if match, _ = filepath.Match(arg, device.Name); match == true {
+						break
+					}
+				}
+				if !match {
+					continue
+				}
+			}
 			fmt.Printf("= %s", device.Name)
 			if device.Network != nil {
 				fmt.Printf("\tHostname(%s) IPv4(%s) MAC(%s)\n", device.Network.Hostname, device.Network.Ipv4, device.Network.MAC)
