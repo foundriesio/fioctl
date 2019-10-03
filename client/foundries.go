@@ -153,7 +153,7 @@ func (a *Api) Delete(url string, data []byte) (*[]byte, error) {
 }
 
 func (a *Api) DeviceList() (*DeviceList, error) {
-	return a.DeviceListCont(a.serverUrl + "/ota/devices/")
+	return a.DeviceListCont(a.serverUrl + "/ota/devices/?shared=1")
 }
 
 func (a *Api) DeviceListCont(url string) (*DeviceList, error) {
