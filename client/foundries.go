@@ -19,6 +19,12 @@ type Api struct {
 	apiToken  string
 }
 
+type NetInfo struct {
+	Hostname string `json:"hostname"`
+	Ipv4     string `json:"local_ipv4"`
+	MAC      string `json:"mac"`
+}
+
 type Device struct {
 	Uuid       string   `json:"uuid"`
 	Name       string   `json:"name"`
@@ -28,6 +34,7 @@ type Device struct {
 	LastSeen   string   `json:"last-seen"`
 	OstreeHash string   `json:"ostree-hash"`
 	DockerApps []string `json:"docker-apps,omitempty"`
+	Network    *NetInfo `json:"network-info,omitempty"`
 	TargetName string   `json:"target-name"`
 }
 
@@ -152,8 +159,12 @@ func (a *Api) Delete(url string, data []byte) (*[]byte, error) {
 	return &body, nil
 }
 
-func (a *Api) DeviceList() (*DeviceList, error) {
-	return a.DeviceListCont(a.serverUrl + "/ota/devices/?shared=1")
+func (a *Api) DeviceList(shared bool) (*DeviceList, error) {
+	if shared {
+		return a.DeviceListCont(a.serverUrl + "/ota/devices/?shared=1")
+	} else {
+		return a.DeviceListCont(a.serverUrl + "/ota/devices/")
+	}
 }
 
 func (a *Api) DeviceListCont(url string) (*DeviceList, error) {

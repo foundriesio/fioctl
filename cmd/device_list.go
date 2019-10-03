@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -12,13 +13,16 @@ import (
 )
 
 var deviceListCmd = &cobra.Command{
-	Use:   "list",
-	Short: "List devices registered to factories.",
+	Use:   "list [pattern]",
+	Short: "List devices registered to factories. Optionally include filepath style patterns to limit to device names. eg device-*",
 	Run:   doDeviceList,
+	Args:  cobra.MinimumNArgs(0),
 }
+var deviceNoShared bool
 
 func init() {
 	deviceCmd.AddCommand(deviceListCmd)
+	deviceListCmd.Flags().BoolVarP(&deviceNoShared, "just-mine", "", false, "Only include devices owned by you")
 }
 
 func doDeviceList(cmd *cobra.Command, args []string) {
@@ -28,7 +32,7 @@ func doDeviceList(cmd *cobra.Command, args []string) {
 	for {
 		var err error
 		if dl == nil {
-			dl, err = api.DeviceList()
+			dl, err = api.DeviceList(!deviceNoShared)
 		} else {
 			if dl.Next != nil {
 				dl, err = api.DeviceListCont(*dl.Next)
@@ -42,7 +46,23 @@ func doDeviceList(cmd *cobra.Command, args []string) {
 			os.Exit(1)
 		}
 		for _, device := range dl.Devices {
-			fmt.Println("=", device.Name)
+			if len(args) > 0 {
+				match := false
+				for _, arg := range args {
+					if match, _ = filepath.Match(arg, device.Name); match == true {
+						break
+					}
+				}
+				if !match {
+					continue
+				}
+			}
+			fmt.Printf("= %s", device.Name)
+			if device.Network != nil {
+				fmt.Printf("\tHostname(%s) IPv4(%s) MAC(%s)\n", device.Network.Hostname, device.Network.Ipv4, device.Network.MAC)
+			} else {
+				fmt.Printf("\n")
+			}
 			fmt.Printf("\tUUID:\t\t%s\n", device.Uuid)
 			fmt.Printf("\tOwner:\t\t%s\n", device.Owner)
 			fmt.Printf("\tFactory:\t%s\n", device.Factory)

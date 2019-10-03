@@ -72,7 +72,6 @@ func printSorted(targets map[string][]targetCustom) {
 	}
 }
 
-
 func doTargetsList(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 	logrus.Debugf("Listing targets for %s hwid(%s) tag(%s)", factory, listByHwId, listByTag)
