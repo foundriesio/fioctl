@@ -18,11 +18,15 @@ var deviceListCmd = &cobra.Command{
 	Run:   doDeviceList,
 	Args:  cobra.MinimumNArgs(0),
 }
-var deviceNoShared bool
+var (
+	deviceNoShared bool
+	deviceByTag    string
+)
 
 func init() {
 	deviceCmd.AddCommand(deviceListCmd)
 	deviceListCmd.Flags().BoolVarP(&deviceNoShared, "just-mine", "", false, "Only include devices owned by you")
+	deviceListCmd.Flags().StringVarP(&deviceByTag, "by-tag", "", "", "Only list devices configured with the given tag")
 }
 
 func doDeviceList(cmd *cobra.Command, args []string) {
@@ -54,8 +58,13 @@ func doDeviceList(cmd *cobra.Command, args []string) {
 					}
 				}
 				if !match {
+					logrus.Debugf("Device(%v) does not match: %s", device, args)
 					continue
 				}
+			}
+			if len(deviceByTag) > 0 && !intersectionInSlices([]string{deviceByTag}, device.Tags) {
+				logrus.Debugf("Device(%v) does not include tag", device)
+				continue
 			}
 			fmt.Printf("= %s", device.Name)
 			if device.Network != nil {
@@ -70,6 +79,9 @@ func doDeviceList(cmd *cobra.Command, args []string) {
 			fmt.Printf("\tOstree Hash:\t%s\n", device.OstreeHash)
 			fmt.Printf("\tCreated:\t%s\n", device.CreatedAt)
 			fmt.Printf("\tLast Seen:\t%s\n", device.LastSeen)
+			if len(device.Tags) > 0 {
+				fmt.Printf("\tTags:\t\t%s\n", strings.Join(device.Tags, ","))
+			}
 			if len(device.DockerApps) > 0 {
 				fmt.Printf("\tDocker Apps:\t%s\n", strings.Join(device.DockerApps, ","))
 			}

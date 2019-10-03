@@ -34,6 +34,7 @@ type Device struct {
 	LastSeen   string   `json:"last-seen"`
 	OstreeHash string   `json:"ostree-hash"`
 	DockerApps []string `json:"docker-apps,omitempty"`
+	Tags       []string `json:"device-tags,omitempty"`
 	Network    *NetInfo `json:"network-info,omitempty"`
 	TargetName string   `json:"target-name"`
 }
