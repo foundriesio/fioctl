@@ -16,9 +16,11 @@ var deviceListCmd = &cobra.Command{
 	Short: "List devices registered to factories.",
 	Run:   doDeviceList,
 }
+var deviceNoShared bool
 
 func init() {
 	deviceCmd.AddCommand(deviceListCmd)
+	deviceListCmd.Flags().BoolVarP(&deviceNoShared, "just-mine", "", false, "Only include devices owned by you")
 }
 
 func doDeviceList(cmd *cobra.Command, args []string) {
@@ -28,7 +30,7 @@ func doDeviceList(cmd *cobra.Command, args []string) {
 	for {
 		var err error
 		if dl == nil {
-			dl, err = api.DeviceList()
+			dl, err = api.DeviceList(!deviceNoShared)
 		} else {
 			if dl.Next != nil {
 				dl, err = api.DeviceListCont(*dl.Next)

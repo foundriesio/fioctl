@@ -152,8 +152,12 @@ func (a *Api) Delete(url string, data []byte) (*[]byte, error) {
 	return &body, nil
 }
 
-func (a *Api) DeviceList() (*DeviceList, error) {
-	return a.DeviceListCont(a.serverUrl + "/ota/devices/?shared=1")
+func (a *Api) DeviceList(shared bool) (*DeviceList, error) {
+	if shared {
+		return a.DeviceListCont(a.serverUrl + "/ota/devices/?shared=1")
+	} else {
+		return a.DeviceListCont(a.serverUrl + "/ota/devices/")
+	}
 }
 
 func (a *Api) DeviceListCont(url string) (*DeviceList, error) {
