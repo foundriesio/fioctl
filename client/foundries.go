@@ -26,17 +26,19 @@ type NetInfo struct {
 }
 
 type Device struct {
-	Uuid       string   `json:"uuid"`
-	Name       string   `json:"name"`
-	Owner      string   `json:"owner"`
-	Factory    string   `json:"factory"`
-	CreatedAt  string   `json:"created-at"`
-	LastSeen   string   `json:"last-seen"`
-	OstreeHash string   `json:"ostree-hash"`
-	DockerApps []string `json:"docker-apps,omitempty"`
-	Tags       []string `json:"device-tags,omitempty"`
-	Network    *NetInfo `json:"network-info,omitempty"`
-	TargetName string   `json:"target-name"`
+	Uuid          string   `json:"uuid"`
+	Name          string   `json:"name"`
+	Owner         string   `json:"owner"`
+	Factory       string   `json:"factory"`
+	CreatedAt     string   `json:"created-at"`
+	LastSeen      string   `json:"last-seen"`
+	OstreeHash    string   `json:"ostree-hash"`
+	DockerApps    []string `json:"docker-apps,omitempty"`
+	Tags          []string `json:"device-tags,omitempty"`
+	Network       *NetInfo `json:"network-info,omitempty"`
+	TargetName    string   `json:"target-name"`
+	Status        string   `json:"status"`
+	CurrentUpdate string   `json:"current-update"`
 }
 
 type DeviceList struct {
