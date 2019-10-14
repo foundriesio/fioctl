@@ -25,6 +25,13 @@ type NetInfo struct {
 	MAC      string `json:"mac"`
 }
 
+type Update struct {
+	CorrelationId string `json:"correlation-id"`
+	Target        string `json:"target"`
+	Version       string `json:"version"`
+	Time          string `json:"time"`
+}
+
 type Device struct {
 	Uuid          string   `json:"uuid"`
 	Name          string   `json:"name"`
@@ -39,6 +46,7 @@ type Device struct {
 	TargetName    string   `json:"target-name"`
 	Status        string   `json:"status"`
 	CurrentUpdate string   `json:"current-update"`
+	Updates       []Update `json:"updates"`
 }
 
 type DeviceList struct {
@@ -160,6 +168,16 @@ func (a *Api) Delete(url string, data []byte) (*[]byte, error) {
 		return nil, fmt.Errorf("Unable to DELETE '%s': HTTP_%d\n=%s", url, res.StatusCode, body)
 	}
 	return &body, nil
+}
+
+func (a *Api) DeviceGet(device string) (*Device, error) {
+	body, err := a.Get(a.serverUrl+"/ota/devices/"+device+"/")
+	d := Device{}
+	err = json.Unmarshal(*body, &d)
+	if err != nil {
+		return nil, err
+	}
+	return &d, nil
 }
 
 func (a *Api) DeviceList(shared bool) (*DeviceList, error) {
