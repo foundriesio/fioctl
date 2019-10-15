@@ -85,6 +85,12 @@ func doDeviceList(cmd *cobra.Command, args []string) {
 			if len(device.DockerApps) > 0 {
 				fmt.Printf("\tDocker Apps:\t%s\n", strings.Join(device.DockerApps, ","))
 			}
+			if len(device.Status) > 0 {
+				fmt.Printf("\tStatus:\t\t%s\n", device.Status)
+			}
+			if len(device.CurrentUpdate) > 0 {
+				fmt.Printf("\tUpdate Id:\t%s\n", device.CurrentUpdate)
+			}
 		}
 	}
 }

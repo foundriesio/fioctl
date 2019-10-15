@@ -25,18 +25,44 @@ type NetInfo struct {
 	MAC      string `json:"mac"`
 }
 
+type Update struct {
+	CorrelationId string `json:"correlation-id"`
+	Target        string `json:"target"`
+	Version       string `json:"version"`
+	Time          string `json:"time"`
+}
+
+type EventType struct {
+	Id string `json:"id"`
+}
+
+type EventDetail struct {
+	Version    string `json:"version"`
+	TargetName string `json:"targetName"`
+	Success    *bool  `json:"success,omitempty"`
+}
+
+type UpdateEvent struct {
+	Time   string      `json:"deviceTime"`
+	Type   EventType   `json:"eventType"`
+	Detail EventDetail `json:"event"`
+}
+
 type Device struct {
-	Uuid       string   `json:"uuid"`
-	Name       string   `json:"name"`
-	Owner      string   `json:"owner"`
-	Factory    string   `json:"factory"`
-	CreatedAt  string   `json:"created-at"`
-	LastSeen   string   `json:"last-seen"`
-	OstreeHash string   `json:"ostree-hash"`
-	DockerApps []string `json:"docker-apps,omitempty"`
-	Tags       []string `json:"device-tags,omitempty"`
-	Network    *NetInfo `json:"network-info,omitempty"`
-	TargetName string   `json:"target-name"`
+	Uuid          string   `json:"uuid"`
+	Name          string   `json:"name"`
+	Owner         string   `json:"owner"`
+	Factory       string   `json:"factory"`
+	CreatedAt     string   `json:"created-at"`
+	LastSeen      string   `json:"last-seen"`
+	OstreeHash    string   `json:"ostree-hash"`
+	DockerApps    []string `json:"docker-apps,omitempty"`
+	Tags          []string `json:"device-tags,omitempty"`
+	Network       *NetInfo `json:"network-info,omitempty"`
+	TargetName    string   `json:"target-name"`
+	Status        string   `json:"status"`
+	CurrentUpdate string   `json:"current-update"`
+	Updates       []Update `json:"updates"`
 }
 
 type DeviceList struct {
@@ -160,6 +186,16 @@ func (a *Api) Delete(url string, data []byte) (*[]byte, error) {
 	return &body, nil
 }
 
+func (a *Api) DeviceGet(device string) (*Device, error) {
+	body, err := a.Get(a.serverUrl + "/ota/devices/" + device + "/")
+	d := Device{}
+	err = json.Unmarshal(*body, &d)
+	if err != nil {
+		return nil, err
+	}
+	return &d, nil
+}
+
 func (a *Api) DeviceList(shared bool) (*DeviceList, error) {
 	if shared {
 		return a.DeviceListCont(a.serverUrl + "/ota/devices/?shared=1")
@@ -186,6 +222,16 @@ func (a *Api) DeviceDelete(device string) error {
 	bytes := []byte{}
 	_, err := a.Delete(a.serverUrl+"/ota/devices/"+device+"/", bytes)
 	return err
+}
+
+func (a *Api) DeviceUpdateEvents(device, correlationId string) ([]UpdateEvent, error) {
+	body, err := a.Get(a.serverUrl + "/ota/devices/" + device + "/updates/" + correlationId + "/")
+	var events []UpdateEvent
+	err = json.Unmarshal(*body, &events)
+	if err != nil {
+		return events, err
+	}
+	return events, nil
 }
 
 func (a *Api) TargetsListRaw(factory string) (*[]byte, error) {
