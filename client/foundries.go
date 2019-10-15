@@ -32,6 +32,22 @@ type Update struct {
 	Time          string `json:"time"`
 }
 
+type EventType struct {
+	Id string `json:"id"`
+}
+
+type EventDetail struct {
+	Version    string `json:"version"`
+	TargetName string `json:"targetName"`
+	Success    *bool  `json:"success,omitempty"`
+}
+
+type UpdateEvent struct {
+	Time   string      `json:"deviceTime"`
+	Type   EventType   `json:"eventType"`
+	Detail EventDetail `json:"event"`
+}
+
 type Device struct {
 	Uuid          string   `json:"uuid"`
 	Name          string   `json:"name"`
@@ -171,7 +187,7 @@ func (a *Api) Delete(url string, data []byte) (*[]byte, error) {
 }
 
 func (a *Api) DeviceGet(device string) (*Device, error) {
-	body, err := a.Get(a.serverUrl+"/ota/devices/"+device+"/")
+	body, err := a.Get(a.serverUrl + "/ota/devices/" + device + "/")
 	d := Device{}
 	err = json.Unmarshal(*body, &d)
 	if err != nil {
@@ -206,6 +222,16 @@ func (a *Api) DeviceDelete(device string) error {
 	bytes := []byte{}
 	_, err := a.Delete(a.serverUrl+"/ota/devices/"+device+"/", bytes)
 	return err
+}
+
+func (a *Api) DeviceUpdateEvents(device, correlationId string) ([]UpdateEvent, error) {
+	body, err := a.Get(a.serverUrl + "/ota/devices/" + device + "/updates/" + correlationId + "/")
+	var events []UpdateEvent
+	err = json.Unmarshal(*body, &events)
+	if err != nil {
+		return events, err
+	}
+	return events, nil
 }
 
 func (a *Api) TargetsListRaw(factory string) (*[]byte, error) {
