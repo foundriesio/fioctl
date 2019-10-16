@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -40,6 +41,18 @@ func intersectionInSlices(list1, list2 []string) bool {
 	return false
 }
 
+func sortedListsMatch(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i, v := range a {
+		if v != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
 func doTargetsPrune(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 
@@ -52,13 +65,15 @@ func doTargetsPrune(cmd *cobra.Command, args []string) {
 
 	var target_names []string
 	if pruneByTag {
+		sort.Strings(args)
 		target_names = make([]string, 0, 10)
 		for name, target := range targets.Signed.Targets {
 			custom, err := api.TargetCustom(target)
 			if err != nil {
 				fmt.Printf("ERROR: %s\n", err)
 			} else {
-				if intersectionInSlices(args, custom.Tags) {
+				sort.Strings(custom.Tags)
+				if sortedListsMatch(args, custom.Tags) {
 					target_names = append(target_names, name)
 				}
 			}
@@ -72,7 +87,7 @@ func doTargetsPrune(cmd *cobra.Command, args []string) {
 		}
 		target_names = args
 	}
-	fmt.Printf("Deleting targets: %s\n", strings.Join(target_names, ","))
+	fmt.Printf("Deleting targets:\n %s\n", strings.Join(target_names, "\n "))
 	if pruneDryRun {
 		fmt.Println("Dry run, exiting")
 		return
