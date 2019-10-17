@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -46,6 +47,15 @@ func doDeviceShow(cmd *cobra.Command, args []string) {
 	}
 	if len(device.CurrentUpdate) > 0 {
 		fmt.Printf("\tUpdate Id:\t%s\n", device.CurrentUpdate)
+	}
+	if device.Hardware != nil {
+		b, err := json.MarshalIndent(device.Hardware, "\t\t", "  ")
+		if err != nil {
+			fmt.Println("Unable to marshall hardware info: ", err)
+		}
+		fmt.Printf("\tHardware Info:\n\t\t")
+		os.Stdout.Write(b)
+		fmt.Println("")
 	}
 	if len(device.Updates) > 0 {
 		fmt.Printf("\tUpdate History:\n")
