@@ -189,6 +189,9 @@ func (a *Api) Delete(url string, data []byte) (*[]byte, error) {
 
 func (a *Api) DeviceGet(device string) (*Device, error) {
 	body, err := a.Get(a.serverUrl + "/ota/devices/" + device + "/")
+	if err != nil {
+		return nil, err
+	}
 	d := Device{}
 	err = json.Unmarshal(*body, &d)
 	if err != nil {
@@ -226,8 +229,11 @@ func (a *Api) DeviceDelete(device string) error {
 }
 
 func (a *Api) DeviceUpdateEvents(device, correlationId string) ([]UpdateEvent, error) {
-	body, err := a.Get(a.serverUrl + "/ota/devices/" + device + "/updates/" + correlationId + "/")
 	var events []UpdateEvent
+	body, err := a.Get(a.serverUrl + "/ota/devices/" + device + "/updates/" + correlationId + "/")
+	if err != nil {
+		return nil, err
+	}
 	err = json.Unmarshal(*body, &events)
 	if err != nil {
 		return events, err
