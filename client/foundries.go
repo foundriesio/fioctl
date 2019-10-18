@@ -32,6 +32,12 @@ type Update struct {
 	Time          string `json:"time"`
 }
 
+type UpdateList struct {
+	Updates []Update `json:"updates"`
+	Total   int      `json:"total"`
+	Next    *string  `json:"next"`
+}
+
 type EventType struct {
 	Id string `json:"id"`
 }
@@ -226,6 +232,24 @@ func (a *Api) DeviceDelete(device string) error {
 	bytes := []byte{}
 	_, err := a.Delete(a.serverUrl+"/ota/devices/"+device+"/", bytes)
 	return err
+}
+
+func (a *Api) DeviceListUpdates(device string) (*UpdateList, error) {
+	return a.DeviceListUpdatesCont(a.serverUrl + "/ota/devices/" + device + "/updates/")
+}
+
+func (a *Api) DeviceListUpdatesCont(url string) (*UpdateList, error) {
+	body, err := a.Get(url)
+	if err != nil {
+		return nil, err
+	}
+
+	updates := UpdateList{}
+	err = json.Unmarshal(*body, &updates)
+	if err != nil {
+		return nil, err
+	}
+	return &updates, nil
 }
 
 func (a *Api) DeviceUpdateEvents(device, correlationId string) ([]UpdateEvent, error) {
