@@ -9,7 +9,7 @@ import (
 )
 
 var deviceShowUpdateCmd = &cobra.Command{
-	Use:   "show-update [name] [update-id]",
+	Use:   "show-update <name> <update-id>",
 	Short: "Show details of a specific device update",
 	Run:   doDeviceShowUpdate,
 	Args:  cobra.ExactArgs(2),

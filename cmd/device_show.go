@@ -11,7 +11,7 @@ import (
 )
 
 var deviceShowCmd = &cobra.Command{
-	Use:   "show [name]",
+	Use:   "show <name>",
 	Short: "Show details of a specific device",
 	Run:   doDeviceShow,
 	Args:  cobra.ExactArgs(1),
