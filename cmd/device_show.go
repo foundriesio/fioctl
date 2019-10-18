@@ -57,16 +57,4 @@ func doDeviceShow(cmd *cobra.Command, args []string) {
 		os.Stdout.Write(b)
 		fmt.Println("")
 	}
-	if len(device.Updates) > 0 {
-		fmt.Printf("\tUpdate History:\n")
-		for idx, update := range device.Updates {
-			if idx > 0 {
-				fmt.Printf("\t\t-------------------------------------------------\n\n")
-			}
-			fmt.Printf("\t\tId:      %s\n", update.CorrelationId)
-			fmt.Printf("\t\tTime:    %s\n", update.Time)
-			fmt.Printf("\t\tTarget:  %s\n", update.Target)
-			fmt.Printf("\t\tVersion: %s\n", update.Version)
-		}
-	}
 }

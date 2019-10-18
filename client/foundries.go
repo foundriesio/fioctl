@@ -69,7 +69,6 @@ type Device struct {
 	TargetName    string           `json:"target-name"`
 	Status        string           `json:"status"`
 	CurrentUpdate string           `json:"current-update"`
-	Updates       []Update         `json:"updates"`
 }
 
 type DeviceList struct {
