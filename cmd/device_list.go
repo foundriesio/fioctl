@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -16,7 +15,7 @@ var deviceListCmd = &cobra.Command{
 	Use:   "list [pattern]",
 	Short: "List devices registered to factories. Optionally include filepath style patterns to limit to device names. eg device-*",
 	Run:   doDeviceList,
-	Args:  cobra.MinimumNArgs(0),
+	Args:  cobra.MaximumNArgs(1),
 }
 var (
 	deviceNoShared bool
@@ -29,6 +28,21 @@ func init() {
 	deviceListCmd.Flags().StringVarP(&deviceByTag, "by-tag", "", "", "Only list devices configured with the given tag")
 }
 
+// We allow pattern matching using filepath.Match type * and ?
+// ie * matches everything and ? matches a single character.
+// In sql we need * and ? to maps to % and _ respectively
+// Since _ is a special character we need to escape that. And
+//
+// Soo... a pattern like: H?st_b* would become: H_st\_b%
+// and would match stuff like host_b and hast_FOOO
+func sqlLikeIfy(filePathLike string) string {
+	sql := strings.Replace(filePathLike, "*", "%", -1)
+	sql = strings.Replace(sql, "_", "\\_", -1)
+	sql = strings.Replace(sql, "?", "_", -1)
+	logrus.Debugf("Converted query(%s) -> %s", filePathLike, sql)
+	return sql
+}
+
 func doDeviceList(cmd *cobra.Command, args []string) {
 	logrus.Debug("Listing registered devices")
 
@@ -36,7 +50,11 @@ func doDeviceList(cmd *cobra.Command, args []string) {
 	for {
 		var err error
 		if dl == nil {
-			dl, err = api.DeviceList(!deviceNoShared)
+			name_ilike := ""
+			if len(args) == 1 {
+				name_ilike = sqlLikeIfy(args[0])
+			}
+			dl, err = api.DeviceList(!deviceNoShared, deviceByTag, name_ilike)
 		} else {
 			if dl.Next != nil {
 				dl, err = api.DeviceListCont(*dl.Next)
@@ -50,22 +68,6 @@ func doDeviceList(cmd *cobra.Command, args []string) {
 			os.Exit(1)
 		}
 		for _, device := range dl.Devices {
-			if len(args) > 0 {
-				match := false
-				for _, arg := range args {
-					if match, _ = filepath.Match(arg, device.Name); match == true {
-						break
-					}
-				}
-				if !match {
-					logrus.Debugf("Device(%v) does not match: %s", device, args)
-					continue
-				}
-			}
-			if len(deviceByTag) > 0 && !intersectionInSlices([]string{deviceByTag}, device.Tags) {
-				logrus.Debugf("Device(%v) does not include tag", device)
-				continue
-			}
 			fmt.Printf("= %s", device.Name)
 			if device.Network != nil {
 				fmt.Printf("\tHostname(%s) IPv4(%s) MAC(%s)\n", device.Network.Hostname, device.Network.Ipv4, device.Network.MAC)

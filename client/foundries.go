@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	tuf "github.com/theupdateframework/notary/tuf/data"
 )
 
@@ -205,12 +206,15 @@ func (a *Api) DeviceGet(device string) (*Device, error) {
 	return &d, nil
 }
 
-func (a *Api) DeviceList(shared bool) (*DeviceList, error) {
+func (a *Api) DeviceList(shared bool, match_tag, name_ilike string) (*DeviceList, error) {
+	shared_int := 0
 	if shared {
-		return a.DeviceListCont(a.serverUrl + "/ota/devices/?shared=1")
-	} else {
-		return a.DeviceListCont(a.serverUrl + "/ota/devices/")
+		shared_int = 1
 	}
+	url := a.serverUrl + "/ota/devices/?"
+	url += fmt.Sprintf("shared=%d&match_tag=%s&name_ilike=%s", shared_int, match_tag, name_ilike)
+	logrus.Debugf("DeviceList with url: %s", url)
+	return a.DeviceListCont(url)
 }
 
 func (a *Api) DeviceListCont(url string) (*DeviceList, error) {
