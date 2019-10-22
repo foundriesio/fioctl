@@ -1,0 +1,9 @@
+# Build using golang container
+FROM golang:1.12
+
+RUN mkdir -p $HOME/fioctl
+WORKDIR $HOME/fioctl
+
+COPY . .
+RUN make build
+

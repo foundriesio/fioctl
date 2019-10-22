@@ -19,3 +19,12 @@ format:
 	@gofmt -l  -w ./
 check:
 	@test -z $(shell gofmt -l ./ | tee /dev/stderr) || echo "[WARN] Fix formatting issues with 'make fmt'"
+
+# Use the image for Dockerfile.build to build and install the tool.
+container-init:
+	docker build -t fioctl-build -f Dockerfile.build .
+
+container-build:
+	docker run --rm -ti -v $(shell pwd):/fioctl fioctl-build make build
+
+	
