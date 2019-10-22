@@ -5,5 +5,5 @@ RUN mkdir -p $HOME/fioctl
 WORKDIR $HOME/fioctl
 
 COPY . .
-RUN make build
+RUN go mod download
 
