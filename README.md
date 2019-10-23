@@ -11,6 +11,9 @@ Factory. Its based on the Foundries.io "ota-lite" API defined here:
  make fioctl-linux-amd64
  make fioctl-darwin-amd64
  make fioctl-windows-amd64
+
+ make container-init && make container-build && \
+ export PATH=$PATH:`pwd`/bin
 ~~~
 
 ## Making Changes
