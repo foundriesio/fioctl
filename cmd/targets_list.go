@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -42,15 +43,19 @@ func init() {
 }
 
 func printSorted(targets map[string][]targetCustom) {
-	keys := make([]string, 0, len(targets))
+	keys := make([]int, 0, len(targets))
 	for k := range targets {
-		keys = append(keys, k)
+		i, err := strconv.Atoi(k)
+		if err != nil {
+			panic(fmt.Sprintf("Unable to sort due to invalid version: %s. Error: %s", k, err))
+		}
+		keys = append(keys, i)
 	}
-	sort.Strings(keys)
+	sort.Ints(keys)
 
 	for _, k := range keys {
 		fmt.Println("=", k)
-		for _, tc := range targets[k] {
+		for _, tc := range targets[strconv.Itoa(k)] {
 			hash := hex.EncodeToString(tc.target.Hashes["sha256"])
 			fmt.Printf("\t%s / %s\n", strings.Join(tc.custom.HardwareIds, ","), hash)
 			if len(tc.custom.Tags) > 0 {
