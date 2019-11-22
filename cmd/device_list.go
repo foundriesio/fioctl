@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
+	"github.com/cheynewallace/tabby"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
@@ -18,14 +20,16 @@ var deviceListCmd = &cobra.Command{
 	Args:  cobra.MaximumNArgs(1),
 }
 var (
-	deviceNoShared bool
-	deviceByTag    string
+	deviceNoShared      bool
+	deviceByTag         string
+	deviceInactiveHours int
 )
 
 func init() {
 	deviceCmd.AddCommand(deviceListCmd)
 	deviceListCmd.Flags().BoolVarP(&deviceNoShared, "just-mine", "", false, "Only include devices owned by you")
 	deviceListCmd.Flags().StringVarP(&deviceByTag, "by-tag", "", "", "Only list devices configured with the given tag")
+	deviceListCmd.Flags().IntVarP(&deviceInactiveHours, "offline-threshold", "", 4, "List the device as 'OFFLINE' if not seen in the last X hours")
 }
 
 // We allow pattern matching using filepath.Match type * and ?
@@ -46,6 +50,8 @@ func sqlLikeIfy(filePathLike string) string {
 func doDeviceList(cmd *cobra.Command, args []string) {
 	logrus.Debug("Listing registered devices")
 
+	t := tabby.New()
+	t.AddHeader("NAME", "FACTORY", "TARGET", "STATUS", "APPS")
 	var dl *client.DeviceList
 	for {
 		var err error
@@ -68,31 +74,26 @@ func doDeviceList(cmd *cobra.Command, args []string) {
 			os.Exit(1)
 		}
 		for _, device := range dl.Devices {
-			fmt.Printf("= %s", device.Name)
-			if device.Network != nil {
-				fmt.Printf("\tHostname(%s) IPv4(%s) MAC(%s)\n", device.Network.Hostname, device.Network.Ipv4, device.Network.MAC)
-			} else {
-				fmt.Printf("\n")
+			if len(device.TargetName) == 0 {
+				device.TargetName = "???"
 			}
-			fmt.Printf("\tUUID:\t\t%s\n", device.Uuid)
-			fmt.Printf("\tOwner:\t\t%s\n", device.Owner)
-			fmt.Printf("\tFactory:\t%s\n", device.Factory)
-			fmt.Printf("\tTarget:\t\t%s / sha256(%s)\n", device.TargetName, device.OstreeHash)
-			fmt.Printf("\tOstree Hash:\t%s\n", device.OstreeHash)
-			fmt.Printf("\tCreated:\t%s\n", device.CreatedAt)
-			fmt.Printf("\tLast Seen:\t%s\n", device.LastSeen)
-			if len(device.Tags) > 0 {
-				fmt.Printf("\tTags:\t\t%s\n", strings.Join(device.Tags, ","))
-			}
-			if len(device.DockerApps) > 0 {
-				fmt.Printf("\tDocker Apps:\t%s\n", strings.Join(device.DockerApps, ","))
-			}
+			status := "OK"
 			if len(device.Status) > 0 {
-				fmt.Printf("\tStatus:\t\t%s\n", device.Status)
+				status = device.Status
 			}
-			if len(device.CurrentUpdate) > 0 {
-				fmt.Printf("\tUpdate Id:\t%s\n", device.CurrentUpdate)
+			if len(device.LastSeen) > 0 {
+				t, err := time.Parse("2006-01-02T15:04:05", device.LastSeen)
+				if err == nil {
+					duration := time.Now().Sub(t)
+					if duration.Hours() > float64(deviceInactiveHours) {
+						status = "OFFLINE"
+					}
+				} else {
+					logrus.Error(err)
+				}
 			}
+			t.AddLine(device.Name, device.Factory, device.TargetName, status, strings.Join(device.DockerApps, ","))
 		}
 	}
+	t.Print()
 }
