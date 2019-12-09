@@ -73,7 +73,11 @@ func doTargetsShow(cmd *cobra.Command, args []string) {
 	t = tabby.New()
 	t.AddHeader("DOCKER APP", "VERSION")
 	for name, app := range apps {
-		t.AddLine(name, app.FileName)
+		if len(app.FileName) > 0 {
+			t.AddLine(name, app.FileName)
+		} else {
+			t.AddLine(name, app.Uri)
+		}
 	}
 	t.Print()
 }
