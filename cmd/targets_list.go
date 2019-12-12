@@ -1,19 +1,16 @@
 package cmd
 
 import (
-	"encoding/hex"
 	"fmt"
 	"os"
 	"sort"
 	"strconv"
 	"strings"
 
+	"github.com/cheynewallace/tabby"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	tuf "github.com/theupdateframework/notary/tuf/data"
-
-	"github.com/foundriesio/fioctl/client"
 )
 
 var targetListCmd = &cobra.Command{
@@ -23,63 +20,27 @@ var targetListCmd = &cobra.Command{
 }
 
 var (
-	listRaw    bool
-	listByTag  string
-	listByHwId string
-	listByVer  bool
+	listRaw   bool
+	listByTag string
 )
 
-type targetCustom struct {
-	target tuf.FileMeta
-	custom *client.TufCustom
+// Represents the details we use for displaying a single OTA "build"
+type targetListing struct {
+	version     int
+	hardwareIds []string
+	tags        []string
+	apps        []string
 }
 
 func init() {
 	targetsCmd.AddCommand(targetListCmd)
 	targetListCmd.Flags().BoolVarP(&listRaw, "raw", "r", false, "Print raw targets.json")
-	targetListCmd.Flags().StringVarP(&listByHwId, "by-hwid", "", "", "Only list targets that match the given hardware-id")
 	targetListCmd.Flags().StringVarP(&listByTag, "by-tag", "", "", "Only list targets that match the given tag")
-	targetListCmd.Flags().BoolVarP(&listByVer, "by-version", "", false, "Group by \"versions\" so that each version shows the hwids and shas for it")
-}
-
-func printSorted(targets map[string][]targetCustom) {
-	keys := make([]int, 0, len(targets))
-	for k := range targets {
-		i, err := strconv.Atoi(k)
-		if err != nil {
-			panic(fmt.Sprintf("Unable to sort due to invalid version: %s. Error: %s", k, err))
-		}
-		keys = append(keys, i)
-	}
-	sort.Ints(keys)
-
-	for _, k := range keys {
-		fmt.Println("=", k)
-		for _, tc := range targets[strconv.Itoa(k)] {
-			hash := hex.EncodeToString(tc.target.Hashes["sha256"])
-			fmt.Printf("\t%s / %s\n", strings.Join(tc.custom.HardwareIds, ","), hash)
-			if len(tc.custom.Tags) > 0 {
-				fmt.Printf("\t\ttags:%s\n", strings.Join(tc.custom.Tags, ","))
-			}
-			if len(tc.custom.DockerApps) > 0 {
-				fmt.Printf("\t\tdocker-apps:")
-				idx := 0
-				for name, app := range tc.custom.DockerApps {
-					if idx > 0 {
-						fmt.Printf(",")
-					}
-					fmt.Printf("%s=%s", name, app.FileName)
-					idx += 1
-				}
-				fmt.Printf("\n")
-			}
-		}
-	}
 }
 
 func doTargetsList(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
-	logrus.Debugf("Listing targets for %s hwid(%s) tag(%s)", factory, listByHwId, listByTag)
+	logrus.Debugf("Listing targets for %s tag(%s)", factory, listByTag)
 
 	if listRaw {
 		body, err := api.TargetsListRaw(factory)
@@ -98,48 +59,65 @@ func doTargetsList(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	verTargets := map[string][]targetCustom{}
-	for name, target := range targets.Signed.Targets {
+	var keys []int
+	listing := make(map[int]*targetListing)
+	for _, target := range targets.Signed.Targets {
 		custom, err := api.TargetCustom(target)
 		if err != nil {
 			fmt.Printf("ERROR: %s\n", err)
 			continue
 		}
-		if len(listByHwId) > 0 && !intersectionInSlices([]string{listByHwId}, custom.HardwareIds) {
-			logrus.Debugf("Target(%v) does not match hwid)", target)
+		if custom.TargetFormat != "OSTREE" {
+			logrus.Debugf("Skipping non-ostree target: %v", target)
 			continue
 		}
-		if len(listByTag) > 0 && !intersectionInSlices([]string{listByTag}, custom.Tags) {
-			logrus.Debugf("Target(%v) does not include tag)", target)
-			continue
-		}
-		if listByVer {
-			verTargets[custom.Version] = append(verTargets[custom.Version], targetCustom{target, custom})
-			continue
-		}
-		fmt.Println("=", name)
-		hash := hex.EncodeToString(target.Hashes["sha256"])
-		fmt.Printf("\tsha256:%s\n", hash)
-		fmt.Printf("\tversion:%s\n", custom.Version)
-		fmt.Printf("\thwids:%s\n", strings.Join(custom.HardwareIds, ","))
-		fmt.Printf("\tformat:%s\n", custom.TargetFormat)
-		if len(custom.Tags) > 0 {
-			fmt.Printf("\ttags:%s\n", strings.Join(custom.Tags, ","))
-		}
-		if len(custom.DockerApps) > 0 {
-			fmt.Printf("\tdocker-apps:")
-			idx := 0
-			for name, app := range custom.DockerApps {
-				if idx > 0 {
-					fmt.Printf(",")
+		if len(listByTag) > 0 {
+			found := false
+			for _, t := range custom.Tags {
+				if t == listByTag {
+					found = true
+					break
 				}
-				fmt.Printf("%s=%s", name, app.FileName)
-				idx += 1
 			}
-			fmt.Printf("\n")
+			if !found {
+				logrus.Debugf("Skipping tag: %v", target)
+				continue
+			}
+		}
+		ver, err := strconv.Atoi(custom.Version)
+		if err != nil {
+			panic(fmt.Sprintf("Invalid version: %v. Error: %s", target, err))
+		}
+		build, ok := listing[ver]
+		if ok {
+			build.hardwareIds = append(build.hardwareIds, custom.HardwareIds...)
+			//TODO assert list of docker-apps is the same
+			//TODO assert list of tags is the same
+		} else {
+			var apps []string
+			for app := range custom.DockerApps {
+				apps = append(apps, app)
+			}
+			keys = append(keys, ver)
+			listing[ver] = &targetListing{
+				version:     ver,
+				hardwareIds: custom.HardwareIds,
+				tags:        custom.Tags,
+				apps:        apps,
+			}
 		}
 	}
-	if listByVer {
-		printSorted(verTargets)
+
+	t := tabby.New()
+	t.AddHeader("VERSION", "TAGS", "APPS", "HARDWARE IDs")
+
+	sort.Ints(keys)
+	for _, key := range keys {
+		l := listing[key]
+		tags := strings.Join(l.tags, ",")
+		apps := strings.Join(l.apps, ",")
+		hwids := strings.Join(l.hardwareIds, ",")
+		t.AddLine(l.version, tags, apps, hwids)
 	}
+	t.Print()
 }

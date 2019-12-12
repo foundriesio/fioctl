@@ -80,6 +80,7 @@ type DeviceList struct {
 
 type DockerApp struct {
 	FileName string `json:"filename"`
+	Uri      string `json:"uri"`
 }
 
 type TufCustom struct {

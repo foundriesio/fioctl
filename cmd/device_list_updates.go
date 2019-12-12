@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/cheynewallace/tabby"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
@@ -17,14 +18,17 @@ var deviceUpdatesCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 }
 
+var deviceUpdatesLimit int
+
 func init() {
 	deviceCmd.AddCommand(deviceUpdatesCmd)
+	deviceUpdatesCmd.Flags().IntVarP(&deviceUpdatesLimit, "limit", "n", 0, "Limit the number of results displayed.")
 }
 
 func doDeviceUpdates(cmd *cobra.Command, args []string) {
 	logrus.Debug("Showing device updates")
-
-	fmt.Printf("Update History:\n")
+	t := tabby.New()
+	t.AddHeader("ID", "TIME", "VERSION", "TARGET")
 	var ul *client.UpdateList
 	for {
 		var err error
@@ -42,14 +46,16 @@ func doDeviceUpdates(cmd *cobra.Command, args []string) {
 			fmt.Println(err)
 			os.Exit(1)
 		}
-		for idx, update := range ul.Updates {
-			if idx > 0 {
-				fmt.Println("")
+		for _, update := range ul.Updates {
+			t.AddLine(update.CorrelationId, update.Time, update.Version, update.Target)
+			deviceUpdatesLimit -= 1
+			if deviceUpdatesLimit == 0 {
+				break
 			}
-			fmt.Printf("Id:      %s\n", update.CorrelationId)
-			fmt.Printf("Time:    %s\n", update.Time)
-			fmt.Printf("Target:  %s\n", update.Target)
-			fmt.Printf("Version: %s\n", update.Version)
+		}
+		if deviceUpdatesLimit == 0 {
+			break
 		}
 	}
+	t.Print()
 }
