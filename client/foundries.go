@@ -232,6 +232,34 @@ func (a *Api) Post(url string, data []byte) (*[]byte, error) {
 	return &body, nil
 }
 
+func (a *Api) Put(url string, data []byte) (*[]byte, error) {
+	client := http.Client{
+		Timeout: time.Second * 10,
+	}
+
+	req, err := http.NewRequest(http.MethodPut, url, bytes.NewBuffer(data))
+	if err != nil {
+		return nil, err
+	}
+
+	a.setReqHeaders(req, true)
+
+	res, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	if res.StatusCode != 202 {
+		return nil, fmt.Errorf("Unable to PUT '%s': HTTP_%d\n=%s", url, res.StatusCode, body)
+	}
+	return &body, nil
+}
+
 func (a *Api) Delete(url string, data []byte) (*[]byte, error) {
 	client := http.Client{
 		Timeout: time.Second * 10,
@@ -361,6 +389,22 @@ func (a *Api) TargetCustom(target tuf.FileMeta) (*TufCustom, error) {
 		return nil, err
 	}
 	return &custom, nil
+}
+
+func (a *Api) TargetsPut(factory string, data []byte) (string, error) {
+	url := a.serverUrl + "/ota/factories/" + factory + "/targets/"
+	resp, err := a.Put(url, data)
+	if err != nil {
+		return "", err
+	}
+	type PutResp struct {
+		JobServUrl string `json:"jobserv-url"`
+	}
+	pr := PutResp{}
+	if err := json.Unmarshal(*resp, &pr); err != nil {
+		return "", err
+	}
+	return pr.JobServUrl + "runs/UpdateTargets/console.log", nil
 }
 
 func (a *Api) TargetUpdateTags(factory string, target_names []string, tag_names []string) (string, error) {
