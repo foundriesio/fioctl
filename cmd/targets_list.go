@@ -32,6 +32,25 @@ type targetListing struct {
 	apps        []string
 }
 
+type byTargetKey []string
+
+func (t byTargetKey) Len() int {
+	return len(t)
+}
+func (t byTargetKey) Swap(i, j int) {
+	t[i], t[j] = t[j], t[i]
+}
+func (t byTargetKey) Less(i, j int) bool {
+	var tagsI, tagsJ string
+	var verI, verJ int
+	fmt.Sscanf(t[i], "%d-%s", &verI, &tagsI)
+	fmt.Sscanf(t[j], "%d-%s", &verJ, &tagsJ)
+	if verI == verJ {
+		return tagsI < tagsJ
+	}
+	return verI < verJ
+}
+
 func init() {
 	targetsCmd.AddCommand(targetListCmd)
 	targetListCmd.Flags().BoolVarP(&listRaw, "raw", "r", false, "Print raw targets.json")
@@ -59,8 +78,8 @@ func doTargetsList(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	var keys []int
-	listing := make(map[int]*targetListing)
+	var keys []string
+	listing := make(map[string]*targetListing)
 	for _, target := range targets.Signed.Targets {
 		custom, err := api.TargetCustom(target)
 		if err != nil {
@@ -88,18 +107,18 @@ func doTargetsList(cmd *cobra.Command, args []string) {
 		if err != nil {
 			panic(fmt.Sprintf("Invalid version: %v. Error: %s", target, err))
 		}
-		build, ok := listing[ver]
+		key := fmt.Sprintf("%d-%s", ver, strings.Join(custom.Tags, ","))
+		build, ok := listing[key]
 		if ok {
 			build.hardwareIds = append(build.hardwareIds, custom.HardwareIds...)
 			//TODO assert list of docker-apps is the same
-			//TODO assert list of tags is the same
 		} else {
 			var apps []string
 			for app := range custom.DockerApps {
 				apps = append(apps, app)
 			}
-			keys = append(keys, ver)
-			listing[ver] = &targetListing{
+			keys = append(keys, key)
+			listing[key] = &targetListing{
 				version:     ver,
 				hardwareIds: custom.HardwareIds,
 				tags:        custom.Tags,
@@ -111,7 +130,7 @@ func doTargetsList(cmd *cobra.Command, args []string) {
 	t := tabby.New()
 	t.AddHeader("VERSION", "TAGS", "APPS", "HARDWARE IDs")
 
-	sort.Ints(keys)
+	sort.Sort(byTargetKey(keys))
 	for _, key := range keys {
 		l := listing[key]
 		tags := strings.Join(l.tags, ",")
