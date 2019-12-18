@@ -60,7 +60,7 @@ func (c *Config) ReadClientCredentials() {
 	clientSecret := strings.Trim(scanner.Text(), " ")
 
 	if clientId == "" || clientSecret == "" {
-		fmt.Println("Client ID and client credentials are both required.")
+		fmt.Println("Client ID and client secret are both required.")
 		os.Exit(1)
 	}
 
