@@ -2,19 +2,22 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/spf13/cobra"
 	"os"
+	"path/filepath"
 
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
 	"github.com/foundriesio/fioctl/client"
+	"github.com/foundriesio/fioctl/internal/config"
 )
 
 var (
 	cfgFile string
 	api     *client.Api
+	cfg     *config.Config
 )
 
 var rootCmd = &cobra.Command{
@@ -48,14 +51,15 @@ func initConfig() {
 		// Use config file from the flag.
 		viper.SetConfigFile(cfgFile)
 	} else {
-		config, err := homedir.Expand("~/.config")
+		cfgDir, err := homedir.Expand("~/.config")
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
 
+		cfgFile = filepath.Join(cfgDir, "fioctl.yaml")
 		// Search config in home directory with name "fioctl" (without extension).
-		viper.AddConfigPath(config)
+		viper.AddConfigPath(cfgDir)
 		viper.SetConfigName("fioctl")
 	}
 
@@ -73,4 +77,5 @@ func initConfig() {
 	}
 
 	api = client.NewApiClient("https://api.foundries.io", viper.GetString("token"))
+	cfg = config.Load(cfgFile)
 }
