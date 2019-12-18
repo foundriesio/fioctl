@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
@@ -52,11 +53,11 @@ func (c *Config) ReadClientCredentials() {
 
 	fmt.Print("Client ID: ")
 	scanner.Scan()
-	clientId := scanner.Text()
+	clientId := strings.Trim(scanner.Text(), " ")
 
 	fmt.Print("Client secret: ")
 	scanner.Scan()
-	clientSecret := scanner.Text()
+	clientSecret := strings.Trim(scanner.Text(), " ")
 
 	if clientId == "" || clientSecret == "" {
 		fmt.Println("Client ID and client credentials are both required.")
