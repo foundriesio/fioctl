@@ -15,6 +15,7 @@ var targetsCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(targetsCmd)
+	targetsCmd.PersistentFlags().StringP("token", "t", "", "API token from https://app.foundries.io/settings/tokens/")
 	targetsCmd.PersistentFlags().StringP("factory", "f", "", "Factory to list targets for")
 
 	if err := viper.BindPFlags(targetsCmd.PersistentFlags()); err != nil {

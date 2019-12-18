@@ -11,4 +11,5 @@ var deviceCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(deviceCmd)
+	deviceCmd.PersistentFlags().StringP("token", "t", "", "API token from https://app.foundries.io/settings/tokens/")
 }
