@@ -22,6 +22,7 @@ var deviceListCmd = &cobra.Command{
 var (
 	deviceNoShared      bool
 	deviceByTag         string
+	deviceByFactory     string
 	deviceInactiveHours int
 )
 
@@ -29,6 +30,7 @@ func init() {
 	deviceCmd.AddCommand(deviceListCmd)
 	deviceListCmd.Flags().BoolVarP(&deviceNoShared, "just-mine", "", false, "Only include devices owned by you")
 	deviceListCmd.Flags().StringVarP(&deviceByTag, "by-tag", "", "", "Only list devices configured with the given tag")
+	deviceListCmd.Flags().StringVarP(&deviceByFactory, "by-factory", "", "", "Only list devices belonging to this factory")
 	deviceListCmd.Flags().IntVarP(&deviceInactiveHours, "offline-threshold", "", 4, "List the device as 'OFFLINE' if not seen in the last X hours")
 }
 
@@ -60,7 +62,10 @@ func doDeviceList(cmd *cobra.Command, args []string) {
 			if len(args) == 1 {
 				name_ilike = sqlLikeIfy(args[0])
 			}
-			dl, err = api.DeviceList(!deviceNoShared, deviceByTag, name_ilike)
+			if len(deviceByFactory) > 0 {
+				deviceNoShared = true
+			}
+			dl, err = api.DeviceList(!deviceNoShared, deviceByTag, deviceByFactory, name_ilike)
 		} else {
 			if dl.Next != nil {
 				dl, err = api.DeviceListCont(*dl.Next)

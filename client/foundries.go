@@ -207,13 +207,13 @@ func (a *Api) DeviceGet(device string) (*Device, error) {
 	return &d, nil
 }
 
-func (a *Api) DeviceList(shared bool, match_tag, name_ilike string) (*DeviceList, error) {
-	shared_int := 0
+func (a *Api) DeviceList(shared bool, matchTag, byFactory, nameIlike string) (*DeviceList, error) {
+	sharedInt := 0
 	if shared {
-		shared_int = 1
+		sharedInt = 1
 	}
 	url := a.serverUrl + "/ota/devices/?"
-	url += fmt.Sprintf("shared=%d&match_tag=%s&name_ilike=%s", shared_int, match_tag, name_ilike)
+	url += fmt.Sprintf("shared=%d&match_tag=%s&name_ilike=%s&factory=%s", sharedInt, matchTag, nameIlike, byFactory)
 	logrus.Debugf("DeviceList with url: %s", url)
 	return a.DeviceListCont(url)
 }
