@@ -21,6 +21,7 @@ var deviceListCmd = &cobra.Command{
 }
 var (
 	deviceNoShared      bool
+	deviceNoOwner       bool
 	deviceByTag         string
 	deviceByFactory     string
 	deviceInactiveHours int
@@ -29,6 +30,7 @@ var (
 func init() {
 	deviceCmd.AddCommand(deviceListCmd)
 	deviceListCmd.Flags().BoolVarP(&deviceNoShared, "just-mine", "", false, "Only include devices owned by you")
+	deviceListCmd.Flags().BoolVarP(&deviceNoOwner, "skip-owner", "", false, "Do not include owner name when lising. (command will run faster)")
 	deviceListCmd.Flags().StringVarP(&deviceByTag, "by-tag", "", "", "Only list devices configured with the given tag")
 	deviceListCmd.Flags().StringVarP(&deviceByFactory, "by-factory", "", "", "Only list devices belonging to this factory")
 	deviceListCmd.Flags().IntVarP(&deviceInactiveHours, "offline-threshold", "", 4, "List the device as 'OFFLINE' if not seen in the last X hours")
@@ -49,11 +51,39 @@ func sqlLikeIfy(filePathLike string) string {
 	return sql
 }
 
+func userName(factory, polisId string, cache map[string]string) string {
+	name, ok := cache[polisId]
+	if ok {
+		return name
+	}
+	logrus.Debugf("Looking up user %s in factory %s", polisId, factory)
+	users, err := api.UsersList(factory)
+	if err != nil {
+		logrus.Errorf("Unable to look up users: %s", err)
+		return "???"
+	}
+	id := "<not in factory: " + polisId + ">"
+	for _, user := range users {
+		cache[user.PolisId] = user.Name
+		if user.PolisId == polisId {
+			id = user.Name
+		}
+	}
+	return id
+}
+
 func doDeviceList(cmd *cobra.Command, args []string) {
 	logrus.Debug("Listing registered devices")
 
 	t := tabby.New()
-	t.AddHeader("NAME", "FACTORY", "TARGET", "STATUS", "APPS")
+	if deviceNoOwner {
+		t.AddHeader("NAME", "FACTORY", "TARGET", "STATUS", "APPS")
+	} else {
+		t.AddHeader("NAME", "FACTORY", "OWNER", "TARGET", "STATUS", "APPS")
+	}
+
+	cache := make(map[string]string)
+
 	var dl *client.DeviceList
 	for {
 		var err error
@@ -97,7 +127,12 @@ func doDeviceList(cmd *cobra.Command, args []string) {
 					logrus.Error(err)
 				}
 			}
-			t.AddLine(device.Name, device.Factory, device.TargetName, status, strings.Join(device.DockerApps, ","))
+			if deviceNoOwner {
+				t.AddLine(device.Name, device.Factory, device.TargetName, status, strings.Join(device.DockerApps, ","))
+			} else {
+				owner := userName(device.Factory, device.Owner, cache)
+				t.AddLine(device.Name, device.Factory, owner, device.TargetName, status, strings.Join(device.DockerApps, ","))
+			}
 		}
 	}
 	t.Print()
