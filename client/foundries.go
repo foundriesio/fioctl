@@ -15,9 +15,14 @@ import (
 	tuf "github.com/theupdateframework/notary/tuf/data"
 )
 
+type Config struct {
+	Factory   string
+	Token     string
+}
+
 type Api struct {
 	serverUrl string
-	apiToken  string
+	config    Config
 }
 
 type NetInfo struct {
@@ -91,8 +96,8 @@ type TufCustom struct {
 	DockerApps   map[string]DockerApp `json:"docker_apps,omitempty"`
 }
 
-func NewApiClient(serverUrl, apiToken string) *Api {
-	api := Api{strings.TrimRight(serverUrl, "/"), apiToken}
+func NewApiClient(serverUrl string, config Config) *Api {
+	api := Api{strings.TrimRight(serverUrl, "/"), config}
 	return &api
 }
 
@@ -107,7 +112,7 @@ func (a *Api) RawGet(url string, headers *map[string]string) (*http.Response, er
 	}
 
 	req.Header.Set("User-Agent", "fioctl")
-	req.Header.Set("OSF-TOKEN", a.apiToken)
+	req.Header.Set("OSF-TOKEN", a.config.Token)
 	if headers != nil {
 		for key, val := range *headers {
 			req.Header.Set(key, val)
@@ -145,7 +150,7 @@ func (a *Api) Patch(url string, data []byte) (*[]byte, error) {
 	}
 
 	req.Header.Set("User-Agent", "fioctl")
-	req.Header.Set("OSF-TOKEN", a.apiToken)
+	req.Header.Set("OSF-TOKEN", a.config.Token)
 	req.Header.Set("Content-Type", "application/json")
 
 	res, err := client.Do(req)
@@ -175,7 +180,7 @@ func (a *Api) Delete(url string, data []byte) (*[]byte, error) {
 	}
 
 	req.Header.Set("User-Agent", "fioctl")
-	req.Header.Set("OSF-TOKEN", a.apiToken)
+	req.Header.Set("OSF-TOKEN", a.config.Token)
 	req.Header.Set("Content-Type", "application/json")
 
 	res, err := client.Do(req)

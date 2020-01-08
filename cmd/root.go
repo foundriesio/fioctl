@@ -84,5 +84,9 @@ func initConfig() {
 		}
 	}
 
-	api = client.NewApiClient("https://api.foundries.io", viper.GetString("token"))
+	var c client.Config
+	if err := viper.Unmarshal(&c); err != nil {
+		panic(fmt.Sprintf("Unexpected failure parsing configuration: %s",  err))
+	}
+	api = client.NewApiClient("https://api.foundries.io", c)
 }
