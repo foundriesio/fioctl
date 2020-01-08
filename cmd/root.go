@@ -61,15 +61,27 @@ func initConfig() {
 
 	viper.SetEnvPrefix("FIOCTL")
 	viper.AutomaticEnv()
-	viper.ReadInConfig()
+	if err := viper.ReadInConfig(); err != nil {
+		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+			logrus.Debug("Config file not found")
+		} else {
+			// Config file was found but another error was produced
+			fmt.Println("ERROR: ", err)
+			os.Exit(1)
+		}
+	}
 	if viper.GetBool("verbose") {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
 	if len(viper.GetString("token")) == 0 {
-		rootCmd.MarkPersistentFlagRequired("token")
+		if err := rootCmd.MarkPersistentFlagRequired("token"); err != nil {
+			panic(fmt.Sprintf("Unexpected failure in viper arg setup: %s",  err))
+		}
 	}
 	if len(viper.GetString("factory")) == 0 {
-		targetsCmd.MarkPersistentFlagRequired("factory")
+		if err := rootCmd.MarkPersistentFlagRequired("factory"); err != nil {
+			panic(fmt.Sprintf("Unexpected failure in viper arg setup: %s",  err))
+		}
 	}
 
 	api = client.NewApiClient("https://api.foundries.io", viper.GetString("token"))
