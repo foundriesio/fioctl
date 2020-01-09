@@ -15,6 +15,7 @@ import (
 var (
 	cfgFile string
 	api     *client.Api
+	config  client.Config
 )
 
 var rootCmd = &cobra.Command{
@@ -75,18 +76,17 @@ func initConfig() {
 	}
 	if len(viper.GetString("token")) == 0 {
 		if err := rootCmd.MarkPersistentFlagRequired("token"); err != nil {
-			panic(fmt.Sprintf("Unexpected failure in viper arg setup: %s",  err))
+			panic(fmt.Sprintf("Unexpected failure in viper arg setup: %s", err))
 		}
 	}
 	if len(viper.GetString("factory")) == 0 {
 		if err := rootCmd.MarkPersistentFlagRequired("factory"); err != nil {
-			panic(fmt.Sprintf("Unexpected failure in viper arg setup: %s",  err))
+			panic(fmt.Sprintf("Unexpected failure in viper arg setup: %s", err))
 		}
 	}
 
-	var c client.Config
-	if err := viper.Unmarshal(&c); err != nil {
-		panic(fmt.Sprintf("Unexpected failure parsing configuration: %s",  err))
+	if err := viper.Unmarshal(&config); err != nil {
+		panic(fmt.Sprintf("Unexpected failure parsing configuration: %s", err))
 	}
-	api = client.NewApiClient("https://api.foundries.io", c)
+	api = client.NewApiClient("https://api.foundries.io", config)
 }

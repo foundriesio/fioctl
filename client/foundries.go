@@ -16,8 +16,9 @@ import (
 )
 
 type Config struct {
-	Factory   string
-	Token     string
+	Factory           string
+	Token             string
+	ClientCredentials OAuthConfig
 }
 
 type Api struct {
