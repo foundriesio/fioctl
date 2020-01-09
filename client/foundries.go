@@ -2,6 +2,7 @@ package client
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -104,7 +105,18 @@ func NewApiClient(serverUrl string, config Config) *Api {
 
 func (a *Api) setReqHeaders(req *http.Request, jsonContent bool) {
 	req.Header.Set("User-Agent", "fioctl")
-	req.Header.Set("OSF-TOKEN", a.config.Token)
+
+	if len(a.config.Token) > 0 {
+		logrus.Debug("Using API token for http request")
+		req.Header.Set("OSF-TOKEN", a.config.Token)
+	}
+
+	if len(a.config.ClientCredentials.AccessToken) > 0 {
+		logrus.Debug("Using oauth token for http request")
+		tok := base64.StdEncoding.EncodeToString([]byte(a.config.ClientCredentials.AccessToken))
+		req.Header.Set("Authorization", "Bearer "+tok)
+	}
+
 	if jsonContent {
 		req.Header.Set("Content-Type", "application/json")
 	}

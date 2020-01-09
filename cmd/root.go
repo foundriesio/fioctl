@@ -74,11 +74,6 @@ func initConfig() {
 	if viper.GetBool("verbose") {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
-	if len(viper.GetString("token")) == 0 {
-		if err := rootCmd.MarkPersistentFlagRequired("token"); err != nil {
-			panic(fmt.Sprintf("Unexpected failure in viper arg setup: %s", err))
-		}
-	}
 	if len(viper.GetString("factory")) == 0 {
 		if err := rootCmd.MarkPersistentFlagRequired("factory"); err != nil {
 			panic(fmt.Sprintf("Unexpected failure in viper arg setup: %s", err))
