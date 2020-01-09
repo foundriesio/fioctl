@@ -5,8 +5,9 @@ import (
 )
 
 var deviceCmd = &cobra.Command{
-	Use:   "device",
-	Short: "Manage devices registered to a factory",
+	Use:              "device",
+	Short:            "Manage devices registered to a factory",
+	PersistentPreRun: assertLogin,
 }
 
 func init() {

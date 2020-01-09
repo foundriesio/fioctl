@@ -9,8 +9,9 @@ import (
 )
 
 var targetsCmd = &cobra.Command{
-	Use:   "targets",
-	Short: "Manage factory's TUF targets",
+	Use:              "targets",
+	Short:            "Manage factory's TUF targets",
+	PersistentPreRun: assertLogin,
 }
 
 func init() {

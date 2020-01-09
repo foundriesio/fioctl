@@ -23,6 +23,40 @@ func init() {
 	rootCmd.AddCommand(loginCmd)
 }
 
+func assertLogin(cmd *cobra.Command, args []string) {
+	if len(config.Token) > 0 {
+		return
+	}
+	creds := client.NewClientCredentials(config.ClientCredentials)
+
+	expired, err := creds.IsExpired()
+	if err != nil {
+		fmt.Println("ERROR: ", err)
+		os.Exit(1)
+	}
+
+	if !expired && len(creds.Config.AccessToken) > 0 {
+		return
+	}
+
+	if len(creds.Config.AccessToken) == 0 {
+		if err := creds.Get(); err != nil {
+			fmt.Println("ERROR: ", err)
+			os.Exit(1)
+		}
+	} else if creds.HasRefreshToken() {
+		if err := creds.Refresh(); err != nil {
+			fmt.Println("ERROR: ", err)
+			os.Exit(1)
+		}
+	} else {
+		fmt.Println("ERROR: Missing refresh token")
+		os.Exit(1)
+	}
+	saveCreds(creds.Config)
+	api = client.NewApiClient("https://api.foundries.io", config)
+}
+
 func doLogin(cmd *cobra.Command, args []string) {
 	logrus.Debug("Executing login command")
 
