@@ -16,6 +16,7 @@ var (
 	cfgFile string
 	api     *client.Api
 	config  client.Config
+	verbose bool
 )
 
 var rootCmd = &cobra.Command{
@@ -34,12 +35,7 @@ func init() {
 	cobra.OnInitialize(initConfig)
 
 	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file (default is $HOME/.config/fioctl.yaml)")
-	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "Print verbose logging")
-
-	if err := viper.BindPFlags(rootCmd.PersistentFlags()); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
+	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Print verbose logging")
 }
 
 func initConfig() {
@@ -69,7 +65,7 @@ func initConfig() {
 			os.Exit(1)
 		}
 	}
-	if viper.GetBool("verbose") {
+	if verbose {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
 	if len(viper.GetString("factory")) == 0 {
