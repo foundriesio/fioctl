@@ -102,6 +102,14 @@ func NewApiClient(serverUrl string, config Config) *Api {
 	return &api
 }
 
+func (a *Api) setReqHeaders(req *http.Request, jsonContent bool) {
+	req.Header.Set("User-Agent", "fioctl")
+	req.Header.Set("OSF-TOKEN", a.config.Token)
+	if jsonContent {
+		req.Header.Set("Content-Type", "application/json")
+	}
+}
+
 func (a *Api) RawGet(url string, headers *map[string]string) (*http.Response, error) {
 	client := http.Client{
 		Timeout: time.Second * 10,
@@ -112,8 +120,7 @@ func (a *Api) RawGet(url string, headers *map[string]string) (*http.Response, er
 		return nil, err
 	}
 
-	req.Header.Set("User-Agent", "fioctl")
-	req.Header.Set("OSF-TOKEN", a.config.Token)
+	a.setReqHeaders(req, false)
 	if headers != nil {
 		for key, val := range *headers {
 			req.Header.Set(key, val)
@@ -150,9 +157,7 @@ func (a *Api) Patch(url string, data []byte) (*[]byte, error) {
 		return nil, err
 	}
 
-	req.Header.Set("User-Agent", "fioctl")
-	req.Header.Set("OSF-TOKEN", a.config.Token)
-	req.Header.Set("Content-Type", "application/json")
+	a.setReqHeaders(req, true)
 
 	res, err := client.Do(req)
 	if err != nil {
@@ -180,9 +185,7 @@ func (a *Api) Delete(url string, data []byte) (*[]byte, error) {
 		return nil, err
 	}
 
-	req.Header.Set("User-Agent", "fioctl")
-	req.Header.Set("OSF-TOKEN", a.config.Token)
-	req.Header.Set("Content-Type", "application/json")
+	a.setReqHeaders(req, true)
 
 	res, err := client.Do(req)
 	if err != nil {
