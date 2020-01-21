@@ -15,6 +15,8 @@ import (
 var (
 	cfgFile string
 	api     *client.Api
+	config  client.Config
+	verbose bool
 )
 
 var rootCmd = &cobra.Command{
@@ -33,14 +35,7 @@ func init() {
 	cobra.OnInitialize(initConfig)
 
 	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file (default is $HOME/.config/fioctl.yaml)")
-	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "Print verbose logging")
-
-	rootCmd.PersistentFlags().StringP("token", "t", "", "API token from https://app.foundries.io/settings/tokens/")
-
-	if err := viper.BindPFlags(rootCmd.PersistentFlags()); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
+	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Print verbose logging")
 }
 
 func initConfig() {
@@ -61,16 +56,26 @@ func initConfig() {
 
 	viper.SetEnvPrefix("FIOCTL")
 	viper.AutomaticEnv()
-	viper.ReadInConfig()
-	if viper.GetBool("verbose") {
+	if err := viper.ReadInConfig(); err != nil {
+		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+			logrus.Debug("Config file not found")
+		} else {
+			// Config file was found but another error was produced
+			fmt.Println("ERROR: ", err)
+			os.Exit(1)
+		}
+	}
+	if verbose {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
-	if len(viper.GetString("token")) == 0 {
-		rootCmd.MarkPersistentFlagRequired("token")
-	}
 	if len(viper.GetString("factory")) == 0 {
-		targetsCmd.MarkPersistentFlagRequired("factory")
+		if err := rootCmd.MarkPersistentFlagRequired("factory"); err != nil {
+			panic(fmt.Sprintf("Unexpected failure in viper arg setup: %s", err))
+		}
 	}
 
-	api = client.NewApiClient("https://api.foundries.io", viper.GetString("token"))
+	if err := viper.Unmarshal(&config); err != nil {
+		panic(fmt.Sprintf("Unexpected failure parsing configuration: %s", err))
+	}
+	api = client.NewApiClient("https://api.foundries.io", config)
 }

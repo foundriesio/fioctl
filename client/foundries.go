@@ -2,6 +2,7 @@ package client
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -15,9 +16,15 @@ import (
 	tuf "github.com/theupdateframework/notary/tuf/data"
 )
 
+type Config struct {
+	Factory           string
+	Token             string
+	ClientCredentials OAuthConfig
+}
+
 type Api struct {
 	serverUrl string
-	apiToken  string
+	config    Config
 }
 
 type NetInfo struct {
@@ -91,9 +98,28 @@ type TufCustom struct {
 	DockerApps   map[string]DockerApp `json:"docker_apps,omitempty"`
 }
 
-func NewApiClient(serverUrl, apiToken string) *Api {
-	api := Api{strings.TrimRight(serverUrl, "/"), apiToken}
+func NewApiClient(serverUrl string, config Config) *Api {
+	api := Api{strings.TrimRight(serverUrl, "/"), config}
 	return &api
+}
+
+func (a *Api) setReqHeaders(req *http.Request, jsonContent bool) {
+	req.Header.Set("User-Agent", "fioctl")
+
+	if len(a.config.Token) > 0 {
+		logrus.Debug("Using API token for http request")
+		req.Header.Set("OSF-TOKEN", a.config.Token)
+	}
+
+	if len(a.config.ClientCredentials.AccessToken) > 0 {
+		logrus.Debug("Using oauth token for http request")
+		tok := base64.StdEncoding.EncodeToString([]byte(a.config.ClientCredentials.AccessToken))
+		req.Header.Set("Authorization", "Bearer "+tok)
+	}
+
+	if jsonContent {
+		req.Header.Set("Content-Type", "application/json")
+	}
 }
 
 func (a *Api) RawGet(url string, headers *map[string]string) (*http.Response, error) {
@@ -106,8 +132,7 @@ func (a *Api) RawGet(url string, headers *map[string]string) (*http.Response, er
 		return nil, err
 	}
 
-	req.Header.Set("User-Agent", "fioctl")
-	req.Header.Set("OSF-TOKEN", a.apiToken)
+	a.setReqHeaders(req, false)
 	if headers != nil {
 		for key, val := range *headers {
 			req.Header.Set(key, val)
@@ -144,9 +169,7 @@ func (a *Api) Patch(url string, data []byte) (*[]byte, error) {
 		return nil, err
 	}
 
-	req.Header.Set("User-Agent", "fioctl")
-	req.Header.Set("OSF-TOKEN", a.apiToken)
-	req.Header.Set("Content-Type", "application/json")
+	a.setReqHeaders(req, true)
 
 	res, err := client.Do(req)
 	if err != nil {
@@ -174,9 +197,7 @@ func (a *Api) Delete(url string, data []byte) (*[]byte, error) {
 		return nil, err
 	}
 
-	req.Header.Set("User-Agent", "fioctl")
-	req.Header.Set("OSF-TOKEN", a.apiToken)
-	req.Header.Set("Content-Type", "application/json")
+	a.setReqHeaders(req, true)
 
 	res, err := client.Do(req)
 	if err != nil {
