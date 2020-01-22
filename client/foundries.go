@@ -90,6 +90,16 @@ type DockerApp struct {
 	Uri      string `json:"uri"`
 }
 
+type ProjectSecret struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
+type ProjectTrigger struct {
+	Id      int             `json:"id"`
+	Secrets []ProjectSecret `json:"secrets"`
+}
+
 type TufCustom struct {
 	HardwareIds  []string             `json:"hardwareIds,omitempty"`
 	Tags         []string             `json:"tags,omitempty"`
@@ -418,4 +428,18 @@ func (a *Api) JobservTail(url string) {
 		status = newstatus
 		time.Sleep(5 * time.Second)
 	}
+}
+
+func (a *Api) FactoryTriggers(factory string) ([]ProjectTrigger, error) {
+	type Resp struct {
+		Data []ProjectTrigger `json:"data"`
+	}
+
+	body, err := a.Get(a.serverUrl + "/projects/" + factory + "/lmp/triggers/")
+	if err != nil {
+		return nil, err
+	}
+	r := Resp{}
+	err = json.Unmarshal(*body, &r)
+	return r.Data, err
 }
