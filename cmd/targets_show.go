@@ -39,7 +39,7 @@ func doTargetsShow(cmd *cobra.Command, args []string) {
 	hashes := make(map[string]string)
 	var tags []string
 	var apps map[string]client.DockerApp
-	for _, target := range targets.Signed.Targets {
+	for name, target := range targets.Signed.Targets {
 		custom, err := api.TargetCustom(target)
 		if err != nil {
 			fmt.Printf("ERROR: %s\n", err)
@@ -52,9 +52,7 @@ func doTargetsShow(cmd *cobra.Command, args []string) {
 			logrus.Debugf("Skipping non-ostree target: %v", target)
 			continue
 		}
-		for _, hwid := range custom.HardwareIds {
-			hashes[hwid] = hex.EncodeToString(target.Hashes["sha256"])
-		}
+		hashes[name] = hex.EncodeToString(target.Hashes["sha256"])
 		apps = custom.DockerApps
 		tags = custom.Tags
 	}
@@ -62,7 +60,7 @@ func doTargetsShow(cmd *cobra.Command, args []string) {
 	fmt.Printf("Tags:\t%s\n\n", strings.Join(tags, ","))
 
 	t := tabby.New()
-	t.AddHeader("HARDWARE ID", "OSTREE HASH - SHA256")
+	t.AddHeader("TARGET NAME", "OSTREE HASH - SHA256")
 	for name, val := range hashes {
 		t.AddLine(name, val)
 	}
