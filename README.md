@@ -5,13 +5,15 @@ Factory. Its based on the Foundries.io "ota-lite" API defined here:
 
 ## Using
 
-Fioctl authenticates with Foundries.io using [API Tokens](https://app.foundries.io/settings/tokens/).
-The token can be specified by passing the `--token` argument to the CLI. However,
-you can also create a $HOME/.config/fioctl.yaml file with the contents:
+You must first authenticate with the server before using this tool with:
 ~~~
-# fioctl.yaml
-token: <YOUR API TOKEN>
-factory: <The name of your factory>
+  fioctl login
+~~~
+
+Most commands require a "factory" argument. This can be defaulted inside
+`$HOME/.config/fioctl.yaml`
+~~~
+  factory: <The name of your factory>
 ~~~
 
 You can then view your fleet of devices with `fioctl device list`, or
