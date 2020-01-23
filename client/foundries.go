@@ -90,6 +90,17 @@ type DockerApp struct {
 	Uri      string `json:"uri"`
 }
 
+type ProjectSecret struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
+type ProjectTrigger struct {
+	Type    string          `json:"type"`
+	Id      int             `json:"id,omitempty"`
+	Secrets []ProjectSecret `json:"secrets"`
+}
+
 type TufCustom struct {
 	HardwareIds  []string             `json:"hardwareIds,omitempty"`
 	Tags         []string             `json:"tags,omitempty"`
@@ -181,8 +192,36 @@ func (a *Api) Patch(url string, data []byte) (*[]byte, error) {
 		return nil, err
 	}
 
-	if res.StatusCode != 202 {
+	if res.StatusCode != 202 || res.StatusCode != 200 {
 		return nil, fmt.Errorf("Unable to PATCH '%s': HTTP_%d\n=%s", url, res.StatusCode, body)
+	}
+	return &body, nil
+}
+
+func (a *Api) Post(url string, data []byte) (*[]byte, error) {
+	client := http.Client{
+		Timeout: time.Second * 10,
+	}
+
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(data))
+	if err != nil {
+		return nil, err
+	}
+
+	a.setReqHeaders(req, true)
+
+	res, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	if res.StatusCode != 201 {
+		return nil, fmt.Errorf("Unable to POST '%s': HTTP_%d\n=%s", url, res.StatusCode, body)
 	}
 	return &body, nil
 }
@@ -417,5 +456,38 @@ func (a *Api) JobservTail(url string) {
 		}
 		status = newstatus
 		time.Sleep(5 * time.Second)
+	}
+}
+
+func (a *Api) FactoryTriggers(factory string) ([]ProjectTrigger, error) {
+	type Resp struct {
+		Data []ProjectTrigger `json:"data"`
+	}
+
+	body, err := a.Get(a.serverUrl + "/projects/" + factory + "/lmp/triggers/")
+	if err != nil {
+		return nil, err
+	}
+	r := Resp{}
+	err = json.Unmarshal(*body, &r)
+	return r.Data, err
+}
+
+func (a *Api) FactoryUpdateTrigger(factory string, t ProjectTrigger) error {
+	data, err := json.Marshal(t)
+	if err != nil {
+		return err
+	}
+
+	url := a.serverUrl + "/projects/" + factory + "/lmp/triggers/"
+	if t.Id == 0 {
+		logrus.Debugf("Creating new trigger")
+		_, err := a.Post(url, data)
+		return err
+	} else {
+		logrus.Debugf("Patching trigger %d", t.Id)
+		url += strconv.Itoa(t.Id) + "/"
+		_, err := a.Patch(url, data)
+		return err
 	}
 }
