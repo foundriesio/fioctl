@@ -90,6 +90,12 @@ type DockerApp struct {
 	Uri      string `json:"uri"`
 }
 
+type FactoryUser struct {
+	PolisId string `json:"polis-id"`
+	Name    string `json:"name"`
+	Role    string `json:"role"`
+}
+
 type ProjectSecret struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
@@ -490,4 +496,19 @@ func (a *Api) FactoryUpdateTrigger(factory string, t ProjectTrigger) error {
 		_, err := a.Patch(url, data)
 		return err
 	}
+}
+
+func (a *Api) UsersList(factory string) ([]FactoryUser, error) {
+	url := a.serverUrl + "/ota/factories/" + factory + "/users/"
+	body, err := a.Get(url)
+	if err != nil {
+		return nil, err
+	}
+
+	var users []FactoryUser
+	err = json.Unmarshal(*body, &users)
+	if err != nil {
+		return nil, err
+	}
+	return users, nil
 }
