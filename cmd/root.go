@@ -38,6 +38,24 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Print verbose logging")
 }
 
+func initViper(cmd *cobra.Command, args []string) {
+	if err := viper.BindPFlags(cmd.Flags()); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	if cmd.Flags().Lookup("factory") != nil && len(viper.GetString("factory")) == 0 {
+		fmt.Println("Error required flag \"factory\" not set")
+		os.Exit(1)
+	}
+	config.Token = viper.GetString("token")
+	api = client.NewApiClient("https://api.foundries.io", config)
+}
+
+func requireFactory(cmd *cobra.Command) {
+	cmd.PersistentFlags().StringP("factory", "f", "", "Factory to list targets for")
+	cmd.PersistentFlags().StringP("token", "t", "", "API token from https://app.foundries.io/settings/tokens/")
+}
+
 func initConfig() {
 	if cfgFile != "" {
 		// Use config file from the flag.
@@ -68,14 +86,8 @@ func initConfig() {
 	if verbose {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
-	if len(viper.GetString("factory")) == 0 {
-		if err := rootCmd.MarkPersistentFlagRequired("factory"); err != nil {
-			panic(fmt.Sprintf("Unexpected failure in viper arg setup: %s", err))
-		}
-	}
 
 	if err := viper.Unmarshal(&config); err != nil {
 		panic(fmt.Sprintf("Unexpected failure parsing configuration: %s", err))
 	}
-	api = client.NewApiClient("https://api.foundries.io", config)
 }

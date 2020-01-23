@@ -24,8 +24,14 @@ func init() {
 }
 
 func assertLogin(cmd *cobra.Command, args []string) {
+	initViper(cmd, args)
 	if len(config.Token) > 0 {
 		return
+	}
+
+	if len(config.ClientCredentials.ClientId) == 0 {
+		fmt.Println("ERROR: Please run: \"fioctl login\" first")
+		os.Exit(1)
 	}
 	creds := client.NewClientCredentials(config.ClientCredentials)
 
