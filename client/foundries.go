@@ -198,7 +198,7 @@ func (a *Api) Patch(url string, data []byte) (*[]byte, error) {
 		return nil, err
 	}
 
-	if res.StatusCode != 202 || res.StatusCode != 200 {
+	if res.StatusCode != 202 && res.StatusCode != 200 {
 		return nil, fmt.Errorf("Unable to PATCH '%s': HTTP_%d\n=%s", url, res.StatusCode, body)
 	}
 	return &body, nil
