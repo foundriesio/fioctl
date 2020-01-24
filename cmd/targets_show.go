@@ -73,7 +73,8 @@ func doTargetsShow(cmd *cobra.Command, args []string) {
 	for name, app := range apps {
 		if len(app.FileName) > 0 {
 			t.AddLine(name, app.FileName)
-		} else {
+		}
+		if len(app.Uri) > 0 {
 			t.AddLine(name, app.Uri)
 		}
 	}
