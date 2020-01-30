@@ -113,6 +113,7 @@ type TufCustom struct {
 	TargetFormat string               `json:"targetFormat,omitempty"`
 	Version      string               `json:"version,omitempty"`
 	DockerApps   map[string]DockerApp `json:"docker_apps,omitempty"`
+	Name         string               `json:"name,omitempty"`
 }
 
 func NewApiClient(serverUrl string, config Config) *Api {
