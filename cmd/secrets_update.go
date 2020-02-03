@@ -42,7 +42,12 @@ func doSecretsUpdate(cmd *cobra.Command, args []string) {
 			os.Exit(1)
 		}
 		secrets[i].Name = parts[0]
-		secrets[i].Value = parts[1]
+		value := parts[1]
+		if value == "" {
+			secrets[i].Value = nil
+		} else {
+			secrets[i].Value = &value
+		}
 	}
 	logrus.Debugf("Secrets are: %s", secrets)
 
