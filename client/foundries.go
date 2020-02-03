@@ -97,8 +97,8 @@ type FactoryUser struct {
 }
 
 type ProjectSecret struct {
-	Name  string `json:"name"`
-	Value string `json:"value"`
+	Name  string  `json:"name"`
+	Value *string `json:"value"`
 }
 
 type ProjectTrigger struct {
