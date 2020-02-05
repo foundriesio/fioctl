@@ -15,8 +15,12 @@ import (
 var secretsUpdateCmd = &cobra.Command{
 	Use:   "update secret_name=secret_val...",
 	Short: "Update secret(s) in a factory",
-	Run:   doSecretsUpdate,
-	Args:  cobra.MinimumNArgs(1),
+	Long: `Update secrets in a factory.
+Secrets can be deleted by setting them to an empty value. eg:
+
+  fioctl secrets update secret_name=`,
+	Run:  doSecretsUpdate,
+	Args: cobra.MinimumNArgs(1),
 }
 
 func init() {
