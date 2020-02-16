@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"encoding/hex"
+	"encoding/base64"
 	"fmt"
 	"os"
 	"strings"
@@ -52,7 +52,7 @@ func doTargetsShow(cmd *cobra.Command, args []string) {
 			logrus.Debugf("Skipping non-ostree target: %v", target)
 			continue
 		}
-		hashes[name] = hex.EncodeToString(target.Hashes["sha256"])
+		hashes[name] = base64.StdEncoding.EncodeToString(target.Hashes["sha256"])
 		apps = custom.DockerApps
 		tags = custom.Tags
 	}
