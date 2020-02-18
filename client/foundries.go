@@ -77,6 +77,7 @@ type Device struct {
 	TargetName    string           `json:"target-name"`
 	Status        string           `json:"status"`
 	CurrentUpdate string           `json:"current-update"`
+	UpToDate      bool             `json:"up-to-date"`
 }
 
 type DeviceList struct {

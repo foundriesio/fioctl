@@ -77,9 +77,9 @@ func doDeviceList(cmd *cobra.Command, args []string) {
 
 	t := tabby.New()
 	if deviceNoOwner {
-		t.AddHeader("NAME", "FACTORY", "TARGET", "STATUS", "APPS")
+		t.AddHeader("NAME", "FACTORY", "TARGET", "STATUS", "APPS", "UP TO DATE")
 	} else {
-		t.AddHeader("NAME", "FACTORY", "OWNER", "TARGET", "STATUS", "APPS")
+		t.AddHeader("NAME", "FACTORY", "OWNER", "TARGET", "STATUS", "APPS", "UP TO DATE")
 	}
 
 	cache := make(map[string]string)
@@ -128,10 +128,10 @@ func doDeviceList(cmd *cobra.Command, args []string) {
 				}
 			}
 			if deviceNoOwner {
-				t.AddLine(device.Name, device.Factory, device.TargetName, status, strings.Join(device.DockerApps, ","))
+				t.AddLine(device.Name, device.Factory, device.TargetName, status, strings.Join(device.DockerApps, ","), device.UpToDate)
 			} else {
 				owner := userName(device.Factory, device.Owner, cache)
-				t.AddLine(device.Name, device.Factory, owner, device.TargetName, status, strings.Join(device.DockerApps, ","))
+				t.AddLine(device.Name, device.Factory, owner, device.TargetName, status, strings.Join(device.DockerApps, ","), device.UpToDate)
 			}
 		}
 	}
