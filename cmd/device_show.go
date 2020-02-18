@@ -32,6 +32,7 @@ func doDeviceShow(cmd *cobra.Command, args []string) {
 	fmt.Printf("UUID:\t\t%s\n", device.Uuid)
 	fmt.Printf("Owner:\t\t%s\n", device.Owner)
 	fmt.Printf("Factory:\t%s\n", device.Factory)
+	fmt.Printf("Up to date:\t%v\n", device.UpToDate)
 	fmt.Printf("Target:\t\t%s / sha256(%s)\n", device.TargetName, device.OstreeHash)
 	fmt.Printf("Ostree Hash:\t%s\n", device.OstreeHash)
 	fmt.Printf("Created:\t%s\n", device.CreatedAt)
