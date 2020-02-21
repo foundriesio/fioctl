@@ -11,7 +11,6 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 var keysRotateCmd = &cobra.Command{
@@ -46,8 +45,6 @@ var rotationErrorExitCodes = [9]rotationExitCode{
 	ErrRemoveOldCredentials, ErrSignCredentials, ErrPackCredentials, ErrPushCredentials}
 
 func doKeyRotation(cmd *cobra.Command, args []string) {
-	factory := viper.GetString("factory")
-	logrus.Debugf("Rotating factory keys for: %s", factory)
 	credentialsPath := args[0]
 	credentialsBackupPath := fmt.Sprintf("%s.bak", credentialsPath)
 	if err := verifyDocker(); err != nil {
