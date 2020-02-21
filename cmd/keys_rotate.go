@@ -144,7 +144,7 @@ with TemporaryDirectory() as tempdir:
 	progress := newProgress("Pulling aktualizr image %s")
 	if err := pullContainer(aktualizrImageName); err != nil {
 		progress.fail()
-		exitf("failed to pull image, %q", aktualizrImageName)
+		exitf("failed to pull image, %q, %s", aktualizrImageName, err)
 	}
 	progress.finish()
 	scriptPath, err := loadScript(rotateCmd)
@@ -155,7 +155,7 @@ with TemporaryDirectory() as tempdir:
 	if err := copyFile(credentialsPath, credentialsBackupPath); err != nil {
 		exitf("failed to backup offline credentials, %s", err)
 	}
-	fmt.Printf("Offline key backed up: %q\n", credentialsBackupPath)
+	fmt.Printf("Original credentials --> %q\n", credentialsBackupPath)
 	progress = newProgress("Rotating offline credentials %s")
 	if output, err := runRotationScript(aktualizrImageName, scriptPath, credentialsPath); err != nil {
 		progress.fail()
@@ -185,8 +185,7 @@ with TemporaryDirectory() as tempdir:
 		}
 	}
 	progress.finish()
-	fmt.Printf("Finished rotating offline credentials\n")
-	fmt.Printf("Updated credentials located %q", credentialsPath)
+	fmt.Printf("Updated credentials --> %q\n", credentialsPath)
 }
 
 func exitf(format string, args ...interface{}) {
@@ -291,10 +290,8 @@ func copyFile(source string, target string) error {
 	return nil
 }
 
-func cli(inputs ...string) ([]byte, error) {
-	args := strings.Join(inputs, " && ")
-	cmd := exec.Command("/bin/sh", "-c", args)
-	logrus.Debugf("cli executing: %v", cmd)
+func cli(input string) ([]byte, error) {
+	cmd := exec.Command("/bin/sh", "-c", input)
 	return cmd.CombinedOutput()
 }
 
@@ -320,14 +317,14 @@ type progress struct {
 }
 
 func newProgress(text string) *progress {
-	progress := progress{
+	p := progress{
 		text:   clearLine + text,
-		frames: []string{".", "..", "..."},
+		frames: []string{".  ", ".. ", "..."},
 		tpf:    500 * time.Millisecond,
 		writer: os.Stdout,
 	}
-	progress.start()
-	return &progress
+	p.start()
+	return &p
 }
 
 func (p *progress) start() {
