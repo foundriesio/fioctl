@@ -1,15 +1,17 @@
 package cmd
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -156,29 +158,27 @@ with TemporaryDirectory() as tempdir:
 	progress = newProgress("Rotating offline credentials %s")
 	if output, err := runRotationScript(aktualizrImageName, scriptPath, credentialsPath); err != nil {
 		progress.fail()
-		formattedOutput := formatOutput(output)
-		logrus.Debugf("failed to issue command, %s\n", err)
 		switch parseErrExitCode(err) {
 		case ErrUnpackCredentials:
-			exitf("failed to unpack credentials\n%s", formattedOutput)
+			exitf("failed to unpack credentials\n%s", output)
 		case ErrPullCredentials:
-			exitf("failed to pull credentials\n%s", formattedOutput)
+			exitf("failed to pull credentials\n%s", output)
 		case ErrParseCredentials:
-			exitf("failed to parse credentials\n%s", formattedOutput)
+			exitf("failed to parse credentials\n%s", output)
 		case ErrRegenerateCredentials:
-			exitf("failed to regenerate credentials\n%s", formattedOutput)
+			exitf("failed to regenerate credentials\n%s", output)
 		case ErrAddNewCredentials:
-			exitf("failed to add new credentials\n%s", formattedOutput)
+			exitf("failed to add new credentials\n%s", output)
 		case ErrRemoveOldCredentials:
-			exitf("failed to remove old credentials\n%s", formattedOutput)
+			exitf("failed to remove old credentials\n%s", output)
 		case ErrSignCredentials:
-			exitf("failed to sign credentials\n%s", formattedOutput)
+			exitf("failed to sign credentials\n%s", output)
 		case ErrPackCredentials:
-			exitf("failed to pack credentials\n%s", formattedOutput)
+			exitf("failed to pack credentials\n%s", output)
 		case ErrPushCredentials:
-			exitf("failed to push credentials\n%s", formattedOutput)
+			exitf("failed to push credentials\n%s", output)
 		default:
-			exitf("system error \n%s", formattedOutput)
+			exitf("%s\n%s", err, output)
 		}
 	}
 	progress.finish()
@@ -214,7 +214,6 @@ func parseErrExitCode(err error) rotationExitCode {
 	if err == nil {
 		return RotationSuccess
 	}
-
 	if exitError, ok := err.(*exec.ExitError); ok {
 		exitCode := exitError.ExitCode()
 		code := rotationExitCode(exitCode)
@@ -223,41 +222,91 @@ func parseErrExitCode(err error) rotationExitCode {
 				return item
 			}
 		}
-		logrus.Debugf("exit code unhandled: %r", code)
 	}
-	logrus.Debugf("exit code failed parse: %s", err)
 	return ErrUnknown
 }
 
-func runRotationScript(imageName string, sourcePath string, credentialsPath string) ([]byte, error) {
+type message struct {
+	text  string
+	error error
+}
+
+func runRotationScript(imageName string, sourcePath string, credentialsPath string) (string, error) {
 	targetPath := "/tmp/tmp.py"
 	args := []string{
 		// base args
 		"run", "--rm",
+		// env args
+		"--env", "PYTHONUNBUFFERED=1",
 		// mount args
 		"-v", fmt.Sprintf("%s:/tmp/creds.tgz", credentialsPath),
 		"-v", fmt.Sprintf("%s:%s", sourcePath, targetPath),
 		// load args
 		imageName, targetPath,
 	}
-	command := exec.Command("docker", args...)
-	logrus.Debugf("executing command: %v\n", command)
-	return command.CombinedOutput()
+	gatherChan := make(chan message)
+	interruptChan := make(chan os.Signal, 2)
+	outputChan := make(chan message)
+	signal.Notify(interruptChan, os.Interrupt, syscall.SIGTERM)
+	go func(gather chan message) { // worker
+		defer close(gather)
+		command := exec.Command("docker", args...)
+		stdoutReader, err := command.StdoutPipe()
+		if err != nil {
+			gather <- message{error: fmt.Errorf("failed to open standard in pipe, %w", err)}
+			return
+		}
+		stderrReader, err := command.StderrPipe()
+		if err != nil {
+			gather <- message{error: fmt.Errorf("failed to open standard error pipe, %w", err)}
+			return
+		}
+		mergedReader := io.MultiReader(stdoutReader, stderrReader)
+		scanner := bufio.NewScanner(mergedReader)
+		go func() {
+			for scanner.Scan() {
+				gather <- message{scanner.Text(), scanner.Err()}
+			}
+		}()
+		if err := command.Run(); err != nil {
+			gather <- message{error: err}
+		}
+	}(gatherChan)
+	go func(gather, output chan message) { // output gatherer
+		defer close(output)
+		var msgs []string
+		var err error
+		for msg := range gather {
+			text := msg.text
+			if text != "" {
+				msgs = append(msgs, text)
+			}
+			err = msg.error
+			if err != nil {
+				break
+			}
+		}
+		output <- message{formatOutput(msgs), err}
+	}(gatherChan, outputChan)
+	go func(interrupt chan os.Signal, gather chan message) { // interrupt handler
+		defer close(gather)
+		<-interrupt
+		gather <- message{error: fmt.Errorf("force quit (ctrl+c pressed)")}
+	}(interruptChan, gatherChan)
+	output := <-outputChan
+	return output.text, output.error
 }
 
 func pullContainer(name string) error {
 	command := fmt.Sprintf("docker pull %s", name)
-	logrus.Debugf("pulling docker image %s\n", name)
 	if _, err := cli(command); err != nil {
-		logrus.Debugf("pulling image failed: %w", err)
 		return err
 	}
 	return nil
 }
 
 func verifyDocker() error {
-	logrus.Debugf("checking if docker is available")
-	if _, err := cli("which docker"); err != nil {
+	if _, err := cli("docker --version"); err != nil {
 		return fmt.Errorf("docker not available")
 	}
 	return nil
@@ -292,14 +341,12 @@ func cli(input string) ([]byte, error) {
 	return cmd.CombinedOutput()
 }
 
-func formatOutput(output []byte) string {
-	prepped := strings.TrimSuffix(string(output), "\n") // remove trailing newline
+func formatOutput(output []string) string {
 	formatted := ""
-	for _, line := range strings.Split(prepped, "\n") {
+	for _, line := range output {
 		formatted = fmt.Sprintf("%s\n  | %s", formatted, line)
 	}
-	formatted = strings.TrimPrefix(formatted, "\n") // remove initial newline
-	return formatted
+	return strings.TrimPrefix(formatted, "\n") // remove initial newline
 }
 
 const clearLine = "\r\033[K"
