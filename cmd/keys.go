@@ -5,9 +5,8 @@ import (
 )
 
 var keysCmd = &cobra.Command{
-	Use:              "keys",
-	Short:            "Manage keys in use by your factory fleet",
-	PersistentPreRun: assertLogin,
+	Use:   "keys",
+	Short: "Manage keys in use by your factory fleet",
 }
 
 func init() {
