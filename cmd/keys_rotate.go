@@ -1,17 +1,14 @@
 package cmd
 
 import (
-	"bufio"
 	"fmt"
+	"github.com/foundriesio/fioctl/internal/progress"
 	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
-	"os/signal"
-	"strings"
-	"syscall"
-	"time"
 
+	"github.com/foundriesio/fioctl/internal/piper"
 	"github.com/spf13/cobra"
 )
 
@@ -140,12 +137,12 @@ with TemporaryDirectory() as tempdir:
     except:
       sys.exit(9)
 `
-	progress := newProgress("Pulling aktualizr image %s")
+	p := progress.New("Pulling aktualizr image %s")
 	if err := pullContainer(aktualizrImageName); err != nil {
-		progress.fail()
+		p.Fail()
 		exitf("failed to pull image, %q, %s", aktualizrImageName, err)
 	}
-	progress.finish()
+	p.Finish()
 	scriptPath, err := loadScript(rotateCmd)
 	if err != nil {
 		exitf("failed to load script, %s", err)
@@ -155,9 +152,9 @@ with TemporaryDirectory() as tempdir:
 		exitf("failed to backup offline credentials, %s", err)
 	}
 	fmt.Printf("Original credentials --> %q\n", credentialsBackupPath)
-	progress = newProgress("Rotating offline credentials %s")
+	p = progress.New("Rotating offline credentials %s")
 	if output, err := runRotationScript(aktualizrImageName, scriptPath, credentialsPath); err != nil {
-		progress.fail()
+		p.Fail()
 		switch parseErrExitCode(err) {
 		case ErrUnpackCredentials:
 			exitf("failed to unpack credentials\n%s", output)
@@ -181,7 +178,7 @@ with TemporaryDirectory() as tempdir:
 			exitf("%s\n%s", err, output)
 		}
 	}
-	progress.finish()
+	p.Finish()
 	fmt.Printf("Updated credentials --> %q\n", credentialsPath)
 }
 
@@ -226,11 +223,6 @@ func parseErrExitCode(err error) rotationExitCode {
 	return ErrUnknown
 }
 
-type message struct {
-	text  string
-	error error
-}
-
 func runRotationScript(imageName string, sourcePath string, credentialsPath string) (string, error) {
 	targetPath := "/tmp/tmp.py"
 	args := []string{
@@ -244,57 +236,7 @@ func runRotationScript(imageName string, sourcePath string, credentialsPath stri
 		// load args
 		imageName, targetPath,
 	}
-	gatherChan := make(chan message)
-	interruptChan := make(chan os.Signal, 2)
-	outputChan := make(chan message)
-	signal.Notify(interruptChan, os.Interrupt, syscall.SIGTERM)
-	go func(gather chan message) { // worker
-		defer close(gather)
-		command := exec.Command("docker", args...)
-		stdoutReader, err := command.StdoutPipe()
-		if err != nil {
-			gather <- message{error: fmt.Errorf("failed to open standard in pipe, %w", err)}
-			return
-		}
-		stderrReader, err := command.StderrPipe()
-		if err != nil {
-			gather <- message{error: fmt.Errorf("failed to open standard error pipe, %w", err)}
-			return
-		}
-		mergedReader := io.MultiReader(stdoutReader, stderrReader)
-		scanner := bufio.NewScanner(mergedReader)
-		go func() {
-			for scanner.Scan() {
-				gather <- message{scanner.Text(), scanner.Err()}
-			}
-		}()
-		if err := command.Run(); err != nil {
-			gather <- message{error: err}
-		}
-	}(gatherChan)
-	go func(gather, output chan message) { // output gatherer
-		defer close(output)
-		var msgs []string
-		var err error
-		for msg := range gather {
-			text := msg.text
-			if text != "" {
-				msgs = append(msgs, text)
-			}
-			err = msg.error
-			if err != nil {
-				break
-			}
-		}
-		output <- message{formatOutput(msgs), err}
-	}(gatherChan, outputChan)
-	go func(interrupt chan os.Signal, gather chan message) { // interrupt handler
-		defer close(gather)
-		<-interrupt
-		gather <- message{error: fmt.Errorf("force quit (ctrl+c pressed)")}
-	}(interruptChan, gatherChan)
-	output := <-outputChan
-	return output.text, output.error
+	return piper.Run(*exec.Command("docker", args...))
 }
 
 func pullContainer(name string) error {
@@ -339,63 +281,4 @@ func copyFile(source string, target string) error {
 func cli(input string) ([]byte, error) {
 	cmd := exec.Command("/bin/sh", "-c", input)
 	return cmd.CombinedOutput()
-}
-
-func formatOutput(output []string) string {
-	formatted := ""
-	for _, line := range output {
-		formatted = fmt.Sprintf("%s\n  | %s", formatted, line)
-	}
-	return strings.TrimPrefix(formatted, "\n") // remove initial newline
-}
-
-const clearLine = "\r\033[K"
-
-type progress struct {
-	frames []string
-	tick   int
-	active bool
-	text   string
-	tpf    time.Duration
-	writer io.Writer
-}
-
-func newProgress(text string) *progress {
-	p := progress{
-		text:   clearLine + text,
-		frames: []string{".  ", ".. ", "..."},
-		tpf:    500 * time.Millisecond,
-		writer: os.Stdout,
-	}
-	p.start()
-	return &p
-}
-
-func (p *progress) start() {
-	if p.active { // prevent spawning concurrent progress
-		return
-	}
-	p.active = true
-	go func() {
-		for p.active {
-			position := p.tick % len(p.frames)
-			indicator := p.frames[position]
-			message := clearLine + p.text
-			fmt.Fprintf(p.writer, message, indicator)
-			p.tick++
-			time.Sleep(p.tpf)
-		}
-	}()
-}
-
-func (p *progress) finish() { p.stop("√") }
-
-func (p *progress) fail() { p.stop("x") }
-
-func (p *progress) stop(indicator string) {
-	if p.active {
-		p.active = false
-		message := clearLine + fmt.Sprintf(p.text, indicator)
-		fmt.Fprintln(p.writer, message)
-	}
 }
