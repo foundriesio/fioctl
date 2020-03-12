@@ -73,7 +73,7 @@ def find_current_root(repodir):
 with TemporaryDirectory() as tempdir:
     os.chdir(tempdir)
     os.mkdir('tuf')
-    creds_file = '/tmp/creds.tgz'
+    creds_file = '/creds.tgz'
     cmd('tar', 'xf', creds_file, cwd='./tuf')
     cmd('garage-sign', 'root', 'pull', '--repo', './tufrepo')
     old_keyname, old_keyid = find_current_root('./tuf/tufrepo')
@@ -142,7 +142,7 @@ func runRotationScript(imageName string, sourcePath string, credentialsPath stri
 		// env args
 		"--env", "PYTHONUNBUFFERED=1",
 		// mount args
-		"-v", fmt.Sprintf("%s:/tmp/creds.tgz", credentialsPath),
+		"-v", fmt.Sprintf("%s:/creds.tgz", credentialsPath),
 		"-v", fmt.Sprintf("%s:%s", sourcePath, targetPath),
 		// load args
 		imageName, targetPath,
