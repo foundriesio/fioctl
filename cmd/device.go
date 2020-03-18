@@ -9,7 +9,8 @@ import (
 )
 
 var deviceCmd = &cobra.Command{
-	Use:              "device",
+	Use:              "devices",
+	Aliases:          []string{"device"},
 	Short:            "Manage devices registered to a factory",
 	PersistentPreRun: assertLogin,
 }
