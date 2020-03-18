@@ -48,7 +48,11 @@ func initViper(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 	config.Token = viper.GetString("token")
-	api = client.NewApiClient("https://api.foundries.io", config)
+	url := os.Getenv("API_URL")
+	if len(url) == 0 {
+		url = "https://api.foundries.io"
+	}
+	api = client.NewApiClient(url, config)
 }
 
 func requireFactory(cmd *cobra.Command) {

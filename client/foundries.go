@@ -127,7 +127,11 @@ func (a *Api) setReqHeaders(req *http.Request, jsonContent bool) {
 
 	if len(a.config.Token) > 0 {
 		logrus.Debug("Using API token for http request")
-		req.Header.Set("OSF-TOKEN", a.config.Token)
+		headerName := os.Getenv("TOKEN_HEADER")
+		if len(headerName) == 0 {
+			headerName = "OSF-TOKEN"
+		}
+		req.Header.Set(headerName, a.config.Token)
 	}
 
 	if len(a.config.ClientCredentials.AccessToken) > 0 {
