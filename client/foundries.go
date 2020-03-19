@@ -37,6 +37,19 @@ type ConfigCreateRequest struct {
 	Files  []ConfigFile `json:"files"`
 }
 
+type DeviceConfig struct {
+	CreatedAt string   `json:"created-at"`
+	AppliedAt string   `json:"applied-at"`
+	Reason    string   `json:"reason"`
+	Files     []string `json:"files"`
+}
+
+type DeviceConfigList struct {
+	Configs []DeviceConfig `json:"config"`
+	Total   int            `json:"total"`
+	Next    *string        `json:"next"`
+}
+
 type NetInfo struct {
 	Hostname string `json:"hostname"`
 	Ipv4     string `json:"local_ipv4"`
@@ -390,6 +403,26 @@ func (a *Api) DeviceCreateConfig(device string, cfg ConfigCreateRequest) error {
 	logrus.Debugf("Creating new device config")
 	_, err = a.Post(url, data)
 	return err
+}
+
+func (a *Api) DeviceListConfig(device string) (*DeviceConfigList, error) {
+	url := a.serverUrl + "/ota/devices/" + device + "/config/"
+	logrus.Debugf("DeviceListConfig with url: %s", url)
+	return a.DeviceListConfigCont(url)
+}
+
+func (a *Api) DeviceListConfigCont(url string) (*DeviceConfigList, error) {
+	body, err := a.Get(url)
+	if err != nil {
+		return nil, err
+	}
+
+	config := DeviceConfigList{}
+	err = json.Unmarshal(*body, &config)
+	if err != nil {
+		return nil, err
+	}
+	return &config, nil
 }
 
 func (a *Api) TargetsListRaw(factory string) (*[]byte, error) {
