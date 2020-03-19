@@ -28,8 +28,9 @@ type Api struct {
 }
 
 type ConfigFile struct {
-	Name  string `json:"name"`
-	Value string `json:"value"`
+	Name      string   `json:"name"`
+	Value     string   `json:"value"`
+	OnChanged []string `json:"on-changed"`
 }
 
 type ConfigCreateRequest struct {
@@ -38,10 +39,10 @@ type ConfigCreateRequest struct {
 }
 
 type DeviceConfig struct {
-	CreatedAt string   `json:"created-at"`
-	AppliedAt string   `json:"applied-at"`
-	Reason    string   `json:"reason"`
-	Files     []string `json:"files"`
+	CreatedAt string       `json:"created-at"`
+	AppliedAt string       `json:"applied-at"`
+	Reason    string       `json:"reason"`
+	Files     []ConfigFile `json:"files"`
 }
 
 type DeviceConfigList struct {

@@ -3,9 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"strings"
 
-	"github.com/cheynewallace/tabby"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -29,8 +27,6 @@ func init() {
 func doFleetConfigs(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 	logrus.Debugf("Showing fleet history for %s", factory)
-	t := tabby.New()
-	t.AddHeader("CREATED", "FILES", "REASON")
 	var dcl *client.DeviceConfigList
 	for {
 		var err error
@@ -48,8 +44,20 @@ func doFleetConfigs(cmd *cobra.Command, args []string) {
 			fmt.Println(err)
 			os.Exit(1)
 		}
-		for _, cfg := range dcl.Configs {
-			t.AddLine(cfg.CreatedAt, strings.Join(cfg.Files, ","), cfg.Reason)
+		for idx, cfg := range dcl.Configs {
+			if idx != 0 {
+				fmt.Println("")
+			}
+			fmt.Printf("Created At:    %s\n", cfg.CreatedAt)
+			fmt.Printf("Change Reason: %s\n", cfg.Reason)
+			fmt.Println("Files:")
+			for _, f := range cfg.Files {
+				if len(f.OnChanged) == 0 {
+					fmt.Printf("\t%s\n", f.Name)
+				} else {
+					fmt.Printf("\t%s - %v\n", f.Name, f.OnChanged)
+				}
+			}
 			deviceConfigsLimit -= 1
 			if deviceConfigsLimit == 0 {
 				break
@@ -59,5 +67,4 @@ func doFleetConfigs(cmd *cobra.Command, args []string) {
 			break
 		}
 	}
-	t.Print()
 }
