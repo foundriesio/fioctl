@@ -53,7 +53,7 @@ func doSecretsUpdate(cmd *cobra.Command, args []string) {
 			secrets[i].Value = &value
 		}
 	}
-	logrus.Debugf("Secrets are: %s", secrets)
+	logrus.Debugf("Secrets are: %v", secrets)
 
 	var pt client.ProjectTrigger
 
