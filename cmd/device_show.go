@@ -58,4 +58,8 @@ func doDeviceShow(cmd *cobra.Command, args []string) {
 		os.Stdout.Write(b)
 		fmt.Println("")
 	}
+	if len(device.PublicKey) > 0 {
+		fmt.Println()
+		fmt.Print(device.PublicKey)
+	}
 }

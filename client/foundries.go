@@ -78,6 +78,7 @@ type Device struct {
 	Status        string           `json:"status"`
 	CurrentUpdate string           `json:"current-update"`
 	UpToDate      bool             `json:"up-to-date"`
+	PublicKey     string           `json:"public-key"`
 }
 
 type DeviceList struct {
