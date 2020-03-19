@@ -400,7 +400,7 @@ func (a *Api) DeviceCreateConfig(device string, cfg ConfigCreateRequest) error {
 	}
 
 	url := a.serverUrl + "/ota/devices/" + device + "/config/"
-	logrus.Debugf("Creating new device config")
+	logrus.Debug("Creating new device config")
 	_, err = a.Post(url, data)
 	return err
 }
@@ -423,6 +423,18 @@ func (a *Api) DeviceListConfigCont(url string) (*DeviceConfigList, error) {
 		return nil, err
 	}
 	return &config, nil
+}
+
+func (a *Api) FleetCreateConfig(factory string, cfg ConfigCreateRequest) error {
+	data, err := json.Marshal(cfg)
+	if err != nil {
+		return err
+	}
+
+	url := a.serverUrl + "/ota/factories/" + factory + "/config/"
+	logrus.Debug("Creating new fleet config")
+	_, err = a.Post(url, data)
+	return err
 }
 
 func (a *Api) FleetListConfig(factory string) (*DeviceConfigList, error) {
