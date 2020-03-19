@@ -30,7 +30,7 @@ type Api struct {
 type ConfigFile struct {
 	Name      string   `json:"name"`
 	Value     string   `json:"value"`
-	OnChanged []string `json:"on-changed"`
+	OnChanged []string `json:"on-changed,omitempty"`
 }
 
 type ConfigCreateRequest struct {

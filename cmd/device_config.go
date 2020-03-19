@@ -5,9 +5,11 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"encoding/base64"
+	"encoding/json"
 	"encoding/pem"
 
 	"fmt"
+	"io/ioutil"
 	"os"
 	"strings"
 
@@ -19,17 +21,59 @@ import (
 )
 
 var deviceConfigCmd = &cobra.Command{
-	Use:   "config <device> file=content <file2=content ...>",
-	Short: "Create a new configuration for the device",
-	Run:   doDeviceConfig,
-	Args:  cobra.MinimumNArgs(2),
+	Use:   "config <device> <file1=content> <file2=content ...>",
+	Short: "Create a secure configuration for the device",
+	Long: `
+Creates a secure configuration for device encrypting the contents each
+file using the device's public key. The fioconfig daemon running
+on each device will then be able to grab the latest version of the
+device's configuration and apply it.
+
+Basic use can be done with command line arguments. eg:
+
+  fioctl device config my-device \
+    npmtok="root" \
+    githubtok="1234"
+
+The device configuration format also allows specifying what command
+to run after a configuration file is updated on the device. To take
+advantage of this, the "--raw" flag must be used. eg:
+
+  cat >tmp.json <<EOF
+  {
+    "reason": "I want to use the on-changed attribute",
+    "files": [
+      {
+        "name": "npmtok",
+	"value": "root",
+	"on-changed": ["/usr/bin/touch", "/tmp/npmtok-changed"]
+      },
+      {
+        "name": "githubok",
+	"value": "1234",
+	"on-changed": ["/usr/sbin/reboot"]
+      }
+    ]
+  }
+  > EOF
+  fioctl device config my-device --raw ./tmp.json
+
+fioctl will read in tmp.json, encrypt its contents, and upload it
+to the OTA server.
+`,
+	Run:  doDeviceConfig,
+	Args: cobra.MinimumNArgs(2),
 }
 
-var configReason string
+var (
+	configReason string
+	configRaw    bool
+)
 
 func init() {
 	deviceCmd.AddCommand(deviceConfigCmd)
 	deviceConfigCmd.Flags().StringVarP(&configReason, "reason", "m", "", "Add a message to store as the \"reason\" for this change")
+	deviceConfigCmd.Flags().BoolVarP(&configRaw, "raw", "", false, "Use raw configuration file")
 }
 
 func loadEciesPub(pubkey string) *ecies.PublicKey {
@@ -57,6 +101,18 @@ func eciesEncrypt(content string, pubkey *ecies.PublicKey) string {
 	return base64.StdEncoding.EncodeToString(enc)
 }
 
+func loadConfig(configFile string, cfg *client.ConfigCreateRequest) {
+	content, err := ioutil.ReadFile(configFile)
+	if err != nil {
+		fmt.Printf("ERROR: Unable to read config file: %v\n", err)
+		os.Exit(1)
+	}
+	if err := json.Unmarshal(content, cfg); err != nil {
+		fmt.Printf("ERROR: Unable to parse config file: %v\n", err)
+		os.Exit(1)
+	}
+}
+
 func doDeviceConfig(cmd *cobra.Command, args []string) {
 	logrus.Debug("Creating new device config")
 
@@ -76,14 +132,21 @@ func doDeviceConfig(cmd *cobra.Command, args []string) {
 	pubkey := loadEciesPub(device.PublicKey)
 
 	cfg := client.ConfigCreateRequest{Reason: configReason}
-	for _, keyval := range args[1:] {
-		parts := strings.SplitN(keyval, "=", 2)
-		if len(parts) != 2 {
-			fmt.Println("ERROR: Invalid file=content argument: ", keyval)
-			os.Exit(1)
+	if configRaw {
+		loadConfig(args[1], &cfg)
+		for i := range cfg.Files {
+			cfg.Files[i].Value = eciesEncrypt(cfg.Files[i].Value, pubkey)
 		}
-		enc := eciesEncrypt(parts[1], pubkey)
-		cfg.Files = append(cfg.Files, client.ConfigFile{Name: parts[0], Value: enc})
+	} else {
+		for _, keyval := range args[1:] {
+			parts := strings.SplitN(keyval, "=", 2)
+			if len(parts) != 2 {
+				fmt.Println("ERROR: Invalid file=content argument: ", keyval)
+				os.Exit(1)
+			}
+			enc := eciesEncrypt(parts[1], pubkey)
+			cfg.Files = append(cfg.Files, client.ConfigFile{Name: parts[0], Value: enc})
+		}
 	}
 
 	if err := api.DeviceCreateConfig(device.Name, cfg); err != nil {
