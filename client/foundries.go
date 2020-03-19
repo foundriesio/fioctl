@@ -27,6 +27,16 @@ type Api struct {
 	config    Config
 }
 
+type ConfigFile struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
+type ConfigCreateRequest struct {
+	Reason string       `json:"reason"`
+	Files  []ConfigFile `json:"files"`
+}
+
 type NetInfo struct {
 	Hostname string `json:"hostname"`
 	Ipv4     string `json:"local_ipv4"`
@@ -368,6 +378,18 @@ func (a *Api) DeviceUpdateEvents(device, correlationId string) ([]UpdateEvent, e
 		return events, err
 	}
 	return events, nil
+}
+
+func (a *Api) DeviceCreateConfig(device string, cfg ConfigCreateRequest) error {
+	data, err := json.Marshal(cfg)
+	if err != nil {
+		return err
+	}
+
+	url := a.serverUrl + "/ota/devices/" + device + "/config/"
+	logrus.Debugf("Creating new device config")
+	_, err = a.Post(url, data)
+	return err
 }
 
 func (a *Api) TargetsListRaw(factory string) (*[]byte, error) {
