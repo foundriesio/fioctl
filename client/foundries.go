@@ -25,6 +25,7 @@ type Config struct {
 type Api struct {
 	serverUrl string
 	config    Config
+	client    http.Client
 }
 
 type NetInfo struct {
@@ -119,7 +120,11 @@ type TufCustom struct {
 }
 
 func NewApiClient(serverUrl string, config Config) *Api {
-	api := Api{strings.TrimRight(serverUrl, "/"), config}
+	api := Api{
+		serverUrl: strings.TrimRight(serverUrl, "/"),
+		config:    config,
+		client:    http.Client{Timeout: time.Second * 10},
+	}
 	return &api
 }
 
@@ -147,10 +152,6 @@ func (a *Api) setReqHeaders(req *http.Request, jsonContent bool) {
 }
 
 func (a *Api) RawGet(url string, headers *map[string]string) (*http.Response, error) {
-	client := http.Client{
-		Timeout: time.Second * 10,
-	}
-
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -163,7 +164,7 @@ func (a *Api) RawGet(url string, headers *map[string]string) (*http.Response, er
 		}
 	}
 
-	return client.Do(req)
+	return a.client.Do(req)
 }
 
 func (a *Api) Get(url string) (*[]byte, error) {
@@ -184,10 +185,6 @@ func (a *Api) Get(url string) (*[]byte, error) {
 }
 
 func (a *Api) Patch(url string, data []byte) (*[]byte, error) {
-	client := http.Client{
-		Timeout: time.Second * 10,
-	}
-
 	req, err := http.NewRequest(http.MethodPatch, url, bytes.NewBuffer(data))
 	if err != nil {
 		return nil, err
@@ -195,7 +192,7 @@ func (a *Api) Patch(url string, data []byte) (*[]byte, error) {
 
 	a.setReqHeaders(req, true)
 
-	res, err := client.Do(req)
+	res, err := a.client.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -212,10 +209,6 @@ func (a *Api) Patch(url string, data []byte) (*[]byte, error) {
 }
 
 func (a *Api) Post(url string, data []byte) (*[]byte, error) {
-	client := http.Client{
-		Timeout: time.Second * 10,
-	}
-
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(data))
 	if err != nil {
 		return nil, err
@@ -223,7 +216,7 @@ func (a *Api) Post(url string, data []byte) (*[]byte, error) {
 
 	a.setReqHeaders(req, true)
 
-	res, err := client.Do(req)
+	res, err := a.client.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -240,10 +233,6 @@ func (a *Api) Post(url string, data []byte) (*[]byte, error) {
 }
 
 func (a *Api) Put(url string, data []byte) (*[]byte, error) {
-	client := http.Client{
-		Timeout: time.Second * 10,
-	}
-
 	req, err := http.NewRequest(http.MethodPut, url, bytes.NewBuffer(data))
 	if err != nil {
 		return nil, err
@@ -251,7 +240,7 @@ func (a *Api) Put(url string, data []byte) (*[]byte, error) {
 
 	a.setReqHeaders(req, true)
 
-	res, err := client.Do(req)
+	res, err := a.client.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -268,10 +257,6 @@ func (a *Api) Put(url string, data []byte) (*[]byte, error) {
 }
 
 func (a *Api) Delete(url string, data []byte) (*[]byte, error) {
-	client := http.Client{
-		Timeout: time.Second * 10,
-	}
-
 	req, err := http.NewRequest(http.MethodDelete, url, bytes.NewBuffer(data))
 	if err != nil {
 		return nil, err
@@ -279,7 +264,7 @@ func (a *Api) Delete(url string, data []byte) (*[]byte, error) {
 
 	a.setReqHeaders(req, true)
 
-	res, err := client.Do(req)
+	res, err := a.client.Do(req)
 	if err != nil {
 		return nil, err
 	}
