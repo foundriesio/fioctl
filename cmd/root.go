@@ -52,7 +52,8 @@ func initViper(cmd *cobra.Command, args []string) {
 	if len(url) == 0 {
 		url = "https://api.foundries.io"
 	}
-	api = client.NewApiClient(url, config)
+	ca := os.Getenv("CACERT")
+	api = client.NewApiClient(url, config, ca)
 }
 
 func requireFactory(cmd *cobra.Command) {

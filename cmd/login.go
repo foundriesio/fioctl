@@ -60,7 +60,7 @@ func assertLogin(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 	saveCreds(creds.Config)
-	api = client.NewApiClient("https://api.foundries.io", config)
+	api = client.NewApiClient("https://api.foundries.io", config, "")
 }
 
 func doLogin(cmd *cobra.Command, args []string) {

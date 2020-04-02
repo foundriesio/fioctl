@@ -2,6 +2,8 @@ package client
 
 import (
 	"bytes"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -119,11 +121,36 @@ type TufCustom struct {
 	Name         string               `json:"name,omitempty"`
 }
 
-func NewApiClient(serverUrl string, config Config) *Api {
+func NewApiClient(serverUrl string, config Config, caCertPath string) *Api {
+	var tlsConfig *tls.Config
+	if len(caCertPath) > 0 {
+		rootCAs, _ := x509.SystemCertPool()
+		if rootCAs == nil {
+			rootCAs = x509.NewCertPool()
+		}
+
+		certs, err := ioutil.ReadFile(caCertPath)
+		if err != nil {
+			logrus.Fatalf("Failed to append %q to RootCAs: %v", caCertPath, err)
+		}
+
+		if ok := rootCAs.AppendCertsFromPEM(certs); !ok {
+			logrus.Warning("No certs appended, using system certs only")
+		}
+
+		tlsConfig = &tls.Config{
+			RootCAs: rootCAs,
+		}
+	}
 	api := Api{
 		serverUrl: strings.TrimRight(serverUrl, "/"),
 		config:    config,
-		client:    http.Client{Timeout: time.Second * 10},
+		client: http.Client{
+			Timeout: time.Second * 10,
+			Transport: &http.Transport{
+				TLSClientConfig: tlsConfig,
+			},
+		},
 	}
 	return &api
 }
