@@ -1,4 +1,4 @@
-package cmd
+package secrets
 
 import (
 	"fmt"
@@ -10,17 +10,15 @@ import (
 	"github.com/spf13/viper"
 )
 
-var secretsListCmd = &cobra.Command{
-	Use:   "list",
-	Short: "List secret credentials configured in the factory",
-	Run:   doSecretList,
-}
-
 func init() {
-	secretsCmd.AddCommand(secretsListCmd)
+	cmd.AddCommand(&cobra.Command{
+		Use:   "list",
+		Short: "List secret credentials configured in the factory",
+		Run:   doList,
+	})
 }
 
-func doSecretList(cmd *cobra.Command, args []string) {
+func doList(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 	logrus.Debugf("Listing factory secrets for: %s", factory)
 
