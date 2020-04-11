@@ -1,4 +1,4 @@
-package cmd
+package keys
 
 import (
 	"fmt"
@@ -11,15 +11,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var keysRotateCmd = &cobra.Command{
-	Use:   "rotate <offline key archive>",
-	Short: "Rotate root signing key used by the Factory",
-	Run:   doKeyRotation,
-	Args:  cobra.MinimumNArgs(1),
-}
-
 func init() {
-	keysCmd.AddCommand(keysRotateCmd)
+	cmd.AddCommand(&cobra.Command{
+		Use:   "rotate <offline key archive>",
+		Short: "Rotate root signing key used by the Factory",
+		Run:   doKeyRotation,
+		Args:  cobra.ExactArgs(1),
+	})
 }
 
 func doKeyRotation(cmd *cobra.Command, args []string) {

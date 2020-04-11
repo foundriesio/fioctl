@@ -1,14 +1,14 @@
-package cmd
+package keys
 
 import (
 	"github.com/spf13/cobra"
 )
 
-var keysCmd = &cobra.Command{
+var cmd = &cobra.Command{
 	Use:   "keys",
 	Short: "Manage keys in use by your factory fleet",
 }
 
-func init() {
-	rootCmd.AddCommand(keysCmd)
+func NewCommand() *cobra.Command {
+	return cmd
 }
