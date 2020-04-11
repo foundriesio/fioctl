@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/foundriesio/fioctl/client"
+	"github.com/foundriesio/fioctl/subcommands/version"
 )
 
 var (
@@ -36,6 +37,8 @@ func init() {
 
 	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file (default is $HOME/.config/fioctl.yaml)")
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Print verbose logging")
+
+	rootCmd.AddCommand(version.NewCommand())
 }
 
 func initViper(cmd *cobra.Command, args []string) {
