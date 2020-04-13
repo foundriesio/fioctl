@@ -15,12 +15,12 @@ var deviceUpdatesLimit int
 
 func init() {
 	listUpdatesCmd := &cobra.Command{
-		Use:   "list-updates <device>",
+		Use:   "list <device>",
 		Short: "List the device's update history",
 		Run:   doListUpdates,
 		Args:  cobra.ExactArgs(1),
 	}
-	cmd.AddCommand(listUpdatesCmd)
+	updatesCmd.AddCommand(listUpdatesCmd)
 	listUpdatesCmd.Flags().IntVarP(&deviceUpdatesLimit, "limit", "n", 0, "Limit the number of results displayed.")
 }
 

@@ -18,7 +18,13 @@ var cmd = &cobra.Command{
 	},
 }
 
+var updatesCmd = &cobra.Command{
+	Use:   "updates",
+	Short: "Device update history",
+}
+
 func NewCommand() *cobra.Command {
 	cmd.PersistentFlags().StringP("token", "t", "", "API token from https://app.foundries.io/settings/tokens/")
+	cmd.AddCommand(updatesCmd)
 	return cmd
 }
