@@ -1,4 +1,4 @@
-package cmd
+package login
 
 import (
 	"bufio"
@@ -11,62 +11,21 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/foundriesio/fioctl/client"
+	"github.com/foundriesio/fioctl/subcommands"
 )
 
-var loginCmd = &cobra.Command{
-	Use:   "login",
-	Short: "Access Foundries.io services with your client credentials",
-	Run:   doLogin,
-}
-
-func init() {
-	rootCmd.AddCommand(loginCmd)
-}
-
-func assertLogin(cmd *cobra.Command, args []string) {
-	initViper(cmd, args)
-	if len(config.Token) > 0 {
-		return
+func NewCommand() *cobra.Command {
+	return &cobra.Command{
+		Use:   "login",
+		Short: "Access Foundries.io services with your client credentials",
+		Run:   doLogin,
 	}
-
-	if len(config.ClientCredentials.ClientId) == 0 {
-		fmt.Println("ERROR: Please run: \"fioctl login\" first")
-		os.Exit(1)
-	}
-	creds := client.NewClientCredentials(config.ClientCredentials)
-
-	expired, err := creds.IsExpired()
-	if err != nil {
-		fmt.Println("ERROR: ", err)
-		os.Exit(1)
-	}
-
-	if !expired && len(creds.Config.AccessToken) > 0 {
-		return
-	}
-
-	if len(creds.Config.AccessToken) == 0 {
-		if err := creds.Get(); err != nil {
-			fmt.Println("ERROR: ", err)
-			os.Exit(1)
-		}
-	} else if creds.HasRefreshToken() {
-		if err := creds.Refresh(); err != nil {
-			fmt.Println("ERROR: ", err)
-			os.Exit(1)
-		}
-	} else {
-		fmt.Println("ERROR: Missing refresh token")
-		os.Exit(1)
-	}
-	saveCreds(creds.Config)
-	api = client.NewApiClient("https://api.foundries.io", config, "")
 }
 
 func doLogin(cmd *cobra.Command, args []string) {
 	logrus.Debug("Executing login command")
 
-	creds := client.NewClientCredentials(config.ClientCredentials)
+	creds := client.NewClientCredentials(subcommands.Config.ClientCredentials)
 	if creds.Config.ClientId == "" || creds.Config.ClientSecret == "" {
 		creds.Config.ClientId, creds.Config.ClientSecret = promptForCreds()
 		saveCreds(creds.Config)
