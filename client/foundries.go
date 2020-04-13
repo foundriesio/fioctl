@@ -451,6 +451,30 @@ func (a *Api) DeviceListConfigCont(url string) (*DeviceConfigList, error) {
 	return &config, nil
 }
 
+func (a *Api) FactoryCreateConfig(factory string, cfg ConfigCreateRequest) error {
+	data, err := json.Marshal(cfg)
+	if err != nil {
+		return err
+	}
+
+	url := a.serverUrl + "/ota/factories/" + factory + "/config/"
+	logrus.Debug("Creating new factory config")
+	_, err = a.Post(url, data)
+	return err
+}
+
+func (a *Api) FactoryPatchConfig(factory string, cfg ConfigCreateRequest) error {
+	data, err := json.Marshal(cfg)
+	if err != nil {
+		return err
+	}
+
+	url := a.serverUrl + "/ota/factories/" + factory + "/config/"
+	logrus.Debug("Creating new factory config")
+	_, err = a.Patch(url, data)
+	return err
+}
+
 func (a *Api) FactoryListConfig(factory string) (*DeviceConfigList, error) {
 	url := a.serverUrl + "/ota/factories/" + factory + "/config/"
 	logrus.Debugf("FactoryListConfig with url: %s", url)
