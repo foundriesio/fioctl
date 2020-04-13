@@ -452,6 +452,13 @@ func (a *Api) DeviceListConfigCont(url string) (*DeviceConfigList, error) {
 	return &config, nil
 }
 
+func (a *Api) DeviceDeleteConfig(device, filename string) error {
+	url := a.serverUrl + "/ota/devices/" + device + "/config/" + filename + "/"
+	logrus.Debugf("Deleting config file: %s", url)
+	_, err := a.Delete(url, nil)
+	return err
+}
+
 func (a *Api) FactoryCreateConfig(factory string, cfg ConfigCreateRequest) error {
 	data, err := json.Marshal(cfg)
 	if err != nil {
