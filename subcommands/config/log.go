@@ -1,4 +1,4 @@
-package devices
+package config
 
 import (
 	"fmt"
@@ -6,32 +6,33 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 
 	"github.com/foundriesio/fioctl/client"
 	"github.com/foundriesio/fioctl/subcommands"
 )
 
 func init() {
-	logConfigCmd := &cobra.Command{
-		Use:   "log <device>",
-		Short: "Changelog of device's configuration",
+	logCmd := &cobra.Command{
+		Use:   "log",
+		Short: "Changelog of configuration",
 		Run:   doConfigLog,
-		Args:  cobra.ExactArgs(1),
 	}
-	configCmd.AddCommand(logConfigCmd)
-	logConfigCmd.Flags().IntVarP(&listLimit, "limit", "n", 0, "Limit the number of results displayed.")
+	cmd.AddCommand(logCmd)
+	logCmd.Flags().IntVarP(&listLimit, "limit", "n", 0, "Limit the number of results displayed.")
 }
 
 func doConfigLog(cmd *cobra.Command, args []string) {
-	logrus.Debug("Showing device config log")
+	factory := viper.GetString("factory")
+	logrus.Debugf("Showing config history for %s", factory)
 	var dcl *client.DeviceConfigList
 	for {
 		var err error
 		if dcl == nil {
-			dcl, err = api.DeviceListConfig(args[0])
+			dcl, err = api.FactoryListConfig(factory)
 		} else {
 			if dcl.Next != nil {
-				dcl, err = api.DeviceListConfigCont(*dcl.Next)
+				dcl, err = api.FactoryListConfigCont(*dcl.Next)
 			} else {
 				break
 			}

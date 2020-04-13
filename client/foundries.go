@@ -422,6 +422,16 @@ func (a *Api) DeviceListConfigCont(url string) (*DeviceConfigList, error) {
 	return &config, nil
 }
 
+func (a *Api) FactoryListConfig(factory string) (*DeviceConfigList, error) {
+	url := a.serverUrl + "/ota/factories/" + factory + "/config/"
+	logrus.Debugf("FactoryListConfig with url: %s", url)
+	return a.DeviceListConfigCont(url)
+}
+
+func (a *Api) FactoryListConfigCont(url string) (*DeviceConfigList, error) {
+	return a.DeviceListConfigCont(url)
+}
+
 func (a *Api) TargetsListRaw(factory string) (*[]byte, error) {
 	url := a.serverUrl + "/ota/repo/" + factory + "/api/v1/user_repo/targets.json"
 	return a.Get(url)
