@@ -14,6 +14,7 @@ import (
 	"github.com/foundriesio/fioctl/subcommands/devices"
 	"github.com/foundriesio/fioctl/subcommands/keys"
 	"github.com/foundriesio/fioctl/subcommands/secrets"
+	"github.com/foundriesio/fioctl/subcommands/targets"
 	"github.com/foundriesio/fioctl/subcommands/users"
 	"github.com/foundriesio/fioctl/subcommands/version"
 )
@@ -47,6 +48,7 @@ func init() {
 	rootCmd.AddCommand(keys.NewCommand())
 	rootCmd.AddCommand(users.NewCommand())
 	rootCmd.AddCommand(secrets.NewCommand())
+	rootCmd.AddCommand(targets.NewCommand())
 	rootCmd.AddCommand(version.NewCommand())
 }
 

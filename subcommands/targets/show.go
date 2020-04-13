@@ -1,4 +1,4 @@
-package cmd
+package targets
 
 import (
 	"encoding/base64"
@@ -14,18 +14,16 @@ import (
 	"github.com/foundriesio/fioctl/client"
 )
 
-var targetShowCmd = &cobra.Command{
-	Use:   "show <version>",
-	Short: "Show details of a specific target.",
-	Run:   doTargetsShow,
-	Args:  cobra.ExactArgs(1),
-}
-
 func init() {
-	targetsCmd.AddCommand(targetShowCmd)
+	cmd.AddCommand(&cobra.Command{
+		Use:   "show <version>",
+		Short: "Show details of a specific target.",
+		Run:   doShow,
+		Args:  cobra.ExactArgs(1),
+	})
 }
 
-func doTargetsShow(cmd *cobra.Command, args []string) {
+func doShow(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 	logrus.Debugf("Showing target for %s %s", factory, args[0])
 

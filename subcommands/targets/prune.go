@@ -1,4 +1,4 @@
-package cmd
+package targets
 
 import (
 	"fmt"
@@ -11,13 +11,6 @@ import (
 	tuf "github.com/theupdateframework/notary/tuf/data"
 )
 
-var targetsPruneCmd = &cobra.Command{
-	Use:   "prune <target> [<target>...]",
-	Short: "Prune target(s)",
-	Run:   doTargetsPrune,
-	Args:  cobra.MinimumNArgs(1),
-}
-
 var (
 	pruneNoTail bool
 	pruneByTag  bool
@@ -25,10 +18,16 @@ var (
 )
 
 func init() {
-	targetsCmd.AddCommand(targetsPruneCmd)
-	targetsPruneCmd.Flags().BoolVarP(&pruneNoTail, "no-tail", "", false, "Don't tail output of CI Job")
-	targetsPruneCmd.Flags().BoolVarP(&pruneByTag, "by-tag", "", false, "Prune all targets by tags instead of name")
-	targetsPruneCmd.Flags().BoolVarP(&pruneDryRun, "dryrun", "", false, "Only show what would be pruned")
+	pruneCmd := &cobra.Command{
+		Use:   "prune <target> [<target>...]",
+		Short: "Prune target(s)",
+		Run:   doPrune,
+		Args:  cobra.MinimumNArgs(1),
+	}
+	cmd.AddCommand(pruneCmd)
+	pruneCmd.Flags().BoolVarP(&pruneNoTail, "no-tail", "", false, "Don't tail output of CI Job")
+	pruneCmd.Flags().BoolVarP(&pruneByTag, "by-tag", "", false, "Prune all targets by tags instead of name")
+	pruneCmd.Flags().BoolVarP(&pruneDryRun, "dryrun", "", false, "Only show what would be pruned")
 }
 
 func intersectionInSlices(list1, list2 []string) bool {
@@ -88,7 +87,7 @@ func findUnusedApps(targets *tuf.SignedTargets, deleted_list []string) []string 
 	return unused
 }
 
-func doTargetsPrune(cmd *cobra.Command, args []string) {
+func doPrune(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 
 	targets, err := api.TargetsList(factory)
