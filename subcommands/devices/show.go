@@ -1,4 +1,4 @@
-package cmd
+package devices
 
 import (
 	"encoding/json"
@@ -10,18 +10,16 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var deviceShowCmd = &cobra.Command{
-	Use:   "show <name>",
-	Short: "Show details of a specific device",
-	Run:   doDeviceShow,
-	Args:  cobra.ExactArgs(1),
-}
-
 func init() {
-	deviceCmd.AddCommand(deviceShowCmd)
+	cmd.AddCommand(&cobra.Command{
+		Use:   "show <name>",
+		Short: "Show details of a specific device",
+		Run:   doShow,
+		Args:  cobra.ExactArgs(1),
+	})
 }
 
-func doDeviceShow(cmd *cobra.Command, args []string) {
+func doShow(cmd *cobra.Command, args []string) {
 	logrus.Debug("Showing device")
 	device, err := api.DeviceGet(args[0])
 	if err != nil {

@@ -11,6 +11,7 @@ import (
 
 	"github.com/foundriesio/fioctl/client"
 	"github.com/foundriesio/fioctl/subcommands"
+	"github.com/foundriesio/fioctl/subcommands/devices"
 	"github.com/foundriesio/fioctl/subcommands/keys"
 	"github.com/foundriesio/fioctl/subcommands/secrets"
 	"github.com/foundriesio/fioctl/subcommands/users"
@@ -42,6 +43,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file (default is $HOME/.config/fioctl.yaml)")
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Print verbose logging")
 
+	rootCmd.AddCommand(devices.NewCommand())
 	rootCmd.AddCommand(keys.NewCommand())
 	rootCmd.AddCommand(users.NewCommand())
 	rootCmd.AddCommand(secrets.NewCommand())
