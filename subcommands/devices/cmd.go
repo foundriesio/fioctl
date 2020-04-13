@@ -7,7 +7,10 @@ import (
 	"github.com/foundriesio/fioctl/subcommands"
 )
 
-var api *client.Api
+var (
+	api       *client.Api
+	listLimit int
+)
 
 var cmd = &cobra.Command{
 	Use:     "devices",
@@ -18,6 +21,11 @@ var cmd = &cobra.Command{
 	},
 }
 
+var configCmd = &cobra.Command{
+	Use:   "config",
+	Short: "Device configuration",
+}
+
 var updatesCmd = &cobra.Command{
 	Use:   "updates",
 	Short: "Device update history",
@@ -25,6 +33,7 @@ var updatesCmd = &cobra.Command{
 
 func NewCommand() *cobra.Command {
 	cmd.PersistentFlags().StringP("token", "t", "", "API token from https://app.foundries.io/settings/tokens/")
+	cmd.AddCommand(configCmd)
 	cmd.AddCommand(updatesCmd)
 	return cmd
 }

@@ -11,8 +11,6 @@ import (
 	"github.com/foundriesio/fioctl/client"
 )
 
-var deviceUpdatesLimit int
-
 func init() {
 	listUpdatesCmd := &cobra.Command{
 		Use:   "list <device>",
@@ -21,7 +19,7 @@ func init() {
 		Args:  cobra.ExactArgs(1),
 	}
 	updatesCmd.AddCommand(listUpdatesCmd)
-	listUpdatesCmd.Flags().IntVarP(&deviceUpdatesLimit, "limit", "n", 0, "Limit the number of results displayed.")
+	listUpdatesCmd.Flags().IntVarP(&listLimit, "limit", "n", 0, "Limit the number of results displayed.")
 }
 
 func doListUpdates(cmd *cobra.Command, args []string) {
@@ -47,12 +45,12 @@ func doListUpdates(cmd *cobra.Command, args []string) {
 		}
 		for _, update := range ul.Updates {
 			t.AddLine(update.CorrelationId, update.Time, update.Version, update.Target)
-			deviceUpdatesLimit -= 1
-			if deviceUpdatesLimit == 0 {
+			listLimit -= 1
+			if listLimit == 0 {
 				break
 			}
 		}
-		if deviceUpdatesLimit == 0 {
+		if listLimit == 0 {
 			break
 		}
 	}
