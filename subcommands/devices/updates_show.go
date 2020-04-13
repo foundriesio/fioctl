@@ -1,4 +1,4 @@
-package cmd
+package devices
 
 import (
 	"fmt"
@@ -8,18 +8,16 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var deviceShowUpdateCmd = &cobra.Command{
-	Use:   "show-update <name> <update-id>",
-	Short: "Show details of a specific device update",
-	Run:   doDeviceShowUpdate,
-	Args:  cobra.ExactArgs(2),
-}
-
 func init() {
-	deviceCmd.AddCommand(deviceShowUpdateCmd)
+	cmd.AddCommand(&cobra.Command{
+		Use:   "show-update <name> <update-id>",
+		Short: "Show details of a specific device update",
+		Run:   doShowUpdate,
+		Args:  cobra.ExactArgs(2),
+	})
 }
 
-func doDeviceShowUpdate(cmd *cobra.Command, args []string) {
+func doShowUpdate(cmd *cobra.Command, args []string) {
 	logrus.Debug("Showing device update")
 	events, err := api.DeviceUpdateEvents(args[0], args[1])
 	if err != nil {

@@ -1,4 +1,4 @@
-package cmd
+package devices
 
 import (
 	"fmt"
@@ -11,21 +11,20 @@ import (
 	"github.com/foundriesio/fioctl/client"
 )
 
-var deviceUpdatesCmd = &cobra.Command{
-	Use:   "list-updates <device>",
-	Short: "List the device's update history",
-	Run:   doDeviceUpdates,
-	Args:  cobra.ExactArgs(1),
-}
-
 var deviceUpdatesLimit int
 
 func init() {
-	deviceCmd.AddCommand(deviceUpdatesCmd)
-	deviceUpdatesCmd.Flags().IntVarP(&deviceUpdatesLimit, "limit", "n", 0, "Limit the number of results displayed.")
+	listUpdatesCmd := &cobra.Command{
+		Use:   "list-updates <device>",
+		Short: "List the device's update history",
+		Run:   doListUpdates,
+		Args:  cobra.ExactArgs(1),
+	}
+	cmd.AddCommand(listUpdatesCmd)
+	listUpdatesCmd.Flags().IntVarP(&deviceUpdatesLimit, "limit", "n", 0, "Limit the number of results displayed.")
 }
 
-func doDeviceUpdates(cmd *cobra.Command, args []string) {
+func doListUpdates(cmd *cobra.Command, args []string) {
 	logrus.Debug("Showing device updates")
 	t := tabby.New()
 	t.AddHeader("ID", "TIME", "VERSION", "TARGET")

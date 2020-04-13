@@ -1,4 +1,4 @@
-package cmd
+package devices
 
 import (
 	"fmt"
@@ -8,18 +8,16 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var deviceDeleteCmd = &cobra.Command{
-	Use:   "delete",
-	Short: "Delete a device(s) registered to a factory.",
-	Run:   doDeviceDelete,
-	Args:  cobra.MinimumNArgs(1),
-}
-
 func init() {
-	deviceCmd.AddCommand(deviceDeleteCmd)
+	cmd.AddCommand(&cobra.Command{
+		Use:   "delete",
+		Short: "Delete a device(s) registered to a factory.",
+		Run:   doDelete,
+		Args:  cobra.MinimumNArgs(1),
+	})
 }
 
-func doDeviceDelete(cmd *cobra.Command, args []string) {
+func doDelete(cmd *cobra.Command, args []string) {
 	logrus.Debug("Deleting %r", args)
 
 	for _, name := range args {

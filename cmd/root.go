@@ -10,11 +10,18 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/foundriesio/fioctl/client"
+	"github.com/foundriesio/fioctl/subcommands"
+	"github.com/foundriesio/fioctl/subcommands/devices"
+	"github.com/foundriesio/fioctl/subcommands/keys"
+	"github.com/foundriesio/fioctl/subcommands/login"
+	"github.com/foundriesio/fioctl/subcommands/secrets"
+	"github.com/foundriesio/fioctl/subcommands/targets"
+	"github.com/foundriesio/fioctl/subcommands/users"
+	"github.com/foundriesio/fioctl/subcommands/version"
 )
 
 var (
 	cfgFile string
-	api     *client.Api
 	config  client.Config
 	verbose bool
 )
@@ -36,29 +43,14 @@ func init() {
 
 	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file (default is $HOME/.config/fioctl.yaml)")
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Print verbose logging")
-}
 
-func initViper(cmd *cobra.Command, args []string) {
-	if err := viper.BindPFlags(cmd.Flags()); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	if cmd.Flags().Lookup("factory") != nil && len(viper.GetString("factory")) == 0 {
-		fmt.Println("Error required flag \"factory\" not set")
-		os.Exit(1)
-	}
-	config.Token = viper.GetString("token")
-	url := os.Getenv("API_URL")
-	if len(url) == 0 {
-		url = "https://api.foundries.io"
-	}
-	ca := os.Getenv("CACERT")
-	api = client.NewApiClient(url, config, ca)
-}
-
-func requireFactory(cmd *cobra.Command) {
-	cmd.PersistentFlags().StringP("factory", "f", "", "Factory to list targets for")
-	cmd.PersistentFlags().StringP("token", "t", "", "API token from https://app.foundries.io/settings/tokens/")
+	rootCmd.AddCommand(devices.NewCommand())
+	rootCmd.AddCommand(keys.NewCommand())
+	rootCmd.AddCommand(login.NewCommand())
+	rootCmd.AddCommand(users.NewCommand())
+	rootCmd.AddCommand(secrets.NewCommand())
+	rootCmd.AddCommand(targets.NewCommand())
+	rootCmd.AddCommand(version.NewCommand())
 }
 
 func initConfig() {
@@ -95,4 +87,5 @@ func initConfig() {
 	if err := viper.Unmarshal(&config); err != nil {
 		panic(fmt.Sprintf("Unexpected failure parsing configuration: %s", err))
 	}
+	subcommands.Config = config
 }

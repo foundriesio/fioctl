@@ -1,4 +1,4 @@
-package cmd
+package secrets
 
 import (
 	"fmt"
@@ -12,22 +12,20 @@ import (
 	"github.com/foundriesio/fioctl/client"
 )
 
-var secretsUpdateCmd = &cobra.Command{
-	Use:   "update secret_name=secret_val...",
-	Short: "Update secret(s) in a factory",
-	Long: `Update secrets in a factory.
+func init() {
+	cmd.AddCommand(&cobra.Command{
+		Use:   "update secret_name=secret_val...",
+		Short: "Update secret(s) in a factory",
+		Long: `Update secrets in a factory.
 Secrets can be deleted by setting them to an empty value. eg:
 
   fioctl secrets update secret_name=`,
-	Run:  doSecretsUpdate,
-	Args: cobra.MinimumNArgs(1),
+		Run:  doUpdate,
+		Args: cobra.MinimumNArgs(1),
+	})
 }
 
-func init() {
-	secretsCmd.AddCommand(secretsUpdateCmd)
-}
-
-func doSecretsUpdate(cmd *cobra.Command, args []string) {
+func doUpdate(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 	logrus.Debugf("Updating factory secrets for: %s", factory)
 

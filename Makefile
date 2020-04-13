@@ -1,7 +1,7 @@
 COMMIT:=$(shell git log -1 --pretty=format:%h)$(shell git diff --quiet || echo '_')
 
 # Use linker flags to provide commit info
-LDFLAGS=-ldflags "-X=github.com/foundriesio/fioctl/cmd.Commit=$(COMMIT)"
+LDFLAGS=-ldflags "-X=github.com/foundriesio/fioctl/subcommands/version.Commit=$(COMMIT)"
 
 build: fioctl-linux-amd64 fioctl-windows-amd64 fioctl-darwin-amd64
 	@true
@@ -27,4 +27,3 @@ container-init:
 container-build:
 	docker run --rm -ti -v $(shell pwd):/fioctl fioctl-build make build
 
-	

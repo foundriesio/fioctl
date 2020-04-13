@@ -1,4 +1,4 @@
-package cmd
+package targets
 
 import (
 	"fmt"
@@ -9,13 +9,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-var targetsTagCmd = &cobra.Command{
-	Use:   "tag <target> [<target>...]",
-	Short: "Apply a comma separated list of tags to one or more targets.",
-	Run:   doTargetsTag,
-	Args:  cobra.MinimumNArgs(1),
-}
-
 var (
 	tagTags      string
 	tagNoTail    bool
@@ -23,13 +16,19 @@ var (
 )
 
 func init() {
-	targetsCmd.AddCommand(targetsTagCmd)
-	targetsTagCmd.Flags().StringVarP(&tagTags, "tags", "T", "", "comma,separate,list")
-	targetsTagCmd.Flags().BoolVarP(&tagNoTail, "no-tail", "", false, "Don't tail output of CI Job")
-	targetsTagCmd.Flags().BoolVarP(&tagByVersion, "by-version", "", false, "Apply tags to all targets matching the given version(s)")
+	var tagCmd = &cobra.Command{
+		Use:   "tag <target> [<target>...]",
+		Short: "Apply a comma separated list of tags to one or more targets.",
+		Run:   doTag,
+		Args:  cobra.MinimumNArgs(1),
+	}
+	cmd.AddCommand(tagCmd)
+	tagCmd.Flags().StringVarP(&tagTags, "tags", "T", "", "comma,separate,list")
+	tagCmd.Flags().BoolVarP(&tagNoTail, "no-tail", "", false, "Don't tail output of CI Job")
+	tagCmd.Flags().BoolVarP(&tagByVersion, "by-version", "", false, "Apply tags to all targets matching the given version(s)")
 }
 
-func doTargetsTag(cmd *cobra.Command, args []string) {
+func doTag(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 	tags := strings.Split(tagTags, ",")
 	fmt.Println(tags)

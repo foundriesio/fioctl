@@ -1,4 +1,4 @@
-package cmd
+package devices
 
 import (
 	"fmt"
@@ -13,12 +13,6 @@ import (
 	"github.com/foundriesio/fioctl/client"
 )
 
-var deviceListCmd = &cobra.Command{
-	Use:   "list [pattern]",
-	Short: "List devices registered to factories. Optionally include filepath style patterns to limit to device names. eg device-*",
-	Run:   doDeviceList,
-	Args:  cobra.MaximumNArgs(1),
-}
 var (
 	deviceNoShared      bool
 	deviceNoOwner       bool
@@ -28,12 +22,18 @@ var (
 )
 
 func init() {
-	deviceCmd.AddCommand(deviceListCmd)
-	deviceListCmd.Flags().BoolVarP(&deviceNoShared, "just-mine", "", false, "Only include devices owned by you")
-	deviceListCmd.Flags().BoolVarP(&deviceNoOwner, "skip-owner", "", false, "Do not include owner name when lising. (command will run faster)")
-	deviceListCmd.Flags().StringVarP(&deviceByTag, "by-tag", "", "", "Only list devices configured with the given tag")
-	deviceListCmd.Flags().StringVarP(&deviceByFactory, "by-factory", "", "", "Only list devices belonging to this factory")
-	deviceListCmd.Flags().IntVarP(&deviceInactiveHours, "offline-threshold", "", 4, "List the device as 'OFFLINE' if not seen in the last X hours")
+	listCmd := &cobra.Command{
+		Use:   "list [pattern]",
+		Short: "List devices registered to factories. Optionally include filepath style patterns to limit to device names. eg device-*",
+		Run:   doList,
+		Args:  cobra.MaximumNArgs(1),
+	}
+	cmd.AddCommand(listCmd)
+	listCmd.Flags().BoolVarP(&deviceNoShared, "just-mine", "", false, "Only include devices owned by you")
+	listCmd.Flags().BoolVarP(&deviceNoOwner, "skip-owner", "", false, "Do not include owner name when lising. (command will run faster)")
+	listCmd.Flags().StringVarP(&deviceByTag, "by-tag", "", "", "Only list devices configured with the given tag")
+	listCmd.Flags().StringVarP(&deviceByFactory, "by-factory", "", "", "Only list devices belonging to this factory")
+	listCmd.Flags().IntVarP(&deviceInactiveHours, "offline-threshold", "", 4, "List the device as 'OFFLINE' if not seen in the last X hours")
 }
 
 // We allow pattern matching using filepath.Match type * and ?
@@ -72,7 +72,7 @@ func userName(factory, polisId string, cache map[string]string) string {
 	return id
 }
 
-func doDeviceList(cmd *cobra.Command, args []string) {
+func doList(cmd *cobra.Command, args []string) {
 	logrus.Debug("Listing registered devices")
 
 	t := tabby.New()

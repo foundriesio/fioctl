@@ -1,4 +1,4 @@
-package cmd
+package users
 
 import (
 	"fmt"
@@ -8,22 +8,24 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
+	"github.com/foundriesio/fioctl/client"
+	"github.com/foundriesio/fioctl/subcommands"
 )
 
-var usersCmd = &cobra.Command{
-	Use:              "users",
-	Short:            "List users with access to a factory",
-	PersistentPreRun: assertLogin,
-	Run:              doUsersList,
+func NewCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "users",
+		Short: "List users with access to a factory",
+		Run: func(cmd *cobra.Command, args []string) {
+			doList(subcommands.Login(cmd), viper.GetString("factory"))
+		},
+	}
+	subcommands.RequireFactory(cmd)
+	return cmd
 }
 
-func init() {
-	rootCmd.AddCommand(usersCmd)
-	requireFactory(usersCmd)
-}
-
-func doUsersList(cmd *cobra.Command, args []string) {
-	factory := viper.GetString("factory")
+func doList(api *client.Api, factory string) {
 	logrus.Debugf("Listing factory users for %s", factory)
 
 	users, err := api.UsersList(factory)

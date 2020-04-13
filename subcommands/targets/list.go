@@ -1,4 +1,4 @@
-package cmd
+package targets
 
 import (
 	"fmt"
@@ -12,12 +12,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
-
-var targetListCmd = &cobra.Command{
-	Use:   "list",
-	Short: "List targets.",
-	Run:   doTargetsList,
-}
 
 var (
 	listRaw   bool
@@ -52,12 +46,17 @@ func (t byTargetKey) Less(i, j int) bool {
 }
 
 func init() {
-	targetsCmd.AddCommand(targetListCmd)
-	targetListCmd.Flags().BoolVarP(&listRaw, "raw", "r", false, "Print raw targets.json")
-	targetListCmd.Flags().StringVarP(&listByTag, "by-tag", "", "", "Only list targets that match the given tag")
+	listCmd := &cobra.Command{
+		Use:   "list",
+		Short: "List targets.",
+		Run:   doList,
+	}
+	cmd.AddCommand(listCmd)
+	listCmd.Flags().BoolVarP(&listRaw, "raw", "r", false, "Print raw targets.json")
+	listCmd.Flags().StringVarP(&listByTag, "by-tag", "", "", "Only list targets that match the given tag")
 }
 
-func doTargetsList(cmd *cobra.Command, args []string) {
+func doList(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 	logrus.Debugf("Listing targets for %s tag(%s)", factory, listByTag)
 

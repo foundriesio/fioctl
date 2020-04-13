@@ -1,4 +1,4 @@
-package cmd
+package targets
 
 import (
 	"bytes"
@@ -14,20 +14,20 @@ import (
 	tuf "github.com/theupdateframework/notary/tuf/data"
 )
 
-var targetsEditCmd = &cobra.Command{
-	Use:    "edit",
-	Short:  "Edit targets.json directly - proceed with caution!",
-	Run:    doTargetsEdit,
-	Hidden: true,
-}
 var editNoTail bool
 
 func init() {
-	targetsCmd.AddCommand(targetsEditCmd)
-	targetsEditCmd.Flags().BoolVarP(&editNoTail, "no-tail", "", false, "Don't tail output of CI Job")
+	editCmd := &cobra.Command{
+		Use:    "edit",
+		Short:  "Edit targets.json directly - proceed with caution!",
+		Run:    doEdit,
+		Hidden: true,
+	}
+	cmd.AddCommand(editCmd)
+	editCmd.Flags().BoolVarP(&editNoTail, "no-tail", "", false, "Don't tail output of CI Job")
 }
 
-func doTargetsEdit(cmd *cobra.Command, args []string) {
+func doEdit(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 	logrus.Debugf("Editing targets for %s", factory)
 
