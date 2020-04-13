@@ -107,6 +107,7 @@ type Device struct {
 	CurrentUpdate string           `json:"current-update"`
 	UpToDate      bool             `json:"up-to-date"`
 	PublicKey     string           `json:"public-key"`
+	ActiveConfig  *DeviceConfig    `json:"active-config,omitempty"`
 }
 
 type DeviceList struct {
