@@ -8,7 +8,6 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 
 	"github.com/foundriesio/fioctl/client"
 	"github.com/foundriesio/fioctl/subcommands"
@@ -28,7 +27,7 @@ func doLogin(cmd *cobra.Command, args []string) {
 	creds := client.NewClientCredentials(subcommands.Config.ClientCredentials)
 	if creds.Config.ClientId == "" || creds.Config.ClientSecret == "" {
 		creds.Config.ClientId, creds.Config.ClientSecret = promptForCreds()
-		saveCreds(creds.Config)
+		subcommands.SaveOauthConfig(creds.Config)
 	}
 
 	if creds.Config.ClientId == "" || creds.Config.ClientSecret == "" {
@@ -57,24 +56,8 @@ func doLogin(cmd *cobra.Command, args []string) {
 		os.Exit(0)
 	}
 
-	saveCreds(creds.Config)
+	subcommands.SaveOauthConfig(creds.Config)
 	fmt.Println("You are now logged in to Foundries.io services.")
-}
-
-func saveCreds(c client.OAuthConfig) {
-	viper.Set("clientcredentials.client_id", c.ClientId)
-	viper.Set("clientcredentials.client_secret", c.ClientSecret)
-
-	viper.Set("clientcredentials.access_token", c.AccessToken)
-	viper.Set("clientcredentials.refresh_token", c.RefreshToken)
-	viper.Set("clientcredentials.token_type", c.TokenType)
-	viper.Set("clientcredentials.expires_in", c.ExpiresIn)
-	viper.Set("clientcredentials.created", c.Created)
-
-	if err := viper.WriteConfig(); err != nil {
-		fmt.Println("ERROR: ", err)
-		os.Exit(1)
-	}
 }
 
 func promptForCreds() (string, string) {
