@@ -67,6 +67,7 @@ func initConfig() {
 		// Search config in home directory with name "fioctl" (without extension).
 		viper.AddConfigPath(config)
 		viper.SetConfigName("fioctl")
+		viper.SetConfigType("yaml")
 	}
 
 	viper.SetEnvPrefix("FIOCTL")

@@ -11,4 +11,5 @@ require (
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/viper v1.3.2
 	github.com/theupdateframework/notary v0.6.1
+	gopkg.in/yaml.v2 v2.2.2
 )

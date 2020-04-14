@@ -2,10 +2,15 @@ package subcommands
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
+	"path/filepath"
 
+	homedir "github.com/mitchellh/go-homedir"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"gopkg.in/yaml.v2"
 
 	"github.com/foundriesio/fioctl/client"
 )
@@ -70,8 +75,36 @@ func SaveOauthConfig(c client.OAuthConfig) {
 	viper.Set("clientcredentials.expires_in", c.ExpiresIn)
 	viper.Set("clientcredentials.created", c.Created)
 
-	if err := viper.WriteConfig(); err != nil {
-		fmt.Println("ERROR: ", err)
+	// viper.WriteConfig isn't so great for this. It doesn't just write
+	// these values but any other flags that were present when this runs.
+	// This gets run automatically when "logging in". So you sometimes
+	// accidentally write CLI flags viper finds to the file, that you
+	// don't intend to be saved. So we do it the hard way:
+	name := viper.ConfigFileUsed()
+	if len(name) == 0 {
+		logrus.Debug("Guessing config file from path")
+		path, err := homedir.Expand("~/.config")
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		name = filepath.Join(path, "fioctl.yaml")
+	}
+	// Try to read in config
+	cfg := make(map[string]interface{})
+	buf, err := ioutil.ReadFile(name)
+	if err == nil {
+		err = yaml.Unmarshal(buf, &cfg)
+	}
+	val := viper.Get("clientcredentials")
+	cfg["clientcredentials"] = val
+	buf, err = yaml.Marshal(cfg)
+	if err != nil {
+		fmt.Println("Unable to marshall oauth config: ", err)
+		os.Exit(1)
+	}
+	if err := ioutil.WriteFile(name, buf, os.FileMode(0644)); err != nil {
+		fmt.Println("Unable to update config: ", err)
 		os.Exit(1)
 	}
 }
