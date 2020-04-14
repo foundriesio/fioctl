@@ -19,5 +19,6 @@ var cmd = &cobra.Command{
 }
 
 func NewCommand() *cobra.Command {
+	cmd.PersistentFlags().StringP("token", "t", "", "API token from https://app.foundries.io/settings/tokens/")
 	return cmd
 }
