@@ -37,6 +37,9 @@ func doShow(cmd *cobra.Command, args []string) {
 	hashes := make(map[string]string)
 	var tags []string
 	var apps map[string]client.DockerApp
+	containersSha := ""
+	manifestSha := ""
+	overridesSha := ""
 	for name, target := range targets.Signed.Targets {
 		custom, err := api.TargetCustom(target)
 		if err != nil {
@@ -50,12 +53,47 @@ func doShow(cmd *cobra.Command, args []string) {
 			logrus.Debugf("Skipping non-ostree target: %v", target)
 			continue
 		}
+		if len(custom.ContainersSha) > 0 {
+			if len(containersSha) > 0 && containersSha != custom.ContainersSha {
+				fmt.Println("ERROR: Git hashes for containers.git does not match across platforms")
+				os.Exit(1)
+			}
+			containersSha = custom.ContainersSha
+		}
+		if len(custom.LmpManifestSha) > 0 {
+			if len(manifestSha) > 0 && manifestSha != custom.LmpManifestSha {
+				fmt.Println("ERROR: Git hashes for lmp-manifest.git does not match across platforms")
+				os.Exit(1)
+			}
+			manifestSha = custom.LmpManifestSha
+		}
+		if len(custom.OverridesSha) > 0 {
+			if len(overridesSha) > 0 && overridesSha != custom.OverridesSha {
+				fmt.Println("ERROR: Git hashes for meta-subscriber-overrides.git does not match across platforms")
+				os.Exit(1)
+			}
+			overridesSha = custom.OverridesSha
+		}
 		hashes[name] = base64.StdEncoding.EncodeToString(target.Hashes["sha256"])
 		apps = custom.DockerApps
 		tags = custom.Tags
 	}
 
-	fmt.Printf("Tags:\t%s\n\n", strings.Join(tags, ","))
+	fmt.Printf("Tags:\t%s\n", strings.Join(tags, ","))
+
+	fmt.Printf("CI:\thttps://ci.foundries.io/projects/%s/lmp/builds/%s/\n", factory, args[0])
+
+	fmt.Println("Source:")
+	if len(manifestSha) > 0 {
+		fmt.Printf("\thttps://source.foundries.io/factories/%s/lmp-manifest.git/commit/?id=%s\n", factory, manifestSha)
+	}
+	if len(overridesSha) > 0 {
+		fmt.Printf("\thttps://source.foundries.io/factories/%s/meta-subscriber-overrides.git/commit/?id=%s\n", factory, overridesSha)
+	}
+	if len(containersSha) > 0 {
+		fmt.Printf("\thttps://source.foundries.io/factories/%s/containers.git/commit/?id=%s\n", factory, containersSha)
+	}
+	fmt.Println("")
 
 	t := tabby.New()
 	t.AddHeader("TARGET NAME", "OSTREE HASH - SHA256")
