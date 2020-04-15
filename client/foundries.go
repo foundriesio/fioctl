@@ -113,12 +113,15 @@ type ProjectTrigger struct {
 }
 
 type TufCustom struct {
-	HardwareIds  []string             `json:"hardwareIds,omitempty"`
-	Tags         []string             `json:"tags,omitempty"`
-	TargetFormat string               `json:"targetFormat,omitempty"`
-	Version      string               `json:"version,omitempty"`
-	DockerApps   map[string]DockerApp `json:"docker_apps,omitempty"`
-	Name         string               `json:"name,omitempty"`
+	HardwareIds    []string             `json:"hardwareIds,omitempty"`
+	Tags           []string             `json:"tags,omitempty"`
+	TargetFormat   string               `json:"targetFormat,omitempty"`
+	Version        string               `json:"version,omitempty"`
+	DockerApps     map[string]DockerApp `json:"docker_apps,omitempty"`
+	Name           string               `json:"name,omitempty"`
+	ContainersSha  string               `json:"containers-sha,omitempty"`
+	LmpManifestSha string               `json:"lmp-manifest-sha,omitempty"`
+	OverridesSha   string               `json:"meta-subscriber-overrides-sha,omitempty"`
 }
 
 func NewApiClient(serverUrl string, config Config, caCertPath string) *Api {
