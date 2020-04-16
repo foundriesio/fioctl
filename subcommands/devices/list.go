@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/cheynewallace/tabby"
 	"github.com/sirupsen/logrus"
@@ -116,16 +115,8 @@ func doList(cmd *cobra.Command, args []string) {
 			if len(device.Status) > 0 {
 				status = device.Status
 			}
-			if len(device.LastSeen) > 0 {
-				t, err := time.Parse("2006-01-02T15:04:05", device.LastSeen)
-				if err == nil {
-					duration := time.Since(t)
-					if duration.Hours() > float64(deviceInactiveHours) {
-						status = "OFFLINE"
-					}
-				} else {
-					logrus.Error(err)
-				}
+			if len(device.LastSeen) > 0 && !device.Online(deviceInactiveHours) {
+				status = "OFFLINE"
 			}
 			if deviceNoOwner {
 				t.AddLine(device.Name, device.Factory, device.TargetName, status, strings.Join(device.DockerApps, ","), device.UpToDate)

@@ -127,6 +127,24 @@ type FactoryUser struct {
 	Role    string `json:"role"`
 }
 
+type TargetStatus struct {
+	Devices int `json:"devices"`
+	Version int `json:"version"`
+}
+type TagStatus struct {
+	Name            string         `json:"name"`
+	DevicesTotal    int            `json:"devices-total"`
+	DevicesOnline   int            `json:"devices-online"`
+	DevicesOnLatest int            `json:"devices-on-latest"`
+	LatestTarget    int            `json:"latest-target"`
+	Targets         []TargetStatus `json:"targets"`
+}
+
+type FactoryStatus struct {
+	TotalDevices int         `json:"total-devices"`
+	Tags         []TagStatus `json:"tags"`
+}
+
 type ProjectSecret struct {
 	Name  string  `json:"name"`
 	Value *string `json:"value"`
@@ -148,6 +166,23 @@ type TufCustom struct {
 	ContainersSha  string               `json:"containers-sha,omitempty"`
 	LmpManifestSha string               `json:"lmp-manifest-sha,omitempty"`
 	OverridesSha   string               `json:"meta-subscriber-overrides-sha,omitempty"`
+}
+
+func (d Device) Online(inactiveHoursThreshold int) bool {
+	if len(d.LastSeen) == 0 {
+		return false
+	}
+	t, err := time.Parse("2006-01-02T15:04:05", d.LastSeen)
+	if err == nil {
+		duration := time.Since(t)
+		if duration.Hours() > float64(inactiveHoursThreshold) {
+			return false
+		}
+	} else {
+		logrus.Error(err)
+		return false
+	}
+	return true
 }
 
 func NewApiClient(serverUrl string, config Config, caCertPath string) *Api {
@@ -494,6 +529,21 @@ func (a *Api) FactoryListConfig(factory string) (*DeviceConfigList, error) {
 
 func (a *Api) FactoryListConfigCont(url string) (*DeviceConfigList, error) {
 	return a.DeviceListConfigCont(url)
+}
+
+func (a *Api) FactoryStatus(factory string, inactiveThreshold int) (*FactoryStatus, error) {
+	url := fmt.Sprintf("%s/ota/factories/%s/status/?offline-threshold=%d", a.serverUrl, factory, inactiveThreshold)
+	logrus.Debugf("FactoryStatus with url: %s", url)
+	body, err := a.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	s := FactoryStatus{}
+	err = json.Unmarshal(*body, &s)
+	if err != nil {
+		return nil, err
+	}
+	return &s, nil
 }
 
 func (a *Api) TargetsListRaw(factory string) (*[]byte, error) {
