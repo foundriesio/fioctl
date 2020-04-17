@@ -26,7 +26,7 @@ func doKeyRotation(cmd *cobra.Command, args []string) {
 	if err := verifyDocker(); err != nil {
 		exitf("invalid environment, %s", err)
 	}
-	const aktualizrImageName = "hub.foundries.io/aktualizr"
+	const aktualizrImageName = "foundries/ota-lite-targets"
 	const rotateCmd = `#!/usr/bin/python3
 import datetime
 import json
@@ -72,6 +72,7 @@ with TemporaryDirectory() as tempdir:
     os.chdir(tempdir)
     os.mkdir('tuf')
     creds_file = '/creds.tgz'
+    expires = (datetime.datetime.now() + datetime.timedelta(days=2*365)).strftime('%Y-%m-%dT%H:%M:%SZ')
     cmd('tar', 'xf', creds_file, cwd='./tuf')
     cmd('garage-sign', 'root', 'pull', '--repo', './tufrepo')
     old_keyname, old_keyid = find_current_root('./tuf/tufrepo')
@@ -83,7 +84,7 @@ with TemporaryDirectory() as tempdir:
     cmd('garage-sign', 'root', 'key', 'remove', '--repo', './tufrepo',
     '--key-id', old_keyid, '--key-name', old_keyname)
     cmd('garage-sign', 'root', 'sign', '--repo', './tufrepo',
-    '--key-name', keyname, '--key-name', old_keyname)
+    '--key-name', keyname, '--key-name', old_keyname, '--expires', expires)
     cmd('tar', 'czf', creds_file, 'tufrepo', cwd='./tuf')
     cmd('garage-sign', 'root', 'push', '--repo', './tufrepo')
 `
