@@ -9,8 +9,8 @@ import (
 )
 
 func init() {
-	cmd.AddCommand(&cobra.Command{
-		Use:   "show-update <name> <update-id>",
+	updatesCmd.AddCommand(&cobra.Command{
+		Use:   "show <name> <update-id>",
 		Short: "Show details of a specific device update",
 		Run:   doShowUpdate,
 		Args:  cobra.ExactArgs(2),

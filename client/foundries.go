@@ -30,6 +30,31 @@ type Api struct {
 	client    http.Client
 }
 
+type ConfigFile struct {
+	Name        string   `json:"name"`
+	Value       string   `json:"value"`
+	Unencrypted bool     `json:"unencrypted"`
+	OnChanged   []string `json:"on-changed,omitempty"`
+}
+
+type ConfigCreateRequest struct {
+	Reason string       `json:"reason"`
+	Files  []ConfigFile `json:"files"`
+}
+
+type DeviceConfig struct {
+	CreatedAt string       `json:"created-at"`
+	AppliedAt string       `json:"applied-at"`
+	Reason    string       `json:"reason"`
+	Files     []ConfigFile `json:"files"`
+}
+
+type DeviceConfigList struct {
+	Configs []DeviceConfig `json:"config"`
+	Total   int            `json:"total"`
+	Next    *string        `json:"next"`
+}
+
 type NetInfo struct {
 	Hostname string `json:"hostname"`
 	Ipv4     string `json:"local_ipv4"`
@@ -82,6 +107,7 @@ type Device struct {
 	CurrentUpdate string           `json:"current-update"`
 	UpToDate      bool             `json:"up-to-date"`
 	PublicKey     string           `json:"public-key"`
+	ActiveConfig  *DeviceConfig    `json:"active-config,omitempty"`
 }
 
 type DeviceList struct {
@@ -232,7 +258,7 @@ func (a *Api) Patch(url string, data []byte) (*[]byte, error) {
 		return nil, err
 	}
 
-	if res.StatusCode != 202 && res.StatusCode != 200 {
+	if res.StatusCode != 202 && res.StatusCode != 201 && res.StatusCode != 200 {
 		return nil, fmt.Errorf("Unable to PATCH '%s': HTTP_%d\n=%s", url, res.StatusCode, body)
 	}
 	return &body, nil
@@ -383,6 +409,91 @@ func (a *Api) DeviceUpdateEvents(device, correlationId string) ([]UpdateEvent, e
 		return events, err
 	}
 	return events, nil
+}
+
+func (a *Api) DeviceCreateConfig(device string, cfg ConfigCreateRequest) error {
+	data, err := json.Marshal(cfg)
+	if err != nil {
+		return err
+	}
+
+	url := a.serverUrl + "/ota/devices/" + device + "/config/"
+	logrus.Debug("Creating new device config")
+	_, err = a.Post(url, data)
+	return err
+}
+
+func (a *Api) DevicePatchConfig(device string, cfg ConfigCreateRequest) error {
+	data, err := json.Marshal(cfg)
+	if err != nil {
+		return err
+	}
+
+	url := a.serverUrl + "/ota/devices/" + device + "/config/"
+	logrus.Debug("Patching device config")
+	_, err = a.Patch(url, data)
+	return err
+}
+
+func (a *Api) DeviceListConfig(device string) (*DeviceConfigList, error) {
+	url := a.serverUrl + "/ota/devices/" + device + "/config/"
+	logrus.Debugf("DeviceListConfig with url: %s", url)
+	return a.DeviceListConfigCont(url)
+}
+
+func (a *Api) DeviceListConfigCont(url string) (*DeviceConfigList, error) {
+	body, err := a.Get(url)
+	if err != nil {
+		return nil, err
+	}
+
+	config := DeviceConfigList{}
+	err = json.Unmarshal(*body, &config)
+	if err != nil {
+		return nil, err
+	}
+	return &config, nil
+}
+
+func (a *Api) DeviceDeleteConfig(device, filename string) error {
+	url := a.serverUrl + "/ota/devices/" + device + "/config/" + filename + "/"
+	logrus.Debugf("Deleting config file: %s", url)
+	_, err := a.Delete(url, nil)
+	return err
+}
+
+func (a *Api) FactoryCreateConfig(factory string, cfg ConfigCreateRequest) error {
+	data, err := json.Marshal(cfg)
+	if err != nil {
+		return err
+	}
+
+	url := a.serverUrl + "/ota/factories/" + factory + "/config/"
+	logrus.Debug("Creating new factory config")
+	_, err = a.Post(url, data)
+	return err
+}
+
+func (a *Api) FactoryPatchConfig(factory string, cfg ConfigCreateRequest) error {
+	data, err := json.Marshal(cfg)
+	if err != nil {
+		return err
+	}
+
+	url := a.serverUrl + "/ota/factories/" + factory + "/config/"
+	logrus.Debug("Creating new factory config")
+	_, err = a.Patch(url, data)
+	return err
+}
+
+func (a *Api) FactoryListConfig(factory string) (*DeviceConfigList, error) {
+	url := a.serverUrl + "/ota/factories/" + factory + "/config/"
+	logrus.Debugf("FactoryListConfig with url: %s", url)
+	return a.DeviceListConfigCont(url)
+}
+
+func (a *Api) FactoryListConfigCont(url string) (*DeviceConfigList, error) {
+	return a.DeviceListConfigCont(url)
 }
 
 func (a *Api) TargetsListRaw(factory string) (*[]byte, error) {
