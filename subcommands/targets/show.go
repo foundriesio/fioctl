@@ -37,6 +37,7 @@ func doShow(cmd *cobra.Command, args []string) {
 	hashes := make(map[string]string)
 	var tags []string
 	var apps map[string]client.DockerApp
+	var composeApps map[string]client.ComposeApp
 	containersSha := ""
 	manifestSha := ""
 	overridesSha := ""
@@ -76,6 +77,7 @@ func doShow(cmd *cobra.Command, args []string) {
 		}
 		hashes[name] = base64.StdEncoding.EncodeToString(target.Hashes["sha256"])
 		apps = custom.DockerApps
+		composeApps = custom.ComposeApps
 		tags = custom.Tags
 	}
 
@@ -104,15 +106,28 @@ func doShow(cmd *cobra.Command, args []string) {
 
 	fmt.Println()
 
-	t = tabby.New()
-	t.AddHeader("DOCKER APP", "VERSION")
-	for name, app := range apps {
-		if len(app.FileName) > 0 {
-			t.AddLine(name, app.FileName)
+	if len(apps) > 0 {
+		t = tabby.New()
+		t.AddHeader("DOCKER APP", "VERSION")
+		for name, app := range apps {
+			if len(app.FileName) > 0 {
+				t.AddLine(name, app.FileName)
+			}
+			if len(app.Uri) > 0 {
+				t.AddLine(name, app.Uri)
+			}
 		}
-		if len(app.Uri) > 0 {
+		t.Print()
+	}
+	if len(composeApps) > 0 {
+		if len(apps) > 0 {
+			fmt.Println()
+		}
+		t = tabby.New()
+		t.AddHeader("COMPOSE APP", "VERSION")
+		for name, app := range composeApps {
 			t.AddLine(name, app.Uri)
 		}
+		t.Print()
 	}
-	t.Print()
 }
