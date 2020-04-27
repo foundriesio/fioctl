@@ -121,6 +121,10 @@ type DockerApp struct {
 	Uri      string `json:"uri"`
 }
 
+type ComposeApp struct {
+	Uri string `json:"uri"`
+}
+
 type FactoryUser struct {
 	PolisId string `json:"polis-id"`
 	Name    string `json:"name"`
@@ -157,15 +161,16 @@ type ProjectTrigger struct {
 }
 
 type TufCustom struct {
-	HardwareIds    []string             `json:"hardwareIds,omitempty"`
-	Tags           []string             `json:"tags,omitempty"`
-	TargetFormat   string               `json:"targetFormat,omitempty"`
-	Version        string               `json:"version,omitempty"`
-	DockerApps     map[string]DockerApp `json:"docker_apps,omitempty"`
-	Name           string               `json:"name,omitempty"`
-	ContainersSha  string               `json:"containers-sha,omitempty"`
-	LmpManifestSha string               `json:"lmp-manifest-sha,omitempty"`
-	OverridesSha   string               `json:"meta-subscriber-overrides-sha,omitempty"`
+	HardwareIds    []string              `json:"hardwareIds,omitempty"`
+	Tags           []string              `json:"tags,omitempty"`
+	TargetFormat   string                `json:"targetFormat,omitempty"`
+	Version        string                `json:"version,omitempty"`
+	DockerApps     map[string]DockerApp  `json:"docker_apps,omitempty"`
+	ComposeApps    map[string]ComposeApp `json:"docker_compose_apps,omitempty"`
+	Name           string                `json:"name,omitempty"`
+	ContainersSha  string                `json:"containers-sha,omitempty"`
+	LmpManifestSha string                `json:"lmp-manifest-sha,omitempty"`
+	OverridesSha   string                `json:"meta-subscriber-overrides-sha,omitempty"`
 }
 
 func (d Device) Online(inactiveHoursThreshold int) bool {

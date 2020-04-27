@@ -112,9 +112,16 @@ func doList(cmd *cobra.Command, args []string) {
 			build.hardwareIds = append(build.hardwareIds, custom.HardwareIds...)
 			//TODO assert list of docker-apps is the same
 		} else {
+			set := make(map[string]bool)
 			var apps []string
 			for app := range custom.DockerApps {
 				apps = append(apps, app)
+				set[app] = true
+			}
+			for app := range custom.ComposeApps {
+				if _, ok := set[app]; !ok {
+					apps = append(apps, app)
+				}
 			}
 			keys = append(keys, key)
 			listing[key] = &targetListing{
