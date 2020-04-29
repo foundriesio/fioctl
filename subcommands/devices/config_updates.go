@@ -141,7 +141,7 @@ func doConfigUpdates(cmd *cobra.Command, args []string) {
 			client.ConfigFile{
 				Name:        tomlName,
 				Unencrypted: true,
-				OnChanged:   []string{"/usr/bin/aktualizr-toml-update"},
+				OnChanged:   []string{"/usr/share/fioconfig/handlers/aktualizr-toml-update"},
 				Value:       newToml,
 			},
 		},
