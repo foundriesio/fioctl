@@ -33,16 +33,16 @@ currently configured and reporting. Configuration can be updated with commands
 like:
 
   # Make a device start taking updates from Targets tagged with "devel"
-  fioctl devices config-updates <device> --tags devel
+  fioctl devices config updates <device> --tags devel
 
   # Make a device start taking updates from 2 different tags:
-  fioctl devices config-updates <device> --tags devel,devel-foo
+  fioctl devices config updates <device> --tags devel,devel-foo
 
   # Set the docker apps a device will run:
-  fioctl devices config-updates <device> --apps shellhttpd
+  fioctl devices config updates <device> --apps shellhttpd
 
   # Set the docker apps and the tag:
-  fioctl devices config-updates <device> --apps shellhttpd --tags master
+  fioctl devices config updates <device> --apps shellhttpd --tags master
 `,
 	}
 	configCmd.AddCommand(configUpdatesCmd)
