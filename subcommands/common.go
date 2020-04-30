@@ -65,6 +65,7 @@ func Login(cmd *cobra.Command) *client.Api {
 		os.Exit(1)
 	}
 	SaveOauthConfig(creds.Config)
+	Config.ClientCredentials = creds.Config
 	return client.NewApiClient("https://api.foundries.io", Config, ca)
 }
 
