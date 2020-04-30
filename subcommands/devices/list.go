@@ -119,7 +119,7 @@ func doList(cmd *cobra.Command, args []string) {
 			if len(device.LastSeen) > 0 {
 				t, err := time.Parse("2006-01-02T15:04:05", device.LastSeen)
 				if err == nil {
-					duration := time.Now().Sub(t)
+					duration := time.Since(t)
 					if duration.Hours() > float64(deviceInactiveHours) {
 						status = "OFFLINE"
 					}

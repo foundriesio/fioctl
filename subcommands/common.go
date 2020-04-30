@@ -30,8 +30,12 @@ func RequireFactory(cmd *cobra.Command) {
 func Login(cmd *cobra.Command) *client.Api {
 	ca := os.Getenv("CACERT")
 	initViper(cmd)
+	url := os.Getenv("API_URL")
+	if len(url) == 0 {
+		url = "https://api.foundries.io"
+	}
 	if len(Config.Token) > 0 {
-		return client.NewApiClient("https://api.foundries.io", Config, ca)
+		return client.NewApiClient(url, Config, ca)
 	}
 
 	if len(Config.ClientCredentials.ClientId) == 0 {
@@ -98,7 +102,10 @@ func SaveOauthConfig(c client.OAuthConfig) {
 	cfg := make(map[string]interface{})
 	buf, err := ioutil.ReadFile(name)
 	if err == nil {
-		err = yaml.Unmarshal(buf, &cfg)
+		if err := yaml.Unmarshal(buf, &cfg); err != nil {
+			fmt.Println("Unable unmarshal configuration:", err)
+			os.Exit(1)
+		}
 	}
 	val := viper.Get("clientcredentials")
 	cfg["clientcredentials"] = val
@@ -123,10 +130,6 @@ func initViper(cmd *cobra.Command) {
 		os.Exit(1)
 	}
 	Config.Token = viper.GetString("token")
-	url := os.Getenv("API_URL")
-	if len(url) == 0 {
-		url = "https://api.foundries.io"
-	}
 }
 
 func PrintConfigs(deviceConfigs []client.DeviceConfig, listLimit int) int {
