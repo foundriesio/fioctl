@@ -1,0 +1,15 @@
+timeout: 30
+triggers:
+  - name: pull-request
+    type: github_pr
+    runs:
+      - name: unit-test
+        container: golangci/golangci-lint:v1.25
+        host-tag: amd64
+        script: unit-test
+
+scripts:
+
+  unit-test: |
+    #!/bin/sh -ex
+    make check
