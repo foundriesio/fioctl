@@ -19,6 +19,8 @@ format:
 	@gofmt -l  -w ./
 check:
 	@test -z $(shell gofmt -l ./ | tee /dev/stderr) || echo "[WARN] Fix formatting issues with 'make fmt'"
+	@test -x $(HOME)/go/bin/golangci-lint || (echo "Please install linter from https://github.com/golangci/golangci-lint/releases/tag/v1.25.1 to $(HOME)/go/bin")
+	$(HOME)/go/bin/golangci-lint run
 
 # Use the image for Dockerfile.build to build and install the tool.
 container-init:
