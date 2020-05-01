@@ -51,7 +51,7 @@ func Login(cmd *cobra.Command) *client.Api {
 	}
 
 	if !expired && len(creds.Config.AccessToken) > 0 {
-		return client.NewApiClient("https://api.foundries.io", Config, ca)
+		return client.NewApiClient(url, Config, ca)
 	}
 
 	if len(creds.Config.AccessToken) == 0 {
@@ -70,7 +70,7 @@ func Login(cmd *cobra.Command) *client.Api {
 	}
 	SaveOauthConfig(creds.Config)
 	Config.ClientCredentials = creds.Config
-	return client.NewApiClient("https://api.foundries.io", Config, ca)
+	return client.NewApiClient(url, Config, ca)
 }
 
 func SaveOauthConfig(c client.OAuthConfig) {
