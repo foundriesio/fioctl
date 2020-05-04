@@ -55,19 +55,22 @@ func init() {
 	rootCmd.AddCommand(version.NewCommand())
 }
 
+func getConfigDir() string {
+	config, err := homedir.Expand("~/.config")
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	return config
+}
+
 func initConfig() {
 	if cfgFile != "" {
 		// Use config file from the flag.
 		viper.SetConfigFile(cfgFile)
 	} else {
-		config, err := homedir.Expand("~/.config")
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-
 		// Search config in home directory with name "fioctl" (without extension).
-		viper.AddConfigPath(config)
+		viper.AddConfigPath(getConfigDir())
 		viper.SetConfigName("fioctl")
 		viper.SetConfigType("yaml")
 	}
