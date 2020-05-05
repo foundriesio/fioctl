@@ -23,11 +23,16 @@ type OAuthConfig struct {
 	RefreshToken string  `mapstructure:"refresh_token"`
 	ExpiresIn    float64 `mapstructure:"expires_in"`
 	Created      string
+	DefaultOrg   string
 }
 
 type ClientCredentials struct {
 	Config OAuthConfig
 	URL    string
+}
+
+type Org struct {
+	Name string `json:"name"`
 }
 
 type OAuthResponse struct {
@@ -36,6 +41,7 @@ type OAuthResponse struct {
 	RefreshToken string  `json:"refresh_token"`
 	ExpiresIn    float64 `json:"expires_in"`
 	Scope        string  `json:"scope"`
+	Orgs         []Org   `json:"orgs"`
 }
 
 func buildUrl(uri string, p string) (string, error) {
@@ -58,6 +64,9 @@ func (c *ClientCredentials) updateConfig(r OAuthResponse) {
 	c.Config.TokenType = r.TokenType
 	c.Config.ExpiresIn = r.ExpiresIn
 	c.Config.Created = time.Now().UTC().Format(time.RFC3339)
+	if len(r.Orgs) == 0 {
+		c.Config.DefaultOrg = r.Orgs[0].Name
+	}
 }
 
 // Perform a POST request.

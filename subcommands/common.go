@@ -109,6 +109,9 @@ func SaveOauthConfig(c client.OAuthConfig) {
 	}
 	val := viper.Get("clientcredentials")
 	cfg["clientcredentials"] = val
+	if len(c.DefaultOrg) > 0 {
+		cfg["factory"] = c.DefaultOrg
+	}
 	buf, err = yaml.Marshal(cfg)
 	if err != nil {
 		fmt.Println("Unable to marshall oauth config: ", err)
