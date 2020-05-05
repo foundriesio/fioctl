@@ -61,6 +61,12 @@ func getConfigDir() string {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+	if _, err := os.Stat(config); os.IsNotExist(err) {
+		if err := os.Mkdir(config, 0755); err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+	}
 	return config
 }
 
