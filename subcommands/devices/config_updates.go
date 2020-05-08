@@ -14,9 +14,11 @@ import (
 )
 
 var (
-	updateTags string
-	updateApps string
-	dryRun     bool
+	dryRun      bool
+	updateTags  string
+	updateApps  string
+	composeApps bool
+	composeDir  string
 )
 
 // Aktualizr puts all config files into a single lexographically sorted map.
@@ -44,11 +46,16 @@ like:
 
   # Set the docker apps and the tag:
   fioctl devices config updates <device> --apps shellhttpd --tags master
+
+  # Move device from old docker-apps to compose-apps:
+  fioctl devices config updates <device> --compose-apps
 `,
 	}
 	configCmd.AddCommand(configUpdatesCmd)
 	configUpdatesCmd.Flags().StringVarP(&updateTags, "tags", "", "", "comma,separate,list")
 	configUpdatesCmd.Flags().StringVarP(&updateApps, "apps", "", "", "comma,separate,list")
+	configUpdatesCmd.Flags().BoolVarP(&composeApps, "compose-apps", "", false, "Migrate device from docker-apps to compose-apps")
+	configUpdatesCmd.Flags().StringVarP(&composeDir, "compose-dir", "", "/var/sota/compose", "The directory to install compose apps in")
 	configUpdatesCmd.Flags().BoolVarP(&dryRun, "dryrun", "", false, "Only show what would be changed")
 }
 
@@ -101,8 +108,9 @@ func doConfigUpdates(cmd *cobra.Command, args []string) {
 	sota := loadSotaConfig(device.Name)
 	configuredApps := sota.GetDefault("pacman.docker_apps", "").(string)
 	configuredTags := sota.GetDefault("pacman.tags", "").(string)
+	configuredMgr := sota.GetDefault("pacman.packagemanager", "").(string)
 
-	if len(updateTags) == 0 && len(updateApps) == 0 {
+	if len(updateTags) == 0 && len(updateApps) == 0 && !composeApps {
 		fmt.Println("= Reporting to server with")
 		fmt.Println(" Tags: ", strings.Join(device.Tags, ","))
 		fmt.Println(" Apps: ", strings.Join(device.DockerApps, ","))
@@ -121,6 +129,7 @@ func doConfigUpdates(cmd *cobra.Command, args []string) {
 		}
 		fmt.Printf("Changing apps from: [%s] -> [%s]\n", configuredApps, updateApps)
 		sota.Set("pacman.docker_apps", updateApps)
+		sota.Set("pacman.compose_apps", updateApps)
 		changed = true
 	}
 	if len(updateTags) > 0 && configuredTags != updateTags {
@@ -129,6 +138,16 @@ func doConfigUpdates(cmd *cobra.Command, args []string) {
 		}
 		fmt.Printf("Changing tags from: [%s] -> [%s]\n", configuredTags, updateTags)
 		sota.Set("pacman.tags", updateTags)
+		changed = true
+	}
+	if composeApps && configuredMgr != "ostree+compose_apps" {
+		fmt.Printf("Changing packagemanger to %s\n", "ostree+compose_apps")
+		sota.Set("pacman.type", "ostree+compose_apps")
+		sota.Set("pacman.compose_apps_root", composeDir)
+		// the device might be running DockerApps that were set in /var/sota/sota.toml
+		// by lmp-device-register, so fallback to what its reporting if we don't find
+		// override values set:
+		sota.Set("pacman.compose_apps", sota.GetDefault("pacman.docker_apps", device.DockerApps))
 		changed = true
 	}
 
@@ -155,6 +174,7 @@ func doConfigUpdates(cmd *cobra.Command, args []string) {
 		},
 	}
 	if dryRun {
+		fmt.Println(newToml)
 		return
 	}
 	if err := api.DevicePatchConfig(args[0], cfg); err != nil {
