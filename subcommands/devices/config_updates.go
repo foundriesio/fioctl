@@ -16,6 +16,7 @@ import (
 var (
 	updateTags string
 	updateApps string
+	dryRun     bool
 )
 
 // Aktualizr puts all config files into a single lexographically sorted map.
@@ -48,6 +49,7 @@ like:
 	configCmd.AddCommand(configUpdatesCmd)
 	configUpdatesCmd.Flags().StringVarP(&updateTags, "tags", "", "", "comma,separate,list")
 	configUpdatesCmd.Flags().StringVarP(&updateApps, "apps", "", "", "comma,separate,list")
+	configUpdatesCmd.Flags().BoolVarP(&dryRun, "dryrun", "", false, "Only show what would be changed")
 }
 
 func loadSotaConfig(device string) *toml.Tree {
@@ -113,12 +115,18 @@ func doConfigUpdates(cmd *cobra.Command, args []string) {
 	validateUpdateArgs()
 
 	changed := false
-	if configuredApps != updateApps {
+	if len(updateApps) > 0 && configuredApps != updateApps {
+		if strings.TrimSpace(updateApps) == "," {
+			updateApps = ""
+		}
 		fmt.Printf("Changing apps from: [%s] -> [%s]\n", configuredApps, updateApps)
 		sota.Set("pacman.docker_apps", updateApps)
 		changed = true
 	}
-	if configuredTags != updateTags {
+	if len(updateTags) > 0 && configuredTags != updateTags {
+		if strings.TrimSpace(updateTags) == "," {
+			updateTags = ""
+		}
 		fmt.Printf("Changing tags from: [%s] -> [%s]\n", configuredTags, updateTags)
 		sota.Set("pacman.tags", updateTags)
 		changed = true
@@ -145,6 +153,9 @@ func doConfigUpdates(cmd *cobra.Command, args []string) {
 				Value:       newToml,
 			},
 		},
+	}
+	if dryRun {
+		return
 	}
 	if err := api.DevicePatchConfig(args[0], cfg); err != nil {
 		fmt.Print("ERROR: ")
