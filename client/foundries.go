@@ -177,7 +177,7 @@ func (d Device) Online(inactiveHoursThreshold int) bool {
 	if len(d.LastSeen) == 0 {
 		return false
 	}
-	t, err := time.Parse("2006-01-02T15:04:05", d.LastSeen)
+	t, err := time.Parse("2006-01-02T15:04:05+00:00", d.LastSeen)
 	if err == nil {
 		duration := time.Since(t)
 		if duration.Hours() > float64(inactiveHoursThreshold) {
@@ -225,7 +225,7 @@ func NewApiClient(serverUrl string, config Config, caCertPath string) *Api {
 }
 
 func (a *Api) setReqHeaders(req *http.Request, jsonContent bool) {
-	req.Header.Set("User-Agent", "fioctl")
+	req.Header.Set("User-Agent", "fioctl-2")
 
 	if len(a.config.Token) > 0 {
 		logrus.Debug("Using API token for http request")
