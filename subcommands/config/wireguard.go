@@ -64,7 +64,7 @@ func (w *WireguardServerConfig) Unmarshall(configVal string) {
 	}
 }
 
-func LoadWireguardServerConfig(factory string) WireguardServerConfig {
+func LoadWireguardServerConfig(factory string, api *client.Api) WireguardServerConfig {
 	dcl, err := api.FactoryListConfig(factory)
 	if err != nil {
 		fmt.Println("ERROR: ", err)
@@ -87,7 +87,7 @@ func doWireguard(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 	logrus.Debugf("Creating new config for %s", factory)
 
-	wsc := LoadWireguardServerConfig(factory)
+	wsc := LoadWireguardServerConfig(factory, api)
 
 	if wireguardDisable {
 		wsc.Enabled = false
