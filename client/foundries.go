@@ -183,6 +183,7 @@ type TargetTest struct {
 	Name        string              `json:"name"`
 	Id          string              `json:"test-id"`
 	DeviceUUID  string              `json:"device-uuid"`
+	DeviceName  string              `json:"device-name"`
 	Status      string              `json:"status"`
 	Details     string              `json:"details"`
 	CreatedOn   float32             `json:"created-on"`

@@ -55,7 +55,11 @@ func list(factory string, target int) {
 		}
 		for _, test := range tl.Tests {
 			created := timestamp(test.CreatedOn)
-			t.AddLine(test.Name, test.Status, test.Id, created, test.DeviceUUID)
+			name := test.DeviceUUID
+			if len(test.DeviceName) > 0 {
+				name = test.DeviceName
+			}
+			t.AddLine(test.Name, test.Status, test.Id, created, name)
 		}
 	}
 	t.Print()
@@ -72,7 +76,11 @@ func show(factory string, target int, testId string) {
 	fmt.Println("Status:   ", test.Status)
 	fmt.Println("Created:  ", timestamp(test.CreatedOn))
 	fmt.Println("Completed:", timestamp(test.CompletedOn))
-	fmt.Println("Device:   ", test.DeviceUUID)
+	name := test.DeviceUUID
+	if len(test.DeviceName) > 0 {
+		name = test.DeviceName
+	}
+	fmt.Println("Device:   ", name)
 	if len(test.Details) > 0 {
 		fmt.Println("Details:")
 		fmt.Println(test.Details)
