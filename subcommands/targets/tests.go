@@ -16,10 +16,10 @@ import (
 
 func init() {
 	cmd.AddCommand(&cobra.Command{
-		Use:   "tests <target> [<test-id>]",
+		Use:   "tests <target> [<test-id> [<artifact name>]]",
 		Short: "Show testing done against a target",
 		Run:   doShowTests,
-		Args:  cobra.RangeArgs(1, 2),
+		Args:  cobra.RangeArgs(1, 3),
 	})
 }
 
@@ -85,6 +85,13 @@ func show(factory string, target int, testId string) {
 		fmt.Println("Details:")
 		fmt.Println(test.Details)
 	}
+
+	if len(test.Artifacts) > 0 {
+		fmt.Println("Artifacts:")
+		for _, a := range test.Artifacts {
+			fmt.Println("\t", a)
+		}
+	}
 	if test.Results != nil {
 		fmt.Println("")
 		t := tabby.New()
@@ -107,9 +114,19 @@ func doShowTests(cmd *cobra.Command, args []string) {
 	if len(args) == 1 {
 		logrus.Debugf("Showing target testing for %s %d", factory, target)
 		list(factory, target)
-	} else {
+	} else if len(args) == 2 {
 		testId := args[1]
 		logrus.Debugf("Showing target test results for %s %d - %s", factory, target, testId)
 		show(factory, target, testId)
+	} else {
+		testId := args[1]
+		artifact := args[2]
+		logrus.Debugf("Showing target test artifacts for %s %d - %s / %s", factory, target, testId, artifact)
+		content, err := api.TargetTestArtifact(factory, target, testId, artifact)
+		if err != nil {
+			fmt.Println("ERROR:", err)
+			os.Exit(1)
+		}
+		os.Stdout.Write(*content)
 	}
 }

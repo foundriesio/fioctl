@@ -189,6 +189,7 @@ type TargetTest struct {
 	CreatedOn   float32             `json:"created-on"`
 	CompletedOn float32             `json:"completed-on"`
 	Results     []TargetTestResults `json:"results"`
+	Artifacts   []string            `json:"artifacts"`
 }
 
 type TargetTestList struct {
@@ -715,6 +716,12 @@ func (a *Api) TargetTestResults(factory string, target int, testId string) (*Tar
 		return nil, err
 	}
 	return &test, nil
+}
+
+func (a *Api) TargetTestArtifact(factory string, target int, testId string, artifact string) (*[]byte, error) {
+	url := a.serverUrl + "/ota/factories/" + factory + "/targets/" + strconv.Itoa(target) + "/testing/" + testId + "/" + artifact
+	logrus.Debugf("TargetTests with url: %s", url)
+	return a.Get(url)
 }
 
 func (a *Api) JobservTail(url string) {
