@@ -13,7 +13,7 @@ func init() {
 		Use:   "delete <device> <file>",
 		Short: "Delete file from the current configuration",
 		Run:   doConfigDelete,
-		Args:  cobra.MinimumNArgs(2),
+		Args:  cobra.ExactArgs(2),
 	})
 }
 
