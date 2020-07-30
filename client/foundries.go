@@ -539,6 +539,13 @@ func (a *Api) FactoryCreateConfig(factory string, cfg ConfigCreateRequest) error
 	return err
 }
 
+func (a *Api) FactoryDeleteConfig(factory, filename string) error {
+	url := a.serverUrl + "/ota/factories/" + factory + "/config/" + filename + "/"
+	logrus.Debugf("Deleting config file: %s", url)
+	_, err := a.Delete(url, nil)
+	return err
+}
+
 func (a *Api) FactoryPatchConfig(factory string, cfg ConfigCreateRequest) error {
 	data, err := json.Marshal(cfg)
 	if err != nil {
