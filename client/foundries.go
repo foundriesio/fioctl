@@ -689,6 +689,23 @@ func (a *Api) TargetDeleteTargets(factory string, target_names []string) (string
 	return pr.JobServUrl + "runs/UpdateTargets/console.log", nil
 }
 
+func (a *Api) TargetImageCreate(factory string, targetName string) (string, error) {
+	url := a.serverUrl + "/ota/factories/" + factory + "/targets/" + targetName + "/images/"
+	resp, err := a.Post(url, nil)
+	if err != nil {
+		return "", err
+	}
+
+	type PatchResp struct {
+		JobServUrl string `json:"jobserv-url"`
+	}
+	pr := PatchResp{}
+	if err := json.Unmarshal(*resp, &pr); err != nil {
+		return "", err
+	}
+	return pr.JobServUrl + "runs/assemble-system-image/console.log", nil
+}
+
 func (a *Api) TargetTests(factory string, target int) (*TargetTestList, error) {
 	url := a.serverUrl + "/ota/factories/" + factory + "/targets/" + strconv.Itoa(target) + "/testing/"
 	logrus.Debugf("TargetTests with url: %s", url)
