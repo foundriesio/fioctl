@@ -249,6 +249,21 @@ func NewApiClient(serverUrl string, config Config, caCertPath string) *Api {
 	return &api
 }
 
+func getResponse(resp *[]byte, err error, runName string) (string, string, error) {
+	if err != nil {
+		return "", "", err
+	}
+	type PatchResp struct {
+		JobServUrl string `json:"jobserv-url"`
+		WebUrl string `json:"web-url"`
+	}
+	pr := PatchResp{}
+	if err := json.Unmarshal(*resp, &pr); err != nil {
+		return "", "", err
+	}
+	return pr.JobServUrl + fmt.Sprintf("runs/%s/console.log", runName), pr.WebUrl, nil
+}
+
 func (a *Api) setReqHeaders(req *http.Request, jsonContent bool) {
 	req.Header.Set("User-Agent", "fioctl-2")
 
@@ -611,23 +626,16 @@ func (a *Api) TargetCustom(target tuf.FileMeta) (*TufCustom, error) {
 	return &custom, nil
 }
 
-func (a *Api) TargetsPut(factory string, data []byte) (string, error) {
+func (a *Api) TargetsPut(factory string, data []byte) (string, string, error) {
 	url := a.serverUrl + "/ota/factories/" + factory + "/targets/"
 	resp, err := a.Put(url, data)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
-	type PutResp struct {
-		JobServUrl string `json:"jobserv-url"`
-	}
-	pr := PutResp{}
-	if err := json.Unmarshal(*resp, &pr); err != nil {
-		return "", err
-	}
-	return pr.JobServUrl + "runs/UpdateTargets/console.log", nil
+	return getResponse(resp, err, "UpdateTargets")
 }
 
-func (a *Api) TargetUpdateTags(factory string, target_names []string, tag_names []string) (string, error) {
+func (a *Api) TargetUpdateTags(factory string, target_names []string, tag_names []string) (string, string, error) {
 	type EmptyTarget struct {
 		Custom TufCustom `json:"custom"`
 	}
@@ -643,26 +651,15 @@ func (a *Api) TargetUpdateTags(factory string, target_names []string, tag_names 
 
 	data, err := json.Marshal(update)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	url := a.serverUrl + "/ota/factories/" + factory + "/targets/"
 	resp, err := a.Patch(url, data)
-	if err != nil {
-		return "", err
-	}
-
-	type PatchResp struct {
-		JobServUrl string `json:"jobserv-url"`
-	}
-	pr := PatchResp{}
-	if err := json.Unmarshal(*resp, &pr); err != nil {
-		return "", err
-	}
-	return pr.JobServUrl + "runs/UpdateTargets/console.log", nil
+	return getResponse(resp, err, "UpdateTargets")
 }
 
-func (a *Api) TargetDeleteTargets(factory string, target_names []string) (string, error) {
+func (a *Api) TargetDeleteTargets(factory string, target_names []string) (string, string, error) {
 	type Update struct {
 		Targets []string `json:"targets"`
 	}
@@ -670,40 +667,18 @@ func (a *Api) TargetDeleteTargets(factory string, target_names []string) (string
 	update.Targets = target_names
 	data, err := json.Marshal(update)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	url := a.serverUrl + "/ota/factories/" + factory + "/targets/"
 	resp, err := a.Delete(url, data)
-	if err != nil {
-		return "", err
-	}
-
-	type PatchResp struct {
-		JobServUrl string `json:"jobserv-url"`
-	}
-	pr := PatchResp{}
-	if err := json.Unmarshal(*resp, &pr); err != nil {
-		return "", err
-	}
-	return pr.JobServUrl + "runs/UpdateTargets/console.log", nil
+	return getResponse(resp, err, "UpdateTargets")
 }
 
-func (a *Api) TargetImageCreate(factory string, targetName string) (string, error) {
+func (a *Api) TargetImageCreate(factory string, targetName string) (string, string, error) {
 	url := a.serverUrl + "/ota/factories/" + factory + "/targets/" + targetName + "/images/"
 	resp, err := a.Post(url, nil)
-	if err != nil {
-		return "", err
-	}
-
-	type PatchResp struct {
-		JobServUrl string `json:"jobserv-url"`
-	}
-	pr := PatchResp{}
-	if err := json.Unmarshal(*resp, &pr); err != nil {
-		return "", err
-	}
-	return pr.JobServUrl + "runs/assemble-system-image/console.log", nil
+	return getResponse(resp, err, "assemble-system-image")
 }
 
 func (a *Api) TargetTests(factory string, target int) (*TargetTestList, error) {

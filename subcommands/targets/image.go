@@ -27,13 +27,13 @@ func doImage(cmd *cobra.Command, args []string) {
 	inputTarget := args[0]
 	logrus.Debugf("Generating image of Target %s in Factory %s", inputTarget, factory)
 
-	url, err := api.TargetImageCreate(factory, inputTarget)
+	jobServUrl, webUrl, err := api.TargetImageCreate(factory, inputTarget)
 	if err != nil {
 		fmt.Printf("ERROR: %s\n", err)
 		os.Exit(1)
 	}
-	fmt.Printf("CI URL: %s\n", url)
+	fmt.Printf("CI URL: %s\n", webUrl)
 	if !noTail {
-		api.JobservTail(url)
+		api.JobservTail(jobServUrl)
 	}
 }

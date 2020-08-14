@@ -131,13 +131,13 @@ func doPrune(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	url, err := api.TargetDeleteTargets(factory, target_names)
+	jobservUrl, webUrl, err := api.TargetDeleteTargets(factory, target_names)
 	if err != nil {
 		fmt.Printf("ERROR: %s\n", err)
 		os.Exit(1)
 	}
-	fmt.Printf("CI URL: %s\n", url)
+	fmt.Printf("CI URL: %s\n", webUrl)
 	if !pruneNoTail {
-		api.JobservTail(url)
+		api.JobservTail(jobservUrl)
 	}
 }
