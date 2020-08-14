@@ -75,13 +75,13 @@ func doTag(cmd *cobra.Command, args []string) {
 		target_names = args
 	}
 
-	url, err := api.TargetUpdateTags(factory, target_names, tags)
+	jobServUrl, webUrl, err := api.TargetUpdateTags(factory, target_names, tags)
 	if err != nil {
 		fmt.Printf("ERROR: %s\n", err)
 		os.Exit(1)
 	}
-	fmt.Printf("CI URL: %s\n", url)
+	fmt.Printf("CI URL: %s\n", webUrl)
 	if !tagNoTail {
-		api.JobservTail(url)
+		api.JobservTail(jobServUrl)
 	}
 }

@@ -102,13 +102,13 @@ func doEdit(cmd *cobra.Command, args []string) {
 	}
 
 	logrus.Debugf("Pushing to server: %s", string(content))
-	url, err := api.TargetsPut(factory, content)
+	jobservUrl, webUrl, err := api.TargetsPut(factory, content)
 	if err != nil {
 		fmt.Println("ERROR: ", err)
 		os.Exit(1)
 	}
-	fmt.Printf("CI URL: %s\n", url)
+	fmt.Printf("CI URL: %s\n", webUrl)
 	if !editNoTail {
-		api.JobservTail(url)
+		api.JobservTail(jobservUrl)
 	}
 }
