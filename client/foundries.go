@@ -703,7 +703,8 @@ func (a *Api) TargetImageCreate(factory string, targetName string) (string, erro
 	if err := json.Unmarshal(*resp, &pr); err != nil {
 		return "", err
 	}
-	return pr.JobServUrl + "runs/assemble-system-image/console.log", nil
+	ciWebUrl := strings.Replace(pr.JobServUrl, "api", "ci", 1)
+	return ciWebUrl, nil
 }
 
 func (a *Api) TargetTests(factory string, target int) (*TargetTestList, error) {
