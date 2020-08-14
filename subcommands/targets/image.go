@@ -9,13 +9,17 @@ import (
 	"github.com/spf13/viper"
 )
 
+var noTail bool
+
 func init() {
-	cmd.AddCommand(&cobra.Command{
+	var imageCmd = &cobra.Command{
 		Use:   "image <target>",
 		Short: "Generate a system image with pre-loaded container images",
 		Run:   doImage,
 		Args:  cobra.ExactArgs(1),
-	})
+	}
+	cmd.AddCommand(imageCmd)
+	imageCmd.Flags().BoolVarP(&noTail, "no-tail", "", false, "Don't tail output of CI Job")
 }
 
 func doImage(cmd *cobra.Command, args []string) {
@@ -29,4 +33,7 @@ func doImage(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 	fmt.Printf("CI URL: %s\n", url)
+	if !noTail {
+		api.JobservTail(url)
+	}
 }
