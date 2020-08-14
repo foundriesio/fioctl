@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 
 	toml "github.com/pelletier/go-toml"
@@ -11,6 +12,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/foundriesio/fioctl/client"
+	"github.com/foundriesio/fioctl/subcommands"
 )
 
 var (
@@ -80,8 +82,32 @@ func loadSotaConfig(device string) *toml.Tree {
 	return tree
 }
 
+func versionInt(ver string) int {
+	verI, err := strconv.Atoi(ver)
+	if err != nil {
+		panic(fmt.Sprintf("Invalid version: %v. Error: %s", ver, err))
+	}
+	return verI
+}
+
+func appsMatch(targetApps, proposedApps []string) bool {
+	for _, a := range proposedApps {
+		match := false
+		for _, targetApp := range targetApps {
+			if a == targetApp {
+				match = true
+				break
+			}
+		}
+		if !match {
+			return false
+		}
+	}
+	return true
+}
+
 // Validate the inputs: Must be alphanumeric, a dash, underscore, or comma
-func validateUpdateArgs() {
+func validateUpdateArgs(device *client.Device) {
 	pattern := `^[a-zA-Z0-9-_,]+$`
 	re := regexp.MustCompile(pattern)
 	if len(updateApps) > 0 && !re.MatchString(updateApps) {
@@ -92,6 +118,82 @@ func validateUpdateArgs() {
 	if len(updateTags) > 0 && !re.MatchString(updateTags) {
 		fmt.Println("ERROR: Invalid value for tags:", updateTags)
 		fmt.Println("       apps must be ", pattern)
+		os.Exit(1)
+	}
+
+	tags := device.Tags
+	if len(updateTags) > 0 {
+		tags = strings.Split(updateTags, ",")
+	}
+	apps := device.DockerApps
+	if len(updateApps) > 0 {
+		apps = strings.Split(updateApps, ",")
+	}
+
+	targets, err := api.TargetsList(device.Factory)
+	if err != nil {
+		fmt.Println("ERROR:", err)
+		os.Exit(1)
+	}
+
+	curTarget := targets.Signed.Targets[device.TargetName]
+	custom, err := api.TargetCustom(curTarget)
+	if err != nil {
+		fmt.Printf("ERROR: %s\n", err)
+		os.Exit(1)
+	}
+	curVer := versionInt(custom.Version)
+
+	// See if the tag exists
+	// if it does, is the latest version going to result in Downgrade?
+	// if that's all okay, do the apps exist in the Target its destined for?
+	found := false
+	upgrade := false
+	appMismatch := []string{}
+	latest := 0
+	for _, target := range targets.Signed.Targets {
+		custom, err := api.TargetCustom(target)
+		if err != nil {
+			fmt.Printf("ERROR: %s\n", err)
+			continue
+		}
+		if custom.TargetFormat != "OSTREE" {
+			logrus.Debugf("Skipping non-ostree target: %v", target)
+			continue
+		}
+		if subcommands.IntersectionInSlices(tags, custom.Tags) {
+			found = true
+			ver := versionInt(custom.Version)
+			if ver >= curVer {
+				upgrade = true
+			}
+			if ver > latest {
+				latest = ver
+				if upgrade {
+					targetApps := []string{}
+					for a := range custom.ComposeApps {
+						targetApps = append(targetApps, a)
+					}
+					if !appsMatch(targetApps, apps) {
+						appMismatch = targetApps
+					}
+				}
+			}
+		}
+	}
+
+	if !found {
+		fmt.Printf("ERROR: Given tags %s are not present in targets.json\n", tags)
+		os.Exit(1)
+	}
+	if !upgrade {
+		fmt.Printf("ERROR: Given tags %s appear to result in a downgrade from version %d to %d\n",
+			tags, curVer, latest)
+		os.Exit(1)
+	}
+	if len(apps) > 0 && len(appMismatch) > 0 {
+		fmt.Printf("ERROR: Given apps %s not present in Target version %d device would update to: %s\n",
+			apps, latest, appMismatch)
 		os.Exit(1)
 	}
 }
@@ -121,7 +223,7 @@ func doConfigUpdates(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	validateUpdateArgs()
+	validateUpdateArgs(device)
 
 	changed := false
 	if len(updateApps) > 0 && configuredApps != updateApps {
