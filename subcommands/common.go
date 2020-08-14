@@ -164,3 +164,14 @@ func PrintConfigs(deviceConfigs []client.DeviceConfig, listLimit int) int {
 	}
 	return listLimit
 }
+
+func IntersectionInSlices(list1, list2 []string) bool {
+	for _, a := range list1 {
+		for _, b := range list2 {
+			if b == a {
+				return true
+			}
+		}
+	}
+	return false
+}

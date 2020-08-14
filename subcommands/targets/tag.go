@@ -7,6 +7,8 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
+	"github.com/foundriesio/fioctl/subcommands"
 )
 
 var (
@@ -48,7 +50,7 @@ func doTag(cmd *cobra.Command, args []string) {
 			if err != nil {
 				fmt.Printf("ERROR: %s\n", err)
 			} else {
-				if intersectionInSlices([]string{custom.Version}, args) {
+				if subcommands.IntersectionInSlices([]string{custom.Version}, args) {
 					target_names = append(target_names, name)
 					fmt.Printf("Changing tags of %s from %s -> %s\n", name, custom.Tags, tags)
 				}

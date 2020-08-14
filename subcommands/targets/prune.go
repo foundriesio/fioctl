@@ -9,6 +9,8 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	tuf "github.com/theupdateframework/notary/tuf/data"
+
+	"github.com/foundriesio/fioctl/subcommands"
 )
 
 var (
@@ -28,17 +30,6 @@ func init() {
 	pruneCmd.Flags().BoolVarP(&pruneNoTail, "no-tail", "", false, "Don't tail output of CI Job")
 	pruneCmd.Flags().BoolVarP(&pruneByTag, "by-tag", "", false, "Prune all targets by tags instead of name")
 	pruneCmd.Flags().BoolVarP(&pruneDryRun, "dryrun", "", false, "Only show what would be pruned")
-}
-
-func intersectionInSlices(list1, list2 []string) bool {
-	for _, a := range list1 {
-		for _, b := range list2 {
-			if b == a {
-				return true
-			}
-		}
-	}
-	return false
 }
 
 func sortedListsMatch(a, b []string) bool {
@@ -64,7 +55,7 @@ func findUnusedApps(targets *tuf.SignedTargets, deleted_list []string) []string 
 			if custom.TargetFormat == "BINARY" && strings.HasSuffix(custom.Name, ".dockerapp") {
 				apps[name] = 0
 			}
-			if !intersectionInSlices([]string{name}, deleted_list) {
+			if !subcommands.IntersectionInSlices([]string{name}, deleted_list) {
 				for _, app := range custom.DockerApps {
 					if len(app.FileName) > 0 {
 						referenced = append(referenced, app.FileName)
