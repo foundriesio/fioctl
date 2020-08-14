@@ -17,6 +17,7 @@ import (
 
 var (
 	dryRun      bool
+	force       bool
 	updateTags  string
 	updateApps  string
 	composeApps bool
@@ -60,6 +61,7 @@ like:
 	configUpdatesCmd.Flags().BoolVarP(&composeApps, "compose-apps", "", false, "Migrate device from docker-apps to compose-apps")
 	configUpdatesCmd.Flags().StringVarP(&composeDir, "compose-dir", "", "/var/sota/compose", "The directory to install compose apps in")
 	configUpdatesCmd.Flags().BoolVarP(&dryRun, "dryrun", "", false, "Only show what would be changed")
+	configUpdatesCmd.Flags().BoolVarP(&force, "force", "", false, "Apply change even if validation rejects it")
 }
 
 func loadSotaConfig(device string) *toml.Tree {
@@ -80,6 +82,12 @@ func loadSotaConfig(device string) *toml.Tree {
 
 	tree, _ := toml.Load("[pacman]")
 	return tree
+}
+
+func exitIfNotForce() {
+	if !force {
+		os.Exit(1)
+	}
 }
 
 func versionInt(ver string) int {
@@ -133,14 +141,14 @@ func validateUpdateArgs(device *client.Device) {
 	targets, err := api.TargetsList(device.Factory)
 	if err != nil {
 		fmt.Println("ERROR:", err)
-		os.Exit(1)
+		exitIfNotForce()
 	}
 
 	curTarget := targets.Signed.Targets[device.TargetName]
 	custom, err := api.TargetCustom(curTarget)
 	if err != nil {
 		fmt.Printf("ERROR: %s\n", err)
-		os.Exit(1)
+		exitIfNotForce()
 	}
 	curVer := versionInt(custom.Version)
 
@@ -184,17 +192,17 @@ func validateUpdateArgs(device *client.Device) {
 
 	if !found {
 		fmt.Printf("ERROR: Given tags %s are not present in targets.json\n", tags)
-		os.Exit(1)
+		exitIfNotForce()
 	}
 	if !upgrade {
 		fmt.Printf("ERROR: Given tags %s appear to result in a downgrade from version %d to %d\n",
 			tags, curVer, latest)
-		os.Exit(1)
+		exitIfNotForce()
 	}
 	if len(apps) > 0 && len(appMismatch) > 0 {
 		fmt.Printf("ERROR: Given apps %s not present in Target version %d device would update to: %s\n",
 			apps, latest, appMismatch)
-		os.Exit(1)
+		exitIfNotForce()
 	}
 }
 
