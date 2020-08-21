@@ -64,7 +64,7 @@ func (c *ClientCredentials) updateConfig(r OAuthResponse) {
 	c.Config.TokenType = r.TokenType
 	c.Config.ExpiresIn = r.ExpiresIn
 	c.Config.Created = time.Now().UTC().Format(time.RFC3339)
-	if len(r.Orgs) == 0 {
+	if len(r.Orgs) == 1 {
 		c.Config.DefaultOrg = r.Orgs[0].Name
 	}
 }
