@@ -1,8 +1,9 @@
 # Build using golang container
-FROM golang:1.12-alpine
+FROM golang:1.15-alpine
 
 RUN apk add --update --no-cache \
     git \
+    g++ \ 
     make
 
 RUN mkdir -p $HOME/fioctl
