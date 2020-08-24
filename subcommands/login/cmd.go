@@ -27,7 +27,6 @@ func doLogin(cmd *cobra.Command, args []string) {
 	creds := client.NewClientCredentials(subcommands.Config.ClientCredentials)
 	if creds.Config.ClientId == "" || creds.Config.ClientSecret == "" {
 		creds.Config.ClientId, creds.Config.ClientSecret = promptForCreds()
-		subcommands.SaveOauthConfig(creds.Config)
 	}
 
 	if creds.Config.ClientId == "" || creds.Config.ClientSecret == "" {
