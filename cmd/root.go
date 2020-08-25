@@ -55,6 +55,8 @@ func init() {
 	rootCmd.AddCommand(status.NewCommand())
 	rootCmd.AddCommand(targets.NewCommand())
 	rootCmd.AddCommand(version.NewCommand())
+
+	rootCmd.AddCommand(docsCmd)
 }
 
 func getConfigDir() string {
