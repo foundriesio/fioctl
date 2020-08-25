@@ -34,7 +34,7 @@ Basic use can be done with command line arguments. eg:
 
 The configuration format also allows specifying what command to
 run after a configuration file is updated on the device. To take
-advantage of this, the "--raw" flag must be used. eg:
+advantage of this, the "--raw" flag must be used. eg::
 
   cat >tmp.json <<EOF
   {
