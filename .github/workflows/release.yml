@@ -53,5 +53,5 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./bin/fioctl-windows-amd64.exe
-          asset_name: fioctl-linux-amd64.exe
+          asset_name: fioctl-windows-amd64.exe
           asset_content_type: application/octet-stream
