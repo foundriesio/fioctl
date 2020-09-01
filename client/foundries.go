@@ -675,8 +675,11 @@ func (a *Api) TargetDeleteTargets(factory string, target_names []string) (string
 	return getResponse(resp, err, "UpdateTargets")
 }
 
-func (a *Api) TargetImageCreate(factory string, targetName string) (string, string, error) {
+func (a *Api) TargetImageCreate(factory string, targetName string, appShortlist string) (string, string, error) {
 	url := a.serverUrl + "/ota/factories/" + factory + "/targets/" + targetName + "/images/"
+	if len(appShortlist) > 0 {
+		url += "?app_shortlist=" + appShortlist
+	}
 	resp, err := a.Post(url, nil)
 	return getResponse(resp, err, "assemble-system-image")
 }
