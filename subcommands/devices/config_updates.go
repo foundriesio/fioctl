@@ -148,7 +148,7 @@ func doConfigUpdates(cmd *cobra.Command, args []string) {
 		// the device might be running DockerApps that were set in /var/sota/sota.toml
 		// by lmp-device-register, so fallback to what its reporting if we don't find
 		// override values set:
-		sota.Set("pacman.compose_apps", sota.GetDefault("pacman.docker_apps", device.DockerApps))
+		sota.Set("pacman.compose_apps", sota.GetDefault("pacman.docker_apps", strings.Join(device.DockerApps, ",")))
 		changed = true
 	}
 
