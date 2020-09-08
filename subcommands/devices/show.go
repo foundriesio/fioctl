@@ -75,6 +75,12 @@ func doShow(cmd *cobra.Command, args []string) {
 			}
 		}
 	}
+	if len(device.AktualizrToml) > 0 {
+		fmt.Println("Aktualizr-lite configuration:")
+		for _, line := range strings.Split(device.AktualizrToml, "\n") {
+			fmt.Printf("\t| %s\n", line)
+		}
+	}
 	if len(device.PublicKey) > 0 {
 		fmt.Println()
 		fmt.Print(device.PublicKey)
