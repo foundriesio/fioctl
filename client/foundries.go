@@ -255,7 +255,7 @@ func getResponse(resp *[]byte, err error, runName string) (string, string, error
 	}
 	type PatchResp struct {
 		JobServUrl string `json:"jobserv-url"`
-		WebUrl string `json:"web-url"`
+		WebUrl     string `json:"web-url"`
 	}
 	pr := PatchResp{}
 	if err := json.Unmarshal(*resp, &pr); err != nil {

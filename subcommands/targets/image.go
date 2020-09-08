@@ -12,7 +12,7 @@ import (
 
 var (
 	appsShortlist string
-	noTail bool
+	noTail        bool
 )
 
 func init() {
@@ -20,14 +20,14 @@ func init() {
 		Use:   "image <target-name>",
 		Short: "Generate a system image with pre-loaded container images",
 		Example: "fioctl targets image raspberrypi4-64-lmp-464 // preload all Target apps\n" +
-				 "fioctl targets image raspberrypi4-64-lmp-464 --apps app-00,app-01 // preload app-00 and app-01",
-		Run:   doImage,
-		Args:  cobra.ExactArgs(1),
+			"fioctl targets image raspberrypi4-64-lmp-464 --apps app-00,app-01 // preload app-00 and app-01",
+		Run:  doImage,
+		Args: cobra.ExactArgs(1),
 	}
 	cmd.AddCommand(imageCmd)
 	imageCmd.Flags().StringVarP(&appsShortlist, "apps", "", "",
-		"comma,separate,list of Target apps to preload into a resultant image." +
-		" All apps of Target are preloaded if the flag is not defined or empty")
+		"comma,separate,list of Target apps to preload into a resultant image."+
+			" All apps of Target are preloaded if the flag is not defined or empty")
 	imageCmd.Flags().BoolVarP(&noTail, "no-tail", "", false, "Don't tail output of CI Job")
 }
 
