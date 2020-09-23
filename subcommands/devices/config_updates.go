@@ -56,8 +56,13 @@ like:
 	configUpdatesCmd.Flags().StringVarP(&updateTags, "tags", "", "", "comma,separate,list")
 	configUpdatesCmd.Flags().StringVarP(&updateApps, "apps", "", "", "comma,separate,list")
 	configUpdatesCmd.Flags().BoolVarP(&composeApps, "compose-apps", "", false, "Migrate device from docker-apps to compose-apps")
-	configUpdatesCmd.Flags().StringVarP(&composeDir, "compose-dir", "", "/var/sota/compose", "The directory to install compose apps in")
+	configUpdatesCmd.Flags().StringVarP(&composeDir, "compose-dir", "", "/var/sota/compose-apps", "The directory to install compose apps in")
 	configUpdatesCmd.Flags().BoolVarP(&dryRun, "dryrun", "", false, "Only show what would be changed")
+
+	err := configUpdatesCmd.Flags().MarkHidden("compose-dir")
+	if err != nil {
+		fmt.Println("WARN - Failed to hide `compose-dir` parameter: ", err)
+	}
 }
 
 func loadSotaConfig(device string) *toml.Tree {
