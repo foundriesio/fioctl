@@ -47,6 +47,12 @@ func doShow(cmd *cobra.Command, args []string) {
 	if len(device.CurrentUpdate) > 0 {
 		fmt.Printf("Update Id:\t%s\n", device.CurrentUpdate)
 	}
+	if device.Network != nil {
+		fmt.Println("Network Info:")
+		fmt.Printf("\tHostname:\t%s\n", device.Network.Hostname)
+		fmt.Printf("\tIP:\t\t%s\n", device.Network.Ipv4)
+		fmt.Printf("\tMAC:\t\t%s\n", device.Network.MAC)
+	}
 	if device.Hardware != nil {
 		b, err := json.MarshalIndent(device.Hardware, "\t", "  ")
 		if err != nil {
