@@ -16,10 +16,23 @@ import (
 
 func init() {
 	cmd.AddCommand(&cobra.Command{
-		Use:   "tests <target> [<test-id> [<artifact name>]]",
+		Use:   "tests [<target> [<test-id> [<artifact name>]]]",
 		Short: "Show testing done against a target",
 		Run:   doShowTests,
-		Args:  cobra.RangeArgs(1, 3),
+		Args:  cobra.RangeArgs(0, 3),
+		Example: `
+  # List all testing performed in factory
+  fioctl targets tests
+
+  # Show tests run against Target 12
+  fioctl targets tests 12
+
+  # Show details of a specific test
+  fioctl targets tests 12 <test-id>
+
+  # Display a test artifact
+  fioctl targets tests 12 <test-id> console.log
+`,
 	})
 }
 
@@ -30,6 +43,19 @@ func timestamp(ts float32) string {
 	secs := int64(ts)
 	nsecs := int64((ts - float32(secs)) * 1e9)
 	return time.Unix(secs, nsecs).UTC().String()
+}
+
+func listAll(factory string) {
+	versions, err := api.TargetTesting(factory)
+	if err != nil {
+		fmt.Print("ERROR: ")
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	fmt.Println("Tested Targets:")
+	for _, ver := range versions {
+		fmt.Println(" ", ver)
+	}
 }
 
 func list(factory string, target int) {
@@ -105,6 +131,13 @@ func show(factory string, target int, testId string) {
 
 func doShowTests(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
+
+	if len(args) == 0 {
+		logrus.Debugf("Showing all testing done for factory: %s", factory)
+		listAll(factory)
+		os.Exit(0)
+	}
+
 	target, err := strconv.Atoi(args[0])
 	if err != nil {
 		fmt.Print("ERROR:")

@@ -684,6 +684,26 @@ func (a *Api) TargetImageCreate(factory string, targetName string, appShortlist 
 	return getResponse(resp, err, "assemble-system-image")
 }
 
+// Return a list of Targets that have been tested
+func (a *Api) TargetTesting(factory string) ([]int, error) {
+	url := a.serverUrl + "/ota/factories/" + factory + "/testing/"
+	logrus.Debugf("TargetTesting with url: %s", url)
+
+	body, err := a.Get(url)
+	if err != nil {
+		return nil, err
+	}
+
+	type resp struct {
+		Versions []int `json:"versions"`
+	}
+	r := resp{}
+	if err = json.Unmarshal(*body, &r); err != nil {
+		return nil, err
+	}
+	return r.Versions, nil
+}
+
 func (a *Api) TargetTests(factory string, target int) (*TargetTestList, error) {
 	url := a.serverUrl + "/ota/factories/" + factory + "/targets/" + strconv.Itoa(target) + "/testing/"
 	logrus.Debugf("TargetTests with url: %s", url)
