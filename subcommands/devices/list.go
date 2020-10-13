@@ -43,7 +43,8 @@ func init() {
 // Soo... a pattern like: H?st_b* would become: H_st\_b%
 // and would match stuff like host_b and hast_FOOO
 func sqlLikeIfy(filePathLike string) string {
-	sql := strings.Replace(filePathLike, "*", "%", -1)
+	// %25 = urlencode("%")
+	sql := strings.Replace(filePathLike, "*", "%25", -1)
 	sql = strings.Replace(sql, "_", "\\_", -1)
 	sql = strings.Replace(sql, "?", "_", -1)
 	logrus.Debugf("Converted query(%s) -> %s", filePathLike, sql)
