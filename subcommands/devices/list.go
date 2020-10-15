@@ -18,6 +18,7 @@ var (
 	deviceByTag         string
 	deviceByFactory     string
 	deviceInactiveHours int
+	deviceUuid          string
 )
 
 func init() {
@@ -33,6 +34,7 @@ func init() {
 	listCmd.Flags().StringVarP(&deviceByTag, "by-tag", "", "", "Only list devices configured with the given tag")
 	listCmd.Flags().StringVarP(&deviceByFactory, "by-factory", "f", "", "Only list devices belonging to this factory")
 	listCmd.Flags().IntVarP(&deviceInactiveHours, "offline-threshold", "", 4, "List the device as 'OFFLINE' if not seen in the last X hours")
+	listCmd.Flags().StringVarP(&deviceUuid, "uuid", "", "", "Find device with the given UUID")
 }
 
 // We allow pattern matching using filepath.Match type * and ?
@@ -95,7 +97,7 @@ func doList(cmd *cobra.Command, args []string) {
 			if len(deviceByFactory) > 0 {
 				deviceNoShared = true
 			}
-			dl, err = api.DeviceList(!deviceNoShared, deviceByTag, deviceByFactory, name_ilike)
+			dl, err = api.DeviceList(!deviceNoShared, deviceByTag, deviceByFactory, name_ilike, deviceUuid)
 		} else {
 			if dl.Next != nil {
 				dl, err = api.DeviceListCont(*dl.Next)

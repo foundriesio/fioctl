@@ -435,13 +435,13 @@ func (a *Api) DeviceGet(device string) (*Device, error) {
 	return &d, nil
 }
 
-func (a *Api) DeviceList(shared bool, matchTag, byFactory, nameIlike string) (*DeviceList, error) {
+func (a *Api) DeviceList(shared bool, matchTag, byFactory, nameIlike, uuid string) (*DeviceList, error) {
 	sharedInt := 0
 	if shared {
 		sharedInt = 1
 	}
 	url := a.serverUrl + "/ota/devices/?"
-	url += fmt.Sprintf("shared=%d&match_tag=%s&name_ilike=%s&factory=%s", sharedInt, matchTag, nameIlike, byFactory)
+	url += fmt.Sprintf("shared=%d&match_tag=%s&name_ilike=%s&factory=%s&uuid=%s", sharedInt, matchTag, nameIlike, byFactory, uuid)
 	logrus.Debugf("DeviceList with url: %s", url)
 	return a.DeviceListCont(url)
 }
