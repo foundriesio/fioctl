@@ -22,6 +22,7 @@ type Config struct {
 	Factory           string
 	Token             string
 	ClientCredentials OAuthConfig
+	ExtraHeaders      map[string]string
 }
 
 type Api struct {
@@ -274,6 +275,11 @@ func (a *Api) setReqHeaders(req *http.Request, jsonContent bool) {
 			headerName = "OSF-TOKEN"
 		}
 		req.Header.Set(headerName, a.config.Token)
+	}
+
+	for k, v := range a.config.ExtraHeaders {
+		logrus.Debugf("Setting extra HTTP header %s=%s", k, v)
+		req.Header.Set(k, v)
 	}
 
 	if len(a.config.ClientCredentials.AccessToken) > 0 {
