@@ -460,6 +460,16 @@ func (a *Api) DeviceListCont(url string) (*DeviceList, error) {
 	return &devices, nil
 }
 
+func (a *Api) DeviceRename(curName, newName string) error {
+	body := map[string]string{"name": newName}
+	data, err := json.Marshal(body)
+	if err != nil {
+		return err
+	}
+	_, err = a.Patch(a.serverUrl+"/ota/devices/"+curName+"/", data)
+	return err
+}
+
 func (a *Api) DeviceDelete(device string) error {
 	bytes := []byte{}
 	_, err := a.Delete(a.serverUrl+"/ota/devices/"+device+"/", bytes)
