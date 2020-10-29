@@ -160,7 +160,7 @@ func doConfigSet(cmd *cobra.Command, args []string) {
 			os.Exit(1)
 		}
 	} else {
-		if err := api.DevicePatchConfig(device.Name, cfg); err != nil {
+		if err := api.DevicePatchConfig(device.Name, cfg, false); err != nil {
 			fmt.Print("ERROR: ")
 			fmt.Println(err)
 			os.Exit(1)

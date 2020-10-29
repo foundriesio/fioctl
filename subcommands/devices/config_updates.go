@@ -19,6 +19,7 @@ var (
 	updateApps  string
 	composeApps bool
 	composeDir  string
+	force       bool
 )
 
 // Aktualizr puts all config files into a single lexographically sorted map.
@@ -58,6 +59,7 @@ like:
 	configUpdatesCmd.Flags().BoolVarP(&composeApps, "compose-apps", "", false, "Migrate device from docker-apps to compose-apps")
 	configUpdatesCmd.Flags().StringVarP(&composeDir, "compose-dir", "", "/var/sota/compose-apps", "The directory to install compose apps in")
 	configUpdatesCmd.Flags().BoolVarP(&dryRun, "dryrun", "", false, "Only show what would be changed")
+	configUpdatesCmd.Flags().BoolVarP(&force, "force", "", false, "DANGER: For a config on a device that might result in corruption")
 
 	err := configUpdatesCmd.Flags().MarkHidden("compose-dir")
 	if err != nil {
@@ -183,7 +185,7 @@ func doConfigUpdates(cmd *cobra.Command, args []string) {
 		fmt.Println(newToml)
 		return
 	}
-	if err := api.DevicePatchConfig(args[0], cfg); err != nil {
+	if err := api.DevicePatchConfig(args[0], cfg, force); err != nil {
 		fmt.Print("ERROR: ")
 		fmt.Println(err)
 		os.Exit(1)

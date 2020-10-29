@@ -201,7 +201,7 @@ func doConfigWireguard(cmd *cobra.Command, args []string) {
 		wcc.Enabled = false
 	}
 	cfg.Files[0].Value = wcc.Marshall()
-	if err := api.DevicePatchConfig(args[0], cfg); err != nil {
+	if err := api.DevicePatchConfig(args[0], cfg, false); err != nil {
 		fmt.Print("ERROR: ")
 		fmt.Println(err)
 		os.Exit(1)

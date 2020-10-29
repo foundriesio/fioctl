@@ -519,13 +519,16 @@ func (a *Api) DeviceCreateConfig(device string, cfg ConfigCreateRequest) error {
 	return err
 }
 
-func (a *Api) DevicePatchConfig(device string, cfg ConfigCreateRequest) error {
+func (a *Api) DevicePatchConfig(device string, cfg ConfigCreateRequest, force bool) error {
 	data, err := json.Marshal(cfg)
 	if err != nil {
 		return err
 	}
 
 	url := a.serverUrl + "/ota/devices/" + device + "/config/"
+	if force {
+		url += "?force=1"
+	}
 	logrus.Debug("Patching device config")
 	_, err = a.Patch(url, data)
 	return err
