@@ -1,14 +1,12 @@
 package devices
 
 import (
-	"fmt"
-	"os"
-
 	"github.com/cheynewallace/tabby"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	"github.com/foundriesio/fioctl/client"
+	"github.com/foundriesio/fioctl/subcommands"
 )
 
 func init() {
@@ -38,11 +36,7 @@ func doListUpdates(cmd *cobra.Command, args []string) {
 				break
 			}
 		}
-		if err != nil {
-			fmt.Print("ERROR: ")
-			fmt.Println(err)
-			os.Exit(1)
-		}
+		subcommands.DieNotNil(err)
 		for _, update := range ul.Updates {
 			t.AddLine(update.CorrelationId, update.Time, update.Version, update.Target)
 			listLimit -= 1

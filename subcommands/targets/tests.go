@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/foundriesio/fioctl/client"
+	"github.com/foundriesio/fioctl/subcommands"
 )
 
 func init() {
@@ -47,11 +48,7 @@ func timestamp(ts float32) string {
 
 func listAll(factory string) {
 	versions, err := api.TargetTesting(factory)
-	if err != nil {
-		fmt.Print("ERROR: ")
-		fmt.Println(err)
-		os.Exit(1)
-	}
+	subcommands.DieNotNil(err)
 	fmt.Println("Tested Targets:")
 	for _, ver := range versions {
 		fmt.Println(" ", ver)
@@ -74,11 +71,7 @@ func list(factory string, target int) {
 				break
 			}
 		}
-		if err != nil {
-			fmt.Print("ERROR: ")
-			fmt.Println(err)
-			os.Exit(1)
-		}
+		subcommands.DieNotNil(err)
 		for _, test := range tl.Tests {
 			created := timestamp(test.CreatedOn)
 			name := test.DeviceUUID
@@ -93,11 +86,7 @@ func list(factory string, target int) {
 
 func show(factory string, target int, testId string) {
 	test, err := api.TargetTestResults(factory, target, testId)
-	if err != nil {
-		fmt.Print("ERROR: ")
-		fmt.Println(err)
-		os.Exit(1)
-	}
+	subcommands.DieNotNil(err)
 	fmt.Println("Name:     ", test.Name)
 	fmt.Println("Status:   ", test.Status)
 	fmt.Println("Created:  ", timestamp(test.CreatedOn))
@@ -139,11 +128,7 @@ func doShowTests(cmd *cobra.Command, args []string) {
 	}
 
 	target, err := strconv.Atoi(args[0])
-	if err != nil {
-		fmt.Print("ERROR:")
-		fmt.Println(err)
-		os.Exit(1)
-	}
+	subcommands.DieNotNil(err)
 	if len(args) == 1 {
 		logrus.Debugf("Showing target testing for %s %d", factory, target)
 		list(factory, target)
@@ -156,10 +141,7 @@ func doShowTests(cmd *cobra.Command, args []string) {
 		artifact := args[2]
 		logrus.Debugf("Showing target test artifacts for %s %d - %s / %s", factory, target, testId, artifact)
 		content, err := api.TargetTestArtifact(factory, target, testId, artifact)
-		if err != nil {
-			fmt.Println("ERROR:", err)
-			os.Exit(1)
-		}
+		subcommands.DieNotNil(err)
 		os.Stdout.Write(*content)
 	}
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/foundriesio/fioctl/client"
+	"github.com/foundriesio/fioctl/subcommands"
 )
 
 var (
@@ -108,10 +109,7 @@ func doConfigUpdates(cmd *cobra.Command, args []string) {
 
 	// Ensure the device has a public key we can encrypt with
 	device, err := api.DeviceGet(args[0])
-	if err != nil {
-		fmt.Println("ERROR: ", err)
-		os.Exit(1)
-	}
+	subcommands.DieNotNil(err)
 
 	sota := loadSotaConfig(device.Name)
 	configuredApps := sota.GetDefault("pacman.docker_apps", "").(string)
@@ -185,9 +183,5 @@ func doConfigUpdates(cmd *cobra.Command, args []string) {
 		fmt.Println(newToml)
 		return
 	}
-	if err := api.DevicePatchConfig(args[0], cfg, force); err != nil {
-		fmt.Print("ERROR: ")
-		fmt.Println(err)
-		os.Exit(1)
-	}
+	subcommands.DieNotNil(api.DevicePatchConfig(args[0], cfg, force))
 }

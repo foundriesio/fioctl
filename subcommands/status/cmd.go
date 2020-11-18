@@ -2,7 +2,6 @@ package status
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/cheynewallace/tabby"
 	"github.com/sirupsen/logrus"
@@ -36,10 +35,7 @@ func showStatus(cmd *cobra.Command, args []string) {
 	logrus.Debugf("Showing status of %s", factory)
 
 	status, err := api.FactoryStatus(factory, inactiveThreshold)
-	if err != nil {
-		fmt.Println("ERROR:", err)
-		os.Exit(1)
-	}
+	subcommands.DieNotNil(err)
 
 	fmt.Println("Total number of devices:", status.TotalDevices)
 	fmt.Println("")

@@ -35,21 +35,12 @@ func doLogin(cmd *cobra.Command, args []string) {
 	}
 
 	expired, err := creds.IsExpired()
-	if err != nil {
-		fmt.Println("ERROR: ", err)
-		os.Exit(1)
-	}
+	subcommands.DieNotNil(err)
 
 	if expired && creds.HasRefreshToken() {
-		if err := creds.Refresh(); err != nil {
-			fmt.Println("ERROR: ", err)
-			os.Exit(1)
-		}
+		subcommands.DieNotNil(creds.Refresh())
 	} else if creds.Config.AccessToken == "" {
-		if err := creds.Get(); err != nil {
-			fmt.Println("ERROR: ", err)
-			os.Exit(1)
-		}
+		subcommands.DieNotNil(creds.Get())
 	} else {
 		fmt.Println("You are already logged in to Foundries.io services.")
 		os.Exit(0)

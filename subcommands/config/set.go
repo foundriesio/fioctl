@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/foundriesio/fioctl/client"
+	"github.com/foundriesio/fioctl/subcommands"
 )
 
 var (
@@ -101,16 +102,8 @@ func doConfigSet(cmd *cobra.Command, args []string) {
 	}
 
 	if configCreate {
-		if err := api.FactoryCreateConfig(factory, cfg); err != nil {
-			fmt.Print("ERROR: ")
-			fmt.Println(err)
-			os.Exit(1)
-		}
+		subcommands.DieNotNil(api.FactoryCreateConfig(factory, cfg))
 	} else {
-		if err := api.FactoryPatchConfig(factory, cfg); err != nil {
-			fmt.Print("ERROR: ")
-			fmt.Println(err)
-			os.Exit(1)
-		}
+		subcommands.DieNotNil(api.FactoryPatchConfig(factory, cfg))
 	}
 }

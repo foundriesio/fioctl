@@ -45,25 +45,16 @@ func Login(cmd *cobra.Command) *client.Api {
 	creds := client.NewClientCredentials(Config.ClientCredentials)
 
 	expired, err := creds.IsExpired()
-	if err != nil {
-		fmt.Println("ERROR: ", err)
-		os.Exit(1)
-	}
+	DieNotNil(err)
 
 	if !expired && len(creds.Config.AccessToken) > 0 {
 		return client.NewApiClient(url, Config, ca)
 	}
 
 	if len(creds.Config.AccessToken) == 0 {
-		if err := creds.Get(); err != nil {
-			fmt.Println("ERROR: ", err)
-			os.Exit(1)
-		}
+		DieNotNil(creds.Get())
 	} else if creds.HasRefreshToken() {
-		if err := creds.Refresh(); err != nil {
-			fmt.Println("ERROR: ", err)
-			os.Exit(1)
-		}
+		DieNotNil(creds.Refresh())
 	} else {
 		fmt.Println("ERROR: Missing refresh token")
 		os.Exit(1)
@@ -163,4 +154,11 @@ func PrintConfigs(deviceConfigs []client.DeviceConfig, listLimit int) int {
 		}
 	}
 	return listLimit
+}
+
+func DieNotNil(err error) {
+	if err != nil {
+		fmt.Println("ERROR:", err)
+		os.Exit(1)
+	}
 }

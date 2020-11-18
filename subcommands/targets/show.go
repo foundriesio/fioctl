@@ -13,6 +13,7 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/foundriesio/fioctl/client"
+	"github.com/foundriesio/fioctl/subcommands"
 )
 
 func init() {
@@ -138,10 +139,7 @@ func doShowComposeApp(cmd *cobra.Command, args []string) {
 			os.Exit(1)
 		}
 		appInfo, err := api.TargetComposeApp(factory, name, appName)
-		if err != nil {
-			fmt.Println("ERROR:", err)
-			os.Exit(1)
-		}
+		subcommands.DieNotNil(err)
 
 		fmt.Println("Version:\n\t", appInfo.Uri)
 		if len(appInfo.Error) > 0 {
@@ -184,11 +182,7 @@ func doShowComposeApp(cmd *cobra.Command, args []string) {
 
 func getTargets(factory string, version string) (map[string]string, map[string]client.TufCustom) {
 	targetsJson, err := api.TargetsList(factory)
-	if err != nil {
-		fmt.Print("ERROR: ")
-		fmt.Println(err)
-		os.Exit(1)
-	}
+	subcommands.DieNotNil(err)
 
 	hashes := make(map[string]string)
 	matches := make(map[string]client.TufCustom)

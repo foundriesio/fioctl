@@ -1,12 +1,11 @@
 package config
 
 import (
-	"fmt"
-	"os"
-
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
+	"github.com/foundriesio/fioctl/subcommands"
 )
 
 func init() {
@@ -22,9 +21,5 @@ func doConfigDelete(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 	logrus.Debugf("Deleting file from config for %s", factory)
 
-	if err := api.FactoryDeleteConfig(factory, args[0]); err != nil {
-		fmt.Println("ERROR: ", err)
-		os.Exit(1)
-	}
-
+	subcommands.DieNotNil(api.FactoryDeleteConfig(factory, args[0]))
 }

@@ -1,9 +1,6 @@
 package devices
 
 import (
-	"fmt"
-	"os"
-
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
@@ -36,11 +33,7 @@ func doConfigLog(cmd *cobra.Command, args []string) {
 				break
 			}
 		}
-		if err != nil {
-			fmt.Print("ERROR: ")
-			fmt.Println(err)
-			os.Exit(1)
-		}
+		subcommands.DieNotNil(err)
 		listLimit = subcommands.PrintConfigs(dcl.Configs, listLimit)
 		if listLimit == 0 {
 			break

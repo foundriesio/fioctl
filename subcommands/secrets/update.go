@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/foundriesio/fioctl/client"
+	"github.com/foundriesio/fioctl/subcommands"
 )
 
 func init() {
@@ -30,11 +31,7 @@ func doUpdate(cmd *cobra.Command, args []string) {
 	logrus.Debugf("Updating factory secrets for: %s", factory)
 
 	triggers, err := api.FactoryTriggers(factory)
-	if err != nil {
-		fmt.Print("ERROR: ")
-		fmt.Println(err)
-		os.Exit(1)
-	}
+	subcommands.DieNotNil(err)
 
 	secrets := make([]client.ProjectSecret, len(args))
 	for i, arg := range args {
@@ -65,9 +62,5 @@ func doUpdate(cmd *cobra.Command, args []string) {
 	}
 
 	pt.Secrets = secrets
-	if err := api.FactoryUpdateTrigger(factory, pt); err != nil {
-		fmt.Print("ERROR: ")
-		fmt.Println(err)
-		os.Exit(1)
-	}
+	subcommands.DieNotNil(api.FactoryUpdateTrigger(factory, pt))
 }

@@ -7,6 +7,8 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
+	"github.com/foundriesio/fioctl/subcommands"
 )
 
 var (
@@ -34,11 +36,7 @@ func doTag(cmd *cobra.Command, args []string) {
 	fmt.Println(tags)
 
 	targets, err := api.TargetsList(factory)
-	if err != nil {
-		fmt.Print("ERROR: ")
-		fmt.Println(err)
-		os.Exit(1)
-	}
+	subcommands.DieNotNil(err)
 
 	var target_names []string
 	if tagByVersion {
@@ -62,10 +60,7 @@ func doTag(cmd *cobra.Command, args []string) {
 		for _, name := range args {
 			if target, ok := targets.Signed.Targets[name]; ok {
 				custom, err := api.TargetCustom(target)
-				if err != nil {
-					fmt.Printf("ERROR: %s\n", err)
-					os.Exit(1)
-				}
+				subcommands.DieNotNil(err)
 				fmt.Printf("Changing tags of %s from %s -> %s\n", name, custom.Tags, tags)
 			} else {
 				fmt.Printf("Target(%s) not found in targets.json\n", name)
@@ -76,10 +71,7 @@ func doTag(cmd *cobra.Command, args []string) {
 	}
 
 	jobServUrl, webUrl, err := api.TargetUpdateTags(factory, target_names, tags)
-	if err != nil {
-		fmt.Printf("ERROR: %s\n", err)
-		os.Exit(1)
-	}
+	subcommands.DieNotNil(err)
 	fmt.Printf("CI URL: %s\n", webUrl)
 	if !tagNoTail {
 		api.JobservTail(jobServUrl)

@@ -1,8 +1,6 @@
 package devices
 
 import (
-	"fmt"
-	"os"
 	"strings"
 
 	"github.com/cheynewallace/tabby"
@@ -10,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/foundriesio/fioctl/client"
+	"github.com/foundriesio/fioctl/subcommands"
 )
 
 var (
@@ -105,11 +104,7 @@ func doList(cmd *cobra.Command, args []string) {
 				break
 			}
 		}
-		if err != nil {
-			fmt.Print("ERROR: ")
-			fmt.Println(err)
-			os.Exit(1)
-		}
+		subcommands.DieNotNil(err)
 		for _, device := range dl.Devices {
 			if len(device.TargetName) == 0 {
 				device.TargetName = "???"

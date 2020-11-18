@@ -1,9 +1,6 @@
 package users
 
 import (
-	"fmt"
-	"os"
-
 	"github.com/cheynewallace/tabby"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -29,11 +26,7 @@ func doList(api *client.Api, factory string) {
 	logrus.Debugf("Listing factory users for %s", factory)
 
 	users, err := api.UsersList(factory)
-	if err != nil {
-		fmt.Print("ERROR: ")
-		fmt.Println(err)
-		os.Exit(1)
-	}
+	subcommands.DieNotNil(err)
 
 	t := tabby.New()
 	t.AddHeader("ID", "NAME", "ROLE")

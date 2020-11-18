@@ -8,6 +8,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+
+	"github.com/foundriesio/fioctl/subcommands"
 )
 
 func init() {
@@ -22,11 +24,8 @@ func init() {
 func doShow(cmd *cobra.Command, args []string) {
 	logrus.Debug("Showing device")
 	device, err := api.DeviceGet(args[0])
-	if err != nil {
-		fmt.Print("ERROR: ")
-		fmt.Println(err)
-		os.Exit(1)
-	}
+	subcommands.DieNotNil(err)
+
 	fmt.Printf("UUID:\t\t%s\n", device.Uuid)
 	fmt.Printf("Owner:\t\t%s\n", device.Owner)
 	fmt.Printf("Factory:\t%s\n", device.Factory)

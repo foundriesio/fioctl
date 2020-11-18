@@ -1,11 +1,10 @@
 package devices
 
 import (
-	"fmt"
-	"os"
-
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+
+	"github.com/foundriesio/fioctl/subcommands"
 )
 
 func init() {
@@ -20,9 +19,5 @@ func init() {
 func doConfigDelete(cmd *cobra.Command, args []string) {
 	logrus.Debug("Deleting file from device config")
 
-	if err := api.DeviceDeleteConfig(args[0], args[1]); err != nil {
-		fmt.Println("ERROR: ", err)
-		os.Exit(1)
-	}
-
+	subcommands.DieNotNil(api.DeviceDeleteConfig(args[0], args[1]))
 }

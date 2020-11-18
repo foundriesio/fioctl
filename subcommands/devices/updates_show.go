@@ -2,10 +2,11 @@ package devices
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+
+	"github.com/foundriesio/fioctl/subcommands"
 )
 
 func init() {
@@ -20,11 +21,7 @@ func init() {
 func doShowUpdate(cmd *cobra.Command, args []string) {
 	logrus.Debug("Showing device update")
 	events, err := api.DeviceUpdateEvents(args[0], args[1])
-	if err != nil {
-		fmt.Print("ERROR: ")
-		fmt.Println(err)
-		os.Exit(1)
-	}
+	subcommands.DieNotNil(err)
 	for _, event := range events {
 		fmt.Printf("%s : %s(%s)", event.Time, event.Type.Id, event.Detail.TargetName)
 		if event.Detail.Success != nil {

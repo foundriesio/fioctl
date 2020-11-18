@@ -9,6 +9,8 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	tuf "github.com/theupdateframework/notary/tuf/data"
+
+	"github.com/foundriesio/fioctl/subcommands"
 )
 
 var (
@@ -91,11 +93,7 @@ func doPrune(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 
 	targets, err := api.TargetsList(factory)
-	if err != nil {
-		fmt.Print("ERROR: ")
-		fmt.Println(err)
-		os.Exit(1)
-	}
+	subcommands.DieNotNil(err)
 
 	var target_names []string
 	if pruneByTag {
@@ -132,10 +130,7 @@ func doPrune(cmd *cobra.Command, args []string) {
 	}
 
 	jobservUrl, webUrl, err := api.TargetDeleteTargets(factory, target_names)
-	if err != nil {
-		fmt.Printf("ERROR: %s\n", err)
-		os.Exit(1)
-	}
+	subcommands.DieNotNil(err)
 	fmt.Printf("CI URL: %s\n", webUrl)
 	if !pruneNoTail {
 		api.JobservTail(jobservUrl)

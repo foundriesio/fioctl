@@ -18,6 +18,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/foundriesio/fioctl/client"
+	"github.com/foundriesio/fioctl/subcommands"
 )
 
 var (
@@ -120,11 +121,7 @@ func doConfigSet(cmd *cobra.Command, args []string) {
 
 	// Ensure the device has a public key we can encrypt with
 	device, err := api.DeviceGet(args[0])
-	if err != nil {
-		fmt.Print("ERROR: ")
-		fmt.Println(err)
-		os.Exit(1)
-	}
+	subcommands.DieNotNil(err)
 
 	if len(device.PublicKey) == 0 {
 		fmt.Println("ERROR: Device has no public key to encrypt with")
@@ -154,16 +151,8 @@ func doConfigSet(cmd *cobra.Command, args []string) {
 	}
 
 	if configCreate {
-		if err := api.DeviceCreateConfig(device.Name, cfg); err != nil {
-			fmt.Print("ERROR: ")
-			fmt.Println(err)
-			os.Exit(1)
-		}
+		subcommands.DieNotNil(api.DeviceCreateConfig(device.Name, cfg))
 	} else {
-		if err := api.DevicePatchConfig(device.Name, cfg, false); err != nil {
-			fmt.Print("ERROR: ")
-			fmt.Println(err)
-			os.Exit(1)
-		}
+		subcommands.DieNotNil(api.DevicePatchConfig(device.Name, cfg, false))
 	}
 }

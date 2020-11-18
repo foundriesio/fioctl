@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/foundriesio/fioctl/client"
+	"github.com/foundriesio/fioctl/subcommands"
 )
 
 var wireguardDisable bool
@@ -66,10 +67,8 @@ func (w *WireguardServerConfig) Unmarshall(configVal string) {
 
 func LoadWireguardServerConfig(factory string, api *client.Api) WireguardServerConfig {
 	dcl, err := api.FactoryListConfig(factory)
-	if err != nil {
-		fmt.Println("ERROR: ", err)
-		os.Exit(1)
-	}
+	subcommands.DieNotNil(err)
+
 	wsc := WireguardServerConfig{}
 	if len(dcl.Configs) > 0 {
 		for _, cfgFile := range dcl.Configs[0].Files {
@@ -103,11 +102,7 @@ func doWireguard(cmd *cobra.Command, args []string) {
 		}
 		cfg.Files[0].Value = wsc.Marshall()
 
-		if err := api.FactoryPatchConfig(factory, cfg); err != nil {
-			fmt.Print("ERROR: ")
-			fmt.Println(err)
-			os.Exit(1)
-		}
+		subcommands.DieNotNil(api.FactoryPatchConfig(factory, cfg))
 	} else {
 		fmt.Println("Enabled:", wsc.Enabled)
 		if len(wsc.Endpoint) > 0 {

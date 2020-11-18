@@ -11,6 +11,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
+	"github.com/foundriesio/fioctl/subcommands"
 )
 
 var (
@@ -62,20 +64,12 @@ func doList(cmd *cobra.Command, args []string) {
 
 	if listRaw {
 		body, err := api.TargetsListRaw(factory)
-		if err != nil {
-			fmt.Print("ERROR: ")
-			fmt.Println(err)
-			os.Exit(1)
-		}
+		subcommands.DieNotNil(err)
 		os.Stdout.Write(*body)
 		return
 	}
 	targets, err := api.TargetsList(factory)
-	if err != nil {
-		fmt.Print("ERROR: ")
-		fmt.Println(err)
-		os.Exit(1)
-	}
+	subcommands.DieNotNil(err)
 
 	var keys []string
 	listing := make(map[string]*targetListing)

@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/foundriesio/fioctl/client"
+	"github.com/foundriesio/fioctl/subcommands"
 	"github.com/foundriesio/fioctl/subcommands/config"
 )
 
@@ -100,11 +101,7 @@ func factoryIps(factory string) map[uint32]bool {
 				break
 			}
 		}
-		if err != nil {
-			fmt.Print("ERROR: ")
-			fmt.Println(err)
-			os.Exit(1)
-		}
+		subcommands.DieNotNil(err)
 		for _, device := range dl.Devices {
 			// TODO - we need to come up with a backend API that
 			// won't require an API call per device. Maybe:
@@ -155,11 +152,7 @@ func doConfigWireguard(cmd *cobra.Command, args []string) {
 
 	// Ensure the device has a public key we can encrypt with
 	device, err := api.DeviceGet(args[0])
-	if err != nil {
-		fmt.Print("ERROR: ")
-		fmt.Println(err)
-		os.Exit(1)
-	}
+	subcommands.DieNotNil(err)
 
 	wcc := loadWireguardClientConfig(args[0])
 	if len(args) == 1 {
@@ -201,9 +194,5 @@ func doConfigWireguard(cmd *cobra.Command, args []string) {
 		wcc.Enabled = false
 	}
 	cfg.Files[0].Value = wcc.Marshall()
-	if err := api.DevicePatchConfig(args[0], cfg, false); err != nil {
-		fmt.Print("ERROR: ")
-		fmt.Println(err)
-		os.Exit(1)
-	}
+	subcommands.DieNotNil(api.DevicePatchConfig(args[0], cfg, false))
 }

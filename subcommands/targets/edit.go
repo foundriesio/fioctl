@@ -12,6 +12,8 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	tuf "github.com/theupdateframework/notary/tuf/data"
+
+	"github.com/foundriesio/fioctl/subcommands"
 )
 
 var editNoTail bool
@@ -33,15 +35,9 @@ func doEdit(cmd *cobra.Command, args []string) {
 
 	// Get raw json
 	targets, err := api.TargetsList(factory)
-	if err != nil {
-		fmt.Println("ERROR: ", err)
-		os.Exit(1)
-	}
+	subcommands.DieNotNil(err)
 	orig, err := json.MarshalIndent(targets.Signed.Targets, "", "  ")
-	if err != nil {
-		fmt.Println("Unable to marshall targets data: ", err)
-		os.Exit(1)
-	}
+	subcommands.DieNotNil(err)
 
 	// Create temp file to edit with
 	tmpfile, err := ioutil.TempFile("", "targets.*.json")
@@ -103,10 +99,7 @@ func doEdit(cmd *cobra.Command, args []string) {
 
 	logrus.Debugf("Pushing to server: %s", string(content))
 	jobservUrl, webUrl, err := api.TargetsPut(factory, content)
-	if err != nil {
-		fmt.Println("ERROR: ", err)
-		os.Exit(1)
-	}
+	subcommands.DieNotNil(err)
 	fmt.Printf("CI URL: %s\n", webUrl)
 	if !editNoTail {
 		api.JobservTail(jobservUrl)
