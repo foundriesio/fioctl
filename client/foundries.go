@@ -174,6 +174,19 @@ type TufCustom struct {
 	OverridesSha   string                `json:"meta-subscriber-overrides-sha,omitempty"`
 }
 
+type ComposeAppContent struct {
+	Files       []string               `json:"files"`
+	ComposeSpec map[string]interface{} `json:"compose_spec"`
+}
+
+type ComposeAppBundle struct {
+	Uri      string                 `json:"uri"`
+	Error    string                 `json:"error"`
+	Warnings []string               `json:"warnings"`
+	Manifest map[string]interface{} `json:"manifest"`
+	Content  ComposeAppContent      `json:"content"`
+}
+
 type TargetTestResults struct {
 	Name    string `json:"name"`
 	Status  string `json:"status"`
@@ -701,6 +714,37 @@ func (a *Api) TargetImageCreate(factory string, targetName string, appShortlist 
 	}
 	resp, err := a.Post(url, nil)
 	return getResponse(resp, err, "assemble-system-image")
+}
+
+// Return a Compose App for a given Target by a Target ID and an App name
+func (a *Api) TargetComposeApp(factory string, targetName string, app string) (*ComposeAppBundle, error) {
+	url := a.serverUrl + "/ota/factories/" + factory + "/targets/" + targetName + "/compose-apps/" + app + "/"
+	log := logrus.WithFields(logrus.Fields{"url": url})
+	logrus.Debugf("TargetApp with url: %s", url)
+
+	resp, err := a.RawGet(url, nil)
+	if err != nil {
+		log.Errorf("Network Error: %s", err)
+		return nil, err
+	} else if resp.StatusCode != 200 {
+		log.WithFields(logrus.Fields{"status": resp.StatusCode}).Errorf("HTTP Error: %s", resp.Status)
+		// Don't return, we can get some debug info from response.
+	}
+
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Errorf("I/O Error: %s", err)
+		return nil, err
+	}
+
+	result := ComposeAppBundle{}
+	if err = json.Unmarshal(body, &result); err != nil {
+		log.Errorf("Parse Error: %s", err)
+		return nil, fmt.Errorf("Parse Error: %w\n=for '%s' HTTP response: %s\n=%s", err, url, resp.Status, body)
+	} else {
+		return &result, nil
+	}
 }
 
 // Return a list of Targets that have been tested
