@@ -171,7 +171,7 @@ func doConfigUpdates(cmd *cobra.Command, args []string) {
 	cfg := client.ConfigCreateRequest{
 		Reason: "Override aktualizr-lite update configuration ",
 		Files: []client.ConfigFile{
-			client.ConfigFile{
+			{
 				Name:        tomlName,
 				Unencrypted: true,
 				OnChanged:   []string{"/usr/share/fioconfig/handlers/aktualizr-toml-update"},

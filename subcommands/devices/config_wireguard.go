@@ -172,7 +172,7 @@ func doConfigWireguard(cmd *cobra.Command, args []string) {
 	cfg := client.ConfigCreateRequest{
 		Reason: "Set Wireguard configuration - " + args[1],
 		Files: []client.ConfigFile{
-			client.ConfigFile{
+			{
 				Name:        "wireguard-client",
 				Unencrypted: true,
 				OnChanged:   []string{"/usr/share/fioconfig/handlers/factory-config-vpn"},
