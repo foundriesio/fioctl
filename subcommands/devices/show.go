@@ -12,13 +12,19 @@ import (
 	"github.com/foundriesio/fioctl/subcommands"
 )
 
+var (
+	showHWInfo bool
+)
+
 func init() {
-	cmd.AddCommand(&cobra.Command{
+	showCmd := &cobra.Command{
 		Use:   "show <name>",
 		Short: "Show details of a specific device",
 		Run:   doShow,
 		Args:  cobra.ExactArgs(1),
-	})
+	}
+	cmd.AddCommand(showCmd)
+	showCmd.Flags().BoolVarP(&showHWInfo, "hwinfo", "i", false, "Show HW Information")
 }
 
 func doShow(cmd *cobra.Command, args []string) {
@@ -57,9 +63,13 @@ func doShow(cmd *cobra.Command, args []string) {
 		if err != nil {
 			fmt.Println("Unable to marshall hardware info: ", err)
 		}
-		fmt.Printf("Hardware Info:\n\t")
-		os.Stdout.Write(b)
-		fmt.Println("")
+		if showHWInfo {
+			fmt.Printf("Hardware Info:\n\t")
+			os.Stdout.Write(b)
+			fmt.Println("")
+		} else {
+			fmt.Printf("Hardware Info: (hidden, use --hwinfo)\n")
+		}
 	}
 	if device.ActiveConfig != nil {
 		fmt.Println("Active Config:")
