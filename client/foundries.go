@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -91,11 +92,19 @@ type UpdateEvent struct {
 	Detail EventDetail `json:"event"`
 }
 
+type DeviceGroup struct {
+	Id          int    `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	CreatedAt   string `json:"created-at"`
+}
+
 type Device struct {
 	Uuid          string           `json:"uuid"`
 	Name          string           `json:"name"`
 	Owner         string           `json:"owner"`
 	Factory       string           `json:"factory"`
+	Group         *DeviceGroup     `json:"group"`
 	CreatedAt     string           `json:"created-at"`
 	LastSeen      string           `json:"last-seen"`
 	OstreeHash    string           `json:"ostree-hash"`
@@ -212,6 +221,27 @@ type TargetTestList struct {
 	Next  *string      `json:"next"`
 }
 
+// This is an error returned in case if we've successfully received an HTTP response which contains
+// an unexpected HTTP status code
+type HttpError struct {
+	Message  string
+	Response *http.Response
+}
+
+func (err *HttpError) Error() string {
+	return err.Message
+}
+
+// This is much better than err.(HttpError) as it also accounts for wrapped errors.
+func AsHttpError(err error) *HttpError {
+	var httpError *HttpError
+	if errors.As(err, &httpError) {
+		return httpError
+	} else {
+		return nil
+	}
+}
+
 func (d Device) Online(inactiveHoursThreshold int) bool {
 	if len(d.LastSeen) == 0 {
 		return false
@@ -263,7 +293,54 @@ func NewApiClient(serverUrl string, config Config, caCertPath string) *Api {
 	return &api
 }
 
-func getResponse(resp *[]byte, err error, runName string) (string, string, error) {
+func httpLogger(req *http.Request) logrus.FieldLogger {
+	return logrus.WithFields(logrus.Fields{"url": req.URL.String(), "method": req.Method})
+}
+
+func readResponse(res *http.Response, log logrus.FieldLogger) (*[]byte, error) {
+	defer res.Body.Close()
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		log.Debugf("I/O error reading response: %s", err)
+		return nil, err
+	}
+
+	// Accept all "normal" successful status codes: 200, 201, 202, 204, excluding quite inappropriate
+	// for RESTful web services 203, 205, and 206.  There are some preferences what to return for
+	// each operation, but a client side normally should not fail if e.g. a POST returns 200, 202, or
+	// 204 instead of a usual 201.  There are use cases when each of those status codes is valid and
+	// should be treated as a success.  Though there might be some differences how that success is
+	// handled by a higher-level logic.
+	switch res.StatusCode {
+	case 200:
+	case 201:
+	case 202:
+	case 204:
+		break
+	default:
+		var PRINT_LIMIT, DEBUG_LIMIT int = 512, 8196
+		errBody := (string)(body)
+		if len(body) > DEBUG_LIMIT {
+			// too much is too much, even for a debug message
+			errBody = fmt.Sprintf("%s...(truncated body over %d)", body[:DEBUG_LIMIT], DEBUG_LIMIT)
+		}
+		log.Debugf("HTTP error received %s", res.Status)
+		log.Debugf(errBody)
+
+		// Still return a body, a caller might need it, but also return an error
+		msg := fmt.Sprintf("HTTP error during %s '%s': %s",
+			res.Request.Method, res.Request.URL.String(), res.Status)
+		if len(body) < PRINT_LIMIT {
+			// return an error response body up to a meaningful limit - if it spans beyond a few
+			// lines, need to find a more appropriate message.
+			msg = fmt.Sprintf("%s\n=%s", msg, body)
+		}
+		err = &HttpError{msg, res}
+	}
+	return &body, err
+}
+
+func parseJobServResponse(resp *[]byte, err error, runName string) (string, string, error) {
 	if err != nil {
 		return "", "", err
 	}
@@ -324,19 +401,14 @@ func (a *Api) RawGet(url string, headers *map[string]string) (*http.Response, er
 
 func (a *Api) Get(url string) (*[]byte, error) {
 	res, err := a.RawGet(url, nil)
+
+	log := httpLogger(res.Request)
 	if err != nil {
+		log.Debugf("Network Error: %s", err)
 		return nil, err
 	}
 
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	if res.StatusCode != 200 {
-		return nil, fmt.Errorf("Unable to get '%s': HTTP_%d\n=%s", url, res.StatusCode, body)
-	}
-	return &body, nil
+	return readResponse(res, log)
 }
 
 func (a *Api) Patch(url string, data []byte) (*[]byte, error) {
@@ -347,20 +419,14 @@ func (a *Api) Patch(url string, data []byte) (*[]byte, error) {
 
 	a.setReqHeaders(req, true)
 
+	log := httpLogger(req)
 	res, err := a.client.Do(req)
 	if err != nil {
+		log.Debugf("Network Error: %s", err)
 		return nil, err
 	}
 
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	if res.StatusCode != 202 && res.StatusCode != 201 && res.StatusCode != 200 {
-		return nil, fmt.Errorf("Unable to PATCH '%s': HTTP_%d\n=%s", url, res.StatusCode, body)
-	}
-	return &body, nil
+	return readResponse(res, log)
 }
 
 func (a *Api) Post(url string, data []byte) (*[]byte, error) {
@@ -371,20 +437,14 @@ func (a *Api) Post(url string, data []byte) (*[]byte, error) {
 
 	a.setReqHeaders(req, true)
 
+	log := httpLogger(req)
 	res, err := a.client.Do(req)
 	if err != nil {
+		log.Debugf("Network Error: %s", err)
 		return nil, err
 	}
 
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	if res.StatusCode != 201 {
-		return nil, fmt.Errorf("Unable to POST '%s': HTTP_%d\n=%s", url, res.StatusCode, body)
-	}
-	return &body, nil
+	return readResponse(res, log)
 }
 
 func (a *Api) Put(url string, data []byte) (*[]byte, error) {
@@ -395,20 +455,14 @@ func (a *Api) Put(url string, data []byte) (*[]byte, error) {
 
 	a.setReqHeaders(req, true)
 
+	log := httpLogger(req)
 	res, err := a.client.Do(req)
 	if err != nil {
+		log.Debugf("Network Error: %s", err)
 		return nil, err
 	}
 
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	if res.StatusCode != 202 {
-		return nil, fmt.Errorf("Unable to PUT '%s': HTTP_%d\n=%s", url, res.StatusCode, body)
-	}
-	return &body, nil
+	return readResponse(res, log)
 }
 
 func (a *Api) Delete(url string, data []byte) (*[]byte, error) {
@@ -419,20 +473,14 @@ func (a *Api) Delete(url string, data []byte) (*[]byte, error) {
 
 	a.setReqHeaders(req, true)
 
+	log := httpLogger(req)
 	res, err := a.client.Do(req)
 	if err != nil {
+		log.Debugf("Network Error: %s", err)
 		return nil, err
 	}
 
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	if res.StatusCode != 202 && res.StatusCode != 200 {
-		return nil, fmt.Errorf("Unable to DELETE '%s': HTTP_%d\n=%s", url, res.StatusCode, body)
-	}
-	return &body, nil
+	return readResponse(res, log)
 }
 
 func (a *Api) DeviceGet(device string) (*Device, error) {
@@ -480,6 +528,16 @@ func (a *Api) DeviceRename(curName, newName string) error {
 		return err
 	}
 	_, err = a.Patch(a.serverUrl+"/ota/devices/"+curName+"/", data)
+	return err
+}
+
+func (a *Api) DeviceSetGroup(device string, group string) error {
+	body := map[string]string{"group": group}
+	data, err := json.Marshal(body)
+	if err != nil {
+		return err
+	}
+	_, err = a.Patch(a.serverUrl+"/ota/devices/"+device+"/", data)
 	return err
 }
 
@@ -630,6 +688,87 @@ func (a *Api) FactoryStatus(factory string, inactiveThreshold int) (*FactoryStat
 	return &s, nil
 }
 
+func (a *Api) FactoryCreateDeviceGroup(factory string, name string, description *string) (*DeviceGroup, error) {
+	body := map[string]string{"name": name}
+	if description != nil {
+		body["description"] = *description
+	}
+	data, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+
+	url := a.serverUrl + "/ota/factories/" + factory + "/device-groups/"
+	logrus.Debugf("Creating new factory device group: %s", url)
+	resp, err := a.Post(url, data)
+	if err != nil {
+		if herr := AsHttpError(err); herr != nil && herr.Response.StatusCode == 409 {
+			err = fmt.Errorf("A device group with this name already exists")
+		}
+		return nil, err
+	}
+
+	grp := DeviceGroup{}
+	err = json.Unmarshal(*resp, &grp)
+	if err != nil {
+		return nil, err
+	}
+	return &grp, nil
+}
+
+func (a *Api) FactoryDeleteDeviceGroup(factory string, name string) error {
+	url := a.serverUrl + "/ota/factories/" + factory + "/device-groups/" + name + "/"
+	logrus.Debugf("Deleting factory device group: %s", url)
+	_, err := a.Delete(url, nil)
+	if herr := AsHttpError(err); herr != nil && herr.Response.StatusCode == 409 {
+		err = fmt.Errorf("There are devices assigned to this device group")
+	}
+	return err
+}
+
+func (a *Api) FactoryPatchDeviceGroup(factory string, name string, new_name *string, new_desc *string) error {
+	body := map[string]string{}
+	if new_name != nil {
+		body["name"] = *new_name
+	}
+	if new_desc != nil {
+		body["description"] = *new_desc
+	}
+	data, err := json.Marshal(body)
+	if err != nil {
+		return err
+	}
+
+	url := a.serverUrl + "/ota/factories/" + factory + "/device-groups/" + name + "/"
+	logrus.Debugf("Updating factory device group :%s", url)
+	_, err = a.Patch(url, data)
+	if herr := AsHttpError(err); herr != nil && herr.Response.StatusCode == 409 {
+		err = fmt.Errorf("A device group with this name already exists")
+	}
+	return err
+}
+
+func (a *Api) FactoryListDeviceGroup(factory string) (*[]DeviceGroup, error) {
+	url := a.serverUrl + "/ota/factories/" + factory + "/device-groups/"
+	logrus.Debugf("Fetching factory device groups: %s", url)
+
+	body, err := a.Get(url)
+	if err != nil {
+		return nil, err
+	}
+
+	type DeviceGroupList struct {
+		Groups []DeviceGroup `json:"groups"`
+	}
+
+	resp := DeviceGroupList{}
+	err = json.Unmarshal(*body, &resp)
+	if err != nil {
+		return nil, err
+	}
+	return &resp.Groups, nil
+}
+
 func (a *Api) TargetsListRaw(factory string) (*[]byte, error) {
 	url := a.serverUrl + "/ota/repo/" + factory + "/api/v1/user_repo/targets.json"
 	return a.Get(url)
@@ -664,7 +803,7 @@ func (a *Api) TargetsPut(factory string, data []byte) (string, string, error) {
 	if err != nil {
 		return "", "", err
 	}
-	return getResponse(resp, err, "UpdateTargets")
+	return parseJobServResponse(resp, err, "UpdateTargets")
 }
 
 func (a *Api) TargetUpdateTags(factory string, target_names []string, tag_names []string) (string, string, error) {
@@ -688,7 +827,7 @@ func (a *Api) TargetUpdateTags(factory string, target_names []string, tag_names 
 
 	url := a.serverUrl + "/ota/factories/" + factory + "/targets/"
 	resp, err := a.Patch(url, data)
-	return getResponse(resp, err, "UpdateTargets")
+	return parseJobServResponse(resp, err, "UpdateTargets")
 }
 
 func (a *Api) TargetDeleteTargets(factory string, target_names []string) (string, string, error) {
@@ -704,7 +843,7 @@ func (a *Api) TargetDeleteTargets(factory string, target_names []string) (string
 
 	url := a.serverUrl + "/ota/factories/" + factory + "/targets/"
 	resp, err := a.Delete(url, data)
-	return getResponse(resp, err, "UpdateTargets")
+	return parseJobServResponse(resp, err, "UpdateTargets")
 }
 
 func (a *Api) TargetImageCreate(factory string, targetName string, appShortlist string) (string, string, error) {
@@ -713,35 +852,32 @@ func (a *Api) TargetImageCreate(factory string, targetName string, appShortlist 
 		url += "?app_shortlist=" + appShortlist
 	}
 	resp, err := a.Post(url, nil)
-	return getResponse(resp, err, "assemble-system-image")
+	return parseJobServResponse(resp, err, "assemble-system-image")
 }
 
 // Return a Compose App for a given Target by a Target ID and an App name
 func (a *Api) TargetComposeApp(factory string, targetName string, app string) (*ComposeAppBundle, error) {
 	url := a.serverUrl + "/ota/factories/" + factory + "/targets/" + targetName + "/compose-apps/" + app + "/"
-	log := logrus.WithFields(logrus.Fields{"url": url})
 	logrus.Debugf("TargetApp with url: %s", url)
 
-	resp, err := a.RawGet(url, nil)
+	body, err := a.Get(url)
 	if err != nil {
-		log.Errorf("Network Error: %s", err)
-		return nil, err
-	} else if resp.StatusCode != 200 {
-		log.WithFields(logrus.Fields{"status": resp.StatusCode}).Errorf("HTTP Error: %s", resp.Status)
-		// Don't return, we can get some debug info from response.
-	}
-
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Errorf("I/O Error: %s", err)
-		return nil, err
+		if herr := AsHttpError(err); herr != nil {
+			logrus.Debugf("HTTP error %s received, try to parse a partial response", herr.Response.Status)
+		} else {
+			return nil, err
+		}
 	}
 
 	result := ComposeAppBundle{}
-	if err = json.Unmarshal(body, &result); err != nil {
-		log.Errorf("Parse Error: %s", err)
-		return nil, fmt.Errorf("Parse Error: %w\n=for '%s' HTTP response: %s\n=%s", err, url, resp.Status, body)
+	if perr := json.Unmarshal(*body, &result); perr != nil {
+		logrus.Debugf("Parse Error: %s", perr)
+		if err == nil {
+			return nil, perr
+		} else {
+			// Most probably a parse error is caused by an HTTP error - return both
+			return nil, fmt.Errorf("Parse Error: %w after HTTP error %s", perr, err)
+		}
 	} else {
 		return &result, nil
 	}
