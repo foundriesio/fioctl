@@ -1,6 +1,7 @@
 package devices
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/cheynewallace/tabby"
@@ -16,6 +17,7 @@ var (
 	deviceNoOwner       bool
 	deviceByTag         string
 	deviceByFactory     string
+	deviceByGroup       string
 	deviceInactiveHours int
 	deviceUuid          string
 )
@@ -32,6 +34,7 @@ func init() {
 	listCmd.Flags().BoolVarP(&deviceNoOwner, "skip-owner", "", false, "Do not include owner name when lising. (command will run faster)")
 	listCmd.Flags().StringVarP(&deviceByTag, "by-tag", "", "", "Only list devices configured with the given tag")
 	listCmd.Flags().StringVarP(&deviceByFactory, "by-factory", "f", "", "Only list devices belonging to this factory")
+	listCmd.Flags().StringVarP(&deviceByGroup, "by-group", "g", "", "Only list devices belonging to this group (factory is mandatory)")
 	listCmd.Flags().IntVarP(&deviceInactiveHours, "offline-threshold", "", 4, "List the device as 'OFFLINE' if not seen in the last X hours")
 	listCmd.Flags().StringVarP(&deviceUuid, "uuid", "", "", "Find device with the given UUID")
 }
@@ -95,8 +98,11 @@ func doList(cmd *cobra.Command, args []string) {
 			}
 			if len(deviceByFactory) > 0 {
 				deviceNoShared = true
+			} else if len(deviceByGroup) > 0 {
+				subcommands.DieNotNil(fmt.Errorf("A factory is mandatory to filter by group"))
 			}
-			dl, err = api.DeviceList(!deviceNoShared, deviceByTag, deviceByFactory, name_ilike, deviceUuid)
+			dl, err = api.DeviceList(
+				!deviceNoShared, deviceByTag, deviceByFactory, deviceByGroup, name_ilike, deviceUuid)
 		} else {
 			if dl.Next != nil {
 				dl, err = api.DeviceListCont(*dl.Next)
