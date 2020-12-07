@@ -14,6 +14,7 @@ import (
 
 var (
 	showHWInfo bool
+	showAkToml bool
 )
 
 func init() {
@@ -25,6 +26,7 @@ func init() {
 	}
 	cmd.AddCommand(showCmd)
 	showCmd.Flags().BoolVarP(&showHWInfo, "hwinfo", "i", false, "Show HW Information")
+	showCmd.Flags().BoolVarP(&showAkToml, "aktoml", "", false, "Show aktualizr-lite toml config")
 }
 
 func doShow(cmd *cobra.Command, args []string) {
@@ -73,6 +75,16 @@ func doShow(cmd *cobra.Command, args []string) {
 		} else {
 			fmt.Printf("Hardware Info: (hidden, use --hwinfo)\n")
 		}
+	}
+	if len(device.AktualizrToml) > 0 {
+		if showAkToml {
+			for _, line := range strings.Split(device.AktualizrToml, "\n") {
+				fmt.Printf("\t| %s\n", line)
+			}
+		} else {
+			fmt.Println("Aktualizr config: (hidden, use --aktoml)")
+		}
+
 	}
 	if device.ActiveConfig != nil {
 		fmt.Println("Active Config:")
