@@ -61,6 +61,8 @@ advantage of this, the "--raw" flag must be used. eg::
   fioctl config set --raw ./tmp.json
 
 fioctl will read in tmp.json and upload it to the OTA server.
+Instead of using ./tmp.json, the command can take a "-" and will read the
+content from STDIN instead of a file.
 `,
 		Run:  doConfigSet,
 		Args: cobra.MinimumNArgs(1),
@@ -72,7 +74,15 @@ fioctl will read in tmp.json and upload it to the OTA server.
 }
 
 func loadConfig(configFile string, cfg *client.ConfigCreateRequest) {
-	content, err := ioutil.ReadFile(configFile)
+	var content []byte
+	var err error
+
+	if configFile == "-" {
+		logrus.Debug("Reading config from STDIN")
+		content, err = ioutil.ReadAll(os.Stdin)
+	} else {
+		content, err = ioutil.ReadFile(configFile)
+	}
 	if err != nil {
 		fmt.Printf("ERROR: Unable to read config file: %v\n", err)
 		os.Exit(1)
