@@ -37,8 +37,7 @@ func Login(cmd *cobra.Command) *client.Api {
 	}
 
 	if len(Config.ClientCredentials.ClientId) == 0 {
-		fmt.Println("ERROR: Please run: \"fioctl login\" first")
-		os.Exit(1)
+		DieNotNil(fmt.Errorf("Please run: \"fioctl login\" first"))
 	}
 	creds := client.NewClientCredentials(Config.ClientCredentials)
 
@@ -54,8 +53,7 @@ func Login(cmd *cobra.Command) *client.Api {
 	} else if creds.HasRefreshToken() {
 		DieNotNil(creds.Refresh())
 	} else {
-		fmt.Println("ERROR: Missing refresh token")
-		os.Exit(1)
+		DieNotNil(fmt.Errorf("Missing refresh token"))
 	}
 	SaveOauthConfig(creds.Config)
 	Config.ClientCredentials = creds.Config
@@ -81,20 +79,14 @@ func SaveOauthConfig(c client.OAuthConfig) {
 	if len(name) == 0 {
 		logrus.Debug("Guessing config file from path")
 		path, err := homedir.Expand("~/.config")
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
+		DieNotNil(err)
 		name = filepath.Join(path, "fioctl.yaml")
 	}
 	// Try to read in config
 	cfg := make(map[string]interface{})
 	buf, err := ioutil.ReadFile(name)
 	if err == nil {
-		if err := yaml.Unmarshal(buf, &cfg); err != nil {
-			fmt.Println("Unable unmarshal configuration:", err)
-			os.Exit(1)
-		}
+		DieNotNil(yaml.Unmarshal(buf, &cfg), "Unable unmarshal configuration:")
 	}
 	val := viper.Get("clientcredentials")
 	cfg["clientcredentials"] = val
@@ -102,31 +94,26 @@ func SaveOauthConfig(c client.OAuthConfig) {
 		cfg["factory"] = c.DefaultOrg
 	}
 	buf, err = yaml.Marshal(cfg)
-	if err != nil {
-		fmt.Println("Unable to marshall oauth config: ", err)
-		os.Exit(1)
-	}
-	if err := ioutil.WriteFile(name, buf, os.FileMode(0644)); err != nil {
-		fmt.Println("Unable to update config: ", err)
-		os.Exit(1)
-	}
+	DieNotNil(err, "Unable to marshall oauth config:")
+	DieNotNil(ioutil.WriteFile(name, buf, os.FileMode(0644)), "Unable to update config: ")
 }
 
 func initViper(cmd *cobra.Command) {
-	if err := viper.BindPFlags(cmd.Flags()); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
+	DieNotNil(viper.BindPFlags(cmd.Flags()))
 	if cmd.Flags().Lookup("factory") != nil && len(viper.GetString("factory")) == 0 {
-		fmt.Println("Error required flag \"factory\" not set")
-		os.Exit(1)
+		DieNotNil(fmt.Errorf("Required flag \"factory\" not set"))
 	}
 	Config.Token = viper.GetString("token")
 }
 
-func DieNotNil(err error) {
+func DieNotNil(err error, message ...string) {
 	if err != nil {
-		fmt.Println("ERROR:", err)
+		parts := []interface{}{"ERROR:"}
+		for _, p := range message {
+			parts = append(parts, p)
+		}
+		parts = append(parts, err)
+		fmt.Println(parts...)
 		os.Exit(1)
 	}
 }
