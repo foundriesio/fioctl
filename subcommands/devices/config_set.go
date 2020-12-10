@@ -73,6 +73,7 @@ func loadEciesPub(pubkey string) *ecies.PublicKey {
 	block, _ := pem.Decode([]byte(pubkey))
 	if block == nil {
 		subcommands.DieNotNil(fmt.Errorf("Failed to parse certificate PEM"))
+		return nil // prevent go-lint error at next line
 	}
 
 	pub, err := x509.ParsePKIXPublicKey(block.Bytes)

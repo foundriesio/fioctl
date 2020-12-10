@@ -22,7 +22,7 @@ func init() {
 func doConfigLog(cmd *cobra.Command, args []string) {
 	device := args[0]
 	listLimit, _ := cmd.Flags().GetInt("limit")
-	logrus.Debug("Showing device config log for %s", device)
+	logrus.Debugf("Showing device config log for %s", device)
 
 	subcommands.LogConfigs(&subcommands.LogConfigsOptions{
 		Limit:         listLimit,

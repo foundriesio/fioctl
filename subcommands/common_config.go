@@ -99,15 +99,16 @@ func ReadConfig(configFile string, cfg *client.ConfigCreateRequest) {
 }
 
 func PrintConfig(cfg *client.DeviceConfig, showAppliedAt, highlightFirstLine bool, indent string) {
-	firstLine := fmt.Printf
-	if highlightFirstLine {
-		firstLine = color.New(color.FgYellow).Printf
-	}
 	printf := func(format string, a ...interface{}) {
 		fmt.Printf(indent+format, a...)
 	}
 
-	firstLine(indent+"Created At:    %s\n", cfg.CreatedAt)
+	if highlightFirstLine {
+		firstLine := color.New(color.FgYellow)
+		firstLine.Printf(indent+"Created At:    %s\n", cfg.CreatedAt)
+	} else {
+		printf("Created At:    %s\n", cfg.CreatedAt)
+	}
 	if showAppliedAt {
 		printf("Applied At:    %s\n", cfg.AppliedAt)
 	}
