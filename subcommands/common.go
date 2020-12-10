@@ -5,12 +5,10 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strings"
 
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/sirupsen/logrus"
 
-	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v2"
@@ -124,36 +122,6 @@ func initViper(cmd *cobra.Command) {
 		os.Exit(1)
 	}
 	Config.Token = viper.GetString("token")
-}
-
-func PrintConfigs(deviceConfigs []client.DeviceConfig, listLimit int) int {
-	firstRow := color.New(color.FgYellow)
-	for idx, cfg := range deviceConfigs {
-		if idx != 0 {
-			fmt.Println("")
-		}
-		firstRow.Printf("Created At:    %s\n", cfg.CreatedAt)
-		fmt.Printf("Applied At:    %s\n", cfg.AppliedAt)
-		fmt.Printf("Change Reason: %s\n", cfg.Reason)
-		fmt.Println("Files:")
-		for _, f := range cfg.Files {
-			if len(f.OnChanged) == 0 {
-				fmt.Printf("\t%s\n", f.Name)
-			} else {
-				fmt.Printf("\t%s - %v\n", f.Name, f.OnChanged)
-			}
-			if f.Unencrypted {
-				for _, line := range strings.Split(f.Value, "\n") {
-					fmt.Printf("\t | %s\n", line)
-				}
-			}
-		}
-		listLimit -= 1
-		if listLimit == 0 {
-			return 0
-		}
-	}
-	return listLimit
 }
 
 func DieNotNil(err error) {
