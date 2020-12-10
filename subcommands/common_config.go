@@ -24,6 +24,9 @@ type SetConfigOptions struct {
 func SetConfig(opts *SetConfigOptions) {
 	cfg := client.ConfigCreateRequest{Reason: opts.Reason}
 	if opts.IsRawFile {
+		if len(opts.FileArgs) != 1 {
+			DieNotNil(fmt.Errorf("Raw file only accepts one file argument"))
+		}
 		ReadConfig(opts.FileArgs[0], &cfg)
 	} else {
 		for _, keyval := range opts.FileArgs {

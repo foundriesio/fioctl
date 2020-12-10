@@ -6,9 +6,7 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/pem"
-
 	"fmt"
-	"os"
 
 	"github.com/ethereum/go-ethereum/crypto/ecies"
 	"github.com/sirupsen/logrus"
@@ -74,14 +72,11 @@ a "-" and will read the content from STDIN instead of a file.
 func loadEciesPub(pubkey string) *ecies.PublicKey {
 	block, _ := pem.Decode([]byte(pubkey))
 	if block == nil {
-		fmt.Println("ERROR: Failed to parse certificate PEM")
-		os.Exit(1)
+		subcommands.DieNotNil(fmt.Errorf("Failed to parse certificate PEM"))
 	}
 
 	pub, err := x509.ParsePKIXPublicKey(block.Bytes)
-	if err != nil {
-		fmt.Printf("ERROR: Failed to parse DER encoded public key: %v\n", err)
-	}
+	subcommands.DieNotNil(err, "Failed to parse DER encoded public key:")
 
 	ecpub := pub.(*ecdsa.PublicKey)
 	return ecies.ImportECDSAPublic(ecpub)
@@ -90,9 +85,7 @@ func loadEciesPub(pubkey string) *ecies.PublicKey {
 func eciesEncrypt(content string, pubkey *ecies.PublicKey) string {
 	message := []byte(content)
 	enc, err := ecies.Encrypt(rand.Reader, pubkey, message, nil, nil)
-	if err != nil {
-		fmt.Printf("ERROR: Cant encrypt: %v\n", err)
-	}
+	subcommands.DieNotNil(err, "Failed to encrypt:")
 	return base64.StdEncoding.EncodeToString(enc)
 }
 
