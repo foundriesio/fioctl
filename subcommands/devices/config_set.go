@@ -5,13 +5,10 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"encoding/base64"
-	"encoding/json"
 	"encoding/pem"
 
 	"fmt"
-	"io/ioutil"
 	"os"
-	"strings"
 
 	"github.com/ethereum/go-ethereum/crypto/ecies"
 	"github.com/sirupsen/logrus"
@@ -19,12 +16,6 @@ import (
 
 	"github.com/foundriesio/fioctl/client"
 	"github.com/foundriesio/fioctl/subcommands"
-)
-
-var (
-	configReason string
-	configRaw    bool
-	configCreate bool
 )
 
 func init() {
@@ -75,9 +66,9 @@ a "-" and will read the content from STDIN instead of a file.
 		Args: cobra.MinimumNArgs(2),
 	}
 	configCmd.AddCommand(setConfigCmd)
-	setConfigCmd.Flags().StringVarP(&configReason, "reason", "m", "", "Add a message to store as the \"reason\" for this change")
-	setConfigCmd.Flags().BoolVarP(&configRaw, "raw", "", false, "Use raw configuration file")
-	setConfigCmd.Flags().BoolVarP(&configCreate, "create", "", false, "Replace the whole config with these values. Default is to merge these values in with the existing config values")
+	setConfigCmd.Flags().StringP("reason", "m", "", "Add a message to store as the \"reason\" for this change")
+	setConfigCmd.Flags().BoolP("raw", "", false, "Use raw configuration file")
+	setConfigCmd.Flags().BoolP("create", "", false, "Replace the whole config with these values. Default is to merge these values in with the existing config values")
 }
 
 func loadEciesPub(pubkey string) *ecies.PublicKey {
@@ -105,63 +96,34 @@ func eciesEncrypt(content string, pubkey *ecies.PublicKey) string {
 	return base64.StdEncoding.EncodeToString(enc)
 }
 
-func loadConfig(configFile string, cfg *client.ConfigCreateRequest) {
-	var content []byte
-	var err error
-
-	if configFile == "-" {
-		logrus.Debug("Reading config from STDIN")
-		content, err = ioutil.ReadAll(os.Stdin)
-	} else {
-		content, err = ioutil.ReadFile(configFile)
-	}
-	if err != nil {
-		fmt.Printf("ERROR: Unable to read config file: %v\n", err)
-		os.Exit(1)
-	}
-	if err := json.Unmarshal(content, cfg); err != nil {
-		fmt.Printf("ERROR: Unable to parse config file: %v\n", err)
-		os.Exit(1)
-	}
-}
-
 func doConfigSet(cmd *cobra.Command, args []string) {
-	logrus.Debug("Creating new device config")
+	name := args[0]
+	reason, _ := cmd.Flags().GetString("reason")
+	isRaw, _ := cmd.Flags().GetBool("raw")
+	shouldCreate, _ := cmd.Flags().GetBool("create")
 
+	logrus.Debugf("Creating new device config for %s", name)
 	// Ensure the device has a public key we can encrypt with
-	device, err := api.DeviceGet(args[0])
+	device, err := api.DeviceGet(name)
 	subcommands.DieNotNil(err)
-
 	if len(device.PublicKey) == 0 {
-		fmt.Println("ERROR: Device has no public key to encrypt with")
-		os.Exit(1)
+		subcommands.DieNotNil(fmt.Errorf("Device has no public key to encrypt with"))
 	}
-
 	pubkey := loadEciesPub(device.PublicKey)
 
-	cfg := client.ConfigCreateRequest{Reason: configReason}
-	if configRaw {
-		loadConfig(args[1], &cfg)
-		for i := range cfg.Files {
-			if !cfg.Files[i].Unencrypted {
-				cfg.Files[i].Value = eciesEncrypt(cfg.Files[i].Value, pubkey)
+	subcommands.SetConfig(&subcommands.SetConfigOptions{
+		FileArgs:  args[1:],
+		Reason:    reason,
+		IsRawFile: isRaw,
+		SetFunc: func(cfg client.ConfigCreateRequest) error {
+			if shouldCreate {
+				return api.DeviceCreateConfig(device.Name, cfg)
+			} else {
+				return api.DevicePatchConfig(device.Name, cfg, false)
 			}
-		}
-	} else {
-		for _, keyval := range args[1:] {
-			parts := strings.SplitN(keyval, "=", 2)
-			if len(parts) != 2 {
-				fmt.Println("ERROR: Invalid file=content argument: ", keyval)
-				os.Exit(1)
-			}
-			enc := eciesEncrypt(parts[1], pubkey)
-			cfg.Files = append(cfg.Files, client.ConfigFile{Name: parts[0], Value: enc})
-		}
-	}
-
-	if configCreate {
-		subcommands.DieNotNil(api.DeviceCreateConfig(device.Name, cfg))
-	} else {
-		subcommands.DieNotNil(api.DevicePatchConfig(device.Name, cfg, false))
-	}
+		},
+		EncryptFunc: func(value string) string {
+			return eciesEncrypt(value, pubkey)
+		},
+	})
 }

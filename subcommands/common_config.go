@@ -1,13 +1,51 @@
 package subcommands
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"os"
 	"strings"
 
 	"github.com/fatih/color"
+	"github.com/sirupsen/logrus"
 
 	"github.com/foundriesio/fioctl/client"
 )
+
+type SetConfigOptions struct {
+	Reason      string
+	FileArgs    []string
+	IsRawFile   bool
+	SetFunc     func(client.ConfigCreateRequest) error
+	EncryptFunc func(string) string
+}
+
+func SetConfig(opts *SetConfigOptions) {
+	cfg := client.ConfigCreateRequest{Reason: opts.Reason}
+	if opts.IsRawFile {
+		ReadConfig(opts.FileArgs[0], &cfg)
+	} else {
+		for _, keyval := range opts.FileArgs {
+			parts := strings.SplitN(keyval, "=", 2)
+			if len(parts) != 2 {
+				DieNotNil(fmt.Errorf("Invalid file=content argument: %s", keyval))
+			}
+			cfg.Files = append(cfg.Files, client.ConfigFile{Name: parts[0], Value: parts[1]})
+		}
+	}
+
+	if opts.EncryptFunc != nil {
+		for i := range cfg.Files {
+			file := &cfg.Files[i]
+			if !file.Unencrypted {
+				file.Value = opts.EncryptFunc(file.Value)
+			}
+		}
+	}
+
+	DieNotNil(opts.SetFunc(cfg))
+}
 
 type LogConfigsOptions struct {
 	Limit         int
@@ -40,6 +78,21 @@ func LogConfigs(opts *LogConfigsOptions) {
 			}
 		}
 	}
+}
+
+func ReadConfig(configFile string, cfg *client.ConfigCreateRequest) {
+	var content []byte
+	var err error
+
+	if configFile == "-" {
+		logrus.Debug("Reading config from STDIN")
+		content, err = ioutil.ReadAll(os.Stdin)
+	} else {
+		content, err = ioutil.ReadFile(configFile)
+	}
+
+	DieNotNil(err, "Unable to read config file:")
+	DieNotNil(json.Unmarshal(content, cfg), "Unable to parse config file:")
 }
 
 func PrintConfig(cfg *client.DeviceConfig, showAppliedAt, highlightFirstLine bool, indent string) {
