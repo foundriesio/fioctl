@@ -51,6 +51,8 @@ advantage of this, the "--raw" flag must be used. eg::
 fioctl will read in tmp.json and upload it to the OTA server.
 Instead of using ./tmp.json, the command can take a "-" and will read the
 content from STDIN instead of a file.
+
+Use a -g or --group parameter to create a device group wide configuration instead.
 `,
 		Run:  doConfigSet,
 		Args: cobra.MinimumNArgs(1),
@@ -76,19 +78,18 @@ func doConfigSet(cmd *cobra.Command, args []string) {
 			if shouldCreate {
 				return api.FactoryCreateConfig(factory, cfg)
 			} else {
-				return api.FactoryPatchConfig(factory, cfg)
+				return api.FactoryPatchConfig(factory, cfg, false)
 			}
 		}
-		subcommands.SetConfig(&opts)
 	} else {
 		logrus.Debugf("Creating new config for %s group %s", factory, group)
 		opts.SetFunc = func(cfg client.ConfigCreateRequest) error {
 			if shouldCreate {
 				return api.GroupCreateConfig(factory, group, cfg)
 			} else {
-				return api.GroupPatchConfig(factory, group, cfg)
+				return api.GroupPatchConfig(factory, group, cfg, false)
 			}
 		}
-		subcommands.SetConfig(&opts)
 	}
+	subcommands.SetConfig(&opts)
 }

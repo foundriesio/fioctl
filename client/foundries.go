@@ -667,13 +667,16 @@ func (a *Api) FactoryDeleteConfig(factory, filename string) error {
 	return err
 }
 
-func (a *Api) FactoryPatchConfig(factory string, cfg ConfigCreateRequest) error {
+func (a *Api) FactoryPatchConfig(factory string, cfg ConfigCreateRequest, force bool) error {
 	data, err := json.Marshal(cfg)
 	if err != nil {
 		return err
 	}
 
 	url := a.serverUrl + "/ota/factories/" + factory + "/config/"
+	if force {
+		url += "?force=1"
+	}
 	logrus.Debug("Creating new factory config")
 	_, err = a.Patch(url, data)
 	return err
@@ -709,13 +712,16 @@ func (a *Api) GroupDeleteConfig(factory, group, filename string) error {
 	return err
 }
 
-func (a *Api) GroupPatchConfig(factory, group string, cfg ConfigCreateRequest) error {
+func (a *Api) GroupPatchConfig(factory, group string, cfg ConfigCreateRequest, force bool) error {
 	data, err := json.Marshal(cfg)
 	if err != nil {
 		return err
 	}
 
 	url := a.serverUrl + "/ota/factories/" + factory + "/device-groups/" + group + "/config/"
+	if force {
+		url += "?force=1"
+	}
 	logrus.Debug("Creating new device group config")
 	_, err = a.Patch(url, data)
 	return err

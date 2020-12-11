@@ -102,7 +102,7 @@ func doWireguard(cmd *cobra.Command, args []string) {
 		}
 		cfg.Files[0].Value = wsc.Marshall()
 
-		subcommands.DieNotNil(api.FactoryPatchConfig(factory, cfg))
+		subcommands.DieNotNil(api.FactoryPatchConfig(factory, cfg, false))
 	} else {
 		fmt.Println("Enabled:", wsc.Enabled)
 		if len(wsc.Endpoint) > 0 {
