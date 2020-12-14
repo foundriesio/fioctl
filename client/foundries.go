@@ -155,6 +155,12 @@ type FactoryUser struct {
 	Role    string `json:"role"`
 }
 
+type JobservRun struct {
+	Name      string   `json:"name"`
+	Url       string   `json:"url"`
+	Artifacts []string `json:"artifacts"`
+}
+
 type TargetStatus struct {
 	Devices int `json:"devices"`
 	Version int `json:"version"`
@@ -1003,6 +1009,55 @@ func (a *Api) TargetTestArtifact(factory string, target int, testId string, arti
 	url := a.serverUrl + "/ota/factories/" + factory + "/targets/" + strconv.Itoa(target) + "/testing/" + testId + "/" + artifact
 	logrus.Debugf("TargetTests with url: %s", url)
 	return a.Get(url)
+}
+
+func (a *Api) JobservRuns(factory string, build int) ([]JobservRun, error) {
+	url := a.serverUrl + "/projects/" + factory + "/lmp/builds/" + strconv.Itoa(build) + "/runs/"
+	logrus.Debugf("JobservRuns with url: %s", url)
+	body, err := a.Get(url)
+	if err != nil {
+		return nil, err
+	}
+
+	type Jsonified struct {
+		Data struct {
+			Runs []JobservRun `json:"runs"`
+		} `json:"data"`
+	}
+
+	var jsonified Jsonified
+	err = json.Unmarshal(*body, &jsonified)
+	if err != nil {
+		return nil, err
+	}
+	return jsonified.Data.Runs, nil
+}
+
+func (a *Api) JobservRun(runUrl string) (*JobservRun, error) {
+	logrus.Debugf("JobservRun with url: %s", runUrl)
+	body, err := a.Get(runUrl)
+	if err != nil {
+		return nil, err
+	}
+
+	type Jsonified struct {
+		Data struct {
+			Run JobservRun `json:"run"`
+		} `json:"data"`
+	}
+
+	var jsonified Jsonified
+	err = json.Unmarshal(*body, &jsonified)
+	if err != nil {
+		return nil, err
+	}
+	return &jsonified.Data.Run, nil
+}
+
+func (a *Api) JobservRunArtifact(factory string, build int, run string, artifact string) (*http.Response, error) {
+	url := a.serverUrl + "/projects/" + factory + "/lmp/builds/" + strconv.Itoa(build) + "/runs/" + run + "/" + artifact
+	logrus.Debugf("JobservRunArtifact with url: %s", url)
+	return a.RawGet(url, nil)
 }
 
 func (a *Api) JobservTail(url string) {
