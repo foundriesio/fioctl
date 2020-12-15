@@ -274,7 +274,6 @@ func (d Device) Online(inactiveHoursThreshold int) bool {
 }
 
 func NewApiClient(serverUrl string, config Config, caCertPath string) *Api {
-	var tlsConfig *tls.Config
 	if len(caCertPath) > 0 {
 		rootCAs, _ := x509.SystemCertPool()
 		if rootCAs == nil {
@@ -290,19 +289,15 @@ func NewApiClient(serverUrl string, config Config, caCertPath string) *Api {
 			logrus.Warning("No certs appended, using system certs only")
 		}
 
-		tlsConfig = &tls.Config{
+		http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{
 			RootCAs: rootCAs,
 		}
+
 	}
 	api := Api{
 		serverUrl: strings.TrimRight(serverUrl, "/"),
 		config:    config,
-		client: http.Client{
-			Timeout: time.Second * 10,
-			Transport: &http.Transport{
-				TLSClientConfig: tlsConfig,
-			},
-		},
+		client:    *http.DefaultClient,
 	}
 	return &api
 }
