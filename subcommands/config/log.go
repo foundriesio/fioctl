@@ -12,7 +12,7 @@ import (
 func init() {
 	logCmd := &cobra.Command{
 		Use:   "log",
-		Short: "Show a change log of configuration",
+		Short: "Show a changelog of configuration",
 		Run:   doConfigLog,
 	}
 	cmd.AddCommand(logCmd)

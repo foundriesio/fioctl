@@ -155,7 +155,7 @@ func SetUpdatesConfig(opts *SetUpdatesConfigOptions) {
 
 	dcl, err := opts.ListFunc()
 	if !opts.IsForced {
-		DieNotNil(err, "Failed to fetch existing config change log (override with --force):")
+		DieNotNil(err, "Failed to fetch existing config changelog (override with --force):")
 	}
 	sota, err := loadSotaConfig(dcl)
 	if !opts.IsForced {

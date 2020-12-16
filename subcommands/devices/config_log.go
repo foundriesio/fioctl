@@ -11,7 +11,7 @@ import (
 func init() {
 	logConfigCmd := &cobra.Command{
 		Use:   "log <device>",
-		Short: "Show a change log of device's configuration",
+		Short: "Show a changelog of device's configuration",
 		Run:   doConfigLog,
 		Args:  cobra.ExactArgs(1),
 	}
