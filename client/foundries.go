@@ -59,7 +59,7 @@ type ConfigCreateRequest struct {
 
 type DeviceConfig struct {
 	CreatedAt string       `json:"created-at"`
-	AppliedAt string       `json:"applied-at"`
+	AppliedAt string       `json:"applied-at"` // This is not present in factory config
 	Reason    string       `json:"reason"`
 	Files     []ConfigFile `json:"files"`
 }
@@ -667,13 +667,16 @@ func (a *Api) FactoryDeleteConfig(factory, filename string) error {
 	return err
 }
 
-func (a *Api) FactoryPatchConfig(factory string, cfg ConfigCreateRequest) error {
+func (a *Api) FactoryPatchConfig(factory string, cfg ConfigCreateRequest, force bool) error {
 	data, err := json.Marshal(cfg)
 	if err != nil {
 		return err
 	}
 
 	url := a.serverUrl + "/ota/factories/" + factory + "/config/"
+	if force {
+		url += "?force=1"
+	}
 	logrus.Debug("Creating new factory config")
 	_, err = a.Patch(url, data)
 	return err
@@ -682,10 +685,56 @@ func (a *Api) FactoryPatchConfig(factory string, cfg ConfigCreateRequest) error 
 func (a *Api) FactoryListConfig(factory string) (*DeviceConfigList, error) {
 	url := a.serverUrl + "/ota/factories/" + factory + "/config/"
 	logrus.Debugf("FactoryListConfig with url: %s", url)
-	return a.DeviceListConfigCont(url)
+	return a.FactoryListConfigCont(url)
 }
 
 func (a *Api) FactoryListConfigCont(url string) (*DeviceConfigList, error) {
+	// A short cut as it behaves just the same
+	return a.DeviceListConfigCont(url)
+}
+
+func (a *Api) GroupCreateConfig(factory, group string, cfg ConfigCreateRequest) error {
+	data, err := json.Marshal(cfg)
+	if err != nil {
+		return err
+	}
+
+	url := a.serverUrl + "/ota/factories/" + factory + "/device-groups/" + group + "/config/"
+	logrus.Debug("Creating new device group config")
+	_, err = a.Post(url, data)
+	return err
+}
+
+func (a *Api) GroupDeleteConfig(factory, group, filename string) error {
+	url := a.serverUrl + "/ota/factories/" + factory + "/device-groups/" + group + "/config/" + filename + "/"
+	logrus.Debugf("Deleting config file: %s", url)
+	_, err := a.Delete(url, nil)
+	return err
+}
+
+func (a *Api) GroupPatchConfig(factory, group string, cfg ConfigCreateRequest, force bool) error {
+	data, err := json.Marshal(cfg)
+	if err != nil {
+		return err
+	}
+
+	url := a.serverUrl + "/ota/factories/" + factory + "/device-groups/" + group + "/config/"
+	if force {
+		url += "?force=1"
+	}
+	logrus.Debug("Creating new device group config")
+	_, err = a.Patch(url, data)
+	return err
+}
+
+func (a *Api) GroupListConfig(factory, group string) (*DeviceConfigList, error) {
+	url := a.serverUrl + "/ota/factories/" + factory + "/device-groups/" + group + "/config/"
+	logrus.Debugf("GroupListConfig with url: %s", url)
+	return a.GroupListConfigCont(url)
+}
+
+func (a *Api) GroupListConfigCont(url string) (*DeviceConfigList, error) {
+	// A short cut as it behaves just the same
 	return a.DeviceListConfigCont(url)
 }
 

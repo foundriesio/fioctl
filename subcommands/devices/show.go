@@ -88,22 +88,7 @@ func doShow(cmd *cobra.Command, args []string) {
 	}
 	if device.ActiveConfig != nil {
 		fmt.Println("Active Config:")
-		fmt.Println("\tCreated At: ", device.ActiveConfig.CreatedAt)
-		fmt.Println("\tApplied At: ", device.ActiveConfig.AppliedAt)
-		fmt.Println("\tReason:     ", device.ActiveConfig.Reason)
-		fmt.Println("\tFiles:")
-		for _, f := range device.ActiveConfig.Files {
-			if len(f.OnChanged) == 0 {
-				fmt.Printf("\t\t%s\n", f.Name)
-			} else {
-				fmt.Printf("\t\t%s - %v\n", f.Name, f.OnChanged)
-			}
-			if f.Unencrypted {
-				for _, line := range strings.Split(f.Value, "\n") {
-					fmt.Printf("\t\t | %s\n", line)
-				}
-			}
-		}
+		subcommands.PrintConfig(device.ActiveConfig, true, false, "\t")
 	}
 	if len(device.PublicKey) > 0 {
 		fmt.Println()

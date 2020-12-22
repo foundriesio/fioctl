@@ -11,32 +11,25 @@ import (
 func init() {
 	logConfigCmd := &cobra.Command{
 		Use:   "log <device>",
-		Short: "Changelog of device's configuration",
+		Short: "Show a changelog of device's configuration",
 		Run:   doConfigLog,
 		Args:  cobra.ExactArgs(1),
 	}
 	configCmd.AddCommand(logConfigCmd)
-	logConfigCmd.Flags().IntVarP(&listLimit, "limit", "n", 0, "Limit the number of results displayed.")
+	logConfigCmd.Flags().IntP("limit", "n", 0, "Limit the number of results displayed.")
 }
 
 func doConfigLog(cmd *cobra.Command, args []string) {
-	logrus.Debug("Showing device config log")
-	var dcl *client.DeviceConfigList
-	for {
-		var err error
-		if dcl == nil {
-			dcl, err = api.DeviceListConfig(args[0])
-		} else {
-			if dcl.Next != nil {
-				dcl, err = api.DeviceListConfigCont(*dcl.Next)
-			} else {
-				break
-			}
-		}
-		subcommands.DieNotNil(err)
-		listLimit = subcommands.PrintConfigs(dcl.Configs, listLimit)
-		if listLimit == 0 {
-			break
-		}
-	}
+	device := args[0]
+	listLimit, _ := cmd.Flags().GetInt("limit")
+	logrus.Debugf("Showing device config log for %s", device)
+
+	subcommands.LogConfigs(&subcommands.LogConfigsOptions{
+		Limit:         listLimit,
+		ShowAppliedAt: true,
+		ListFunc: func() (*client.DeviceConfigList, error) {
+			return api.DeviceListConfig(device)
+		},
+		ListContFunc: api.DeviceListConfigCont,
+	})
 }

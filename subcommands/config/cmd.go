@@ -8,8 +8,7 @@ import (
 )
 
 var (
-	api       *client.Api
-	listLimit int
+	api *client.Api
 )
 
 var cmd = &cobra.Command{

@@ -1,24 +1,12 @@
 package config
 
 import (
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
-	"os"
-	"strings"
-
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
 	"github.com/foundriesio/fioctl/client"
 	"github.com/foundriesio/fioctl/subcommands"
-)
-
-var (
-	configReason string
-	configRaw    bool
-	configCreate bool
 )
 
 func init() {
@@ -63,57 +51,45 @@ advantage of this, the "--raw" flag must be used. eg::
 fioctl will read in tmp.json and upload it to the OTA server.
 Instead of using ./tmp.json, the command can take a "-" and will read the
 content from STDIN instead of a file.
+
+Use a -g or --group parameter to create a device group wide configuration instead.
 `,
 		Run:  doConfigSet,
 		Args: cobra.MinimumNArgs(1),
 	}
 	cmd.AddCommand(setCmd)
-	setCmd.Flags().StringVarP(&configReason, "reason", "m", "", "Add a message to store as the \"reason\" for this change")
-	setCmd.Flags().BoolVarP(&configRaw, "raw", "", false, "Use raw configuration file")
-	setCmd.Flags().BoolVarP(&configCreate, "create", "", false, "Replace the whole config with these values. Default is to merge these values in with the existing config values")
-}
-
-func loadConfig(configFile string, cfg *client.ConfigCreateRequest) {
-	var content []byte
-	var err error
-
-	if configFile == "-" {
-		logrus.Debug("Reading config from STDIN")
-		content, err = ioutil.ReadAll(os.Stdin)
-	} else {
-		content, err = ioutil.ReadFile(configFile)
-	}
-	if err != nil {
-		fmt.Printf("ERROR: Unable to read config file: %v\n", err)
-		os.Exit(1)
-	}
-	if err := json.Unmarshal(content, cfg); err != nil {
-		fmt.Printf("ERROR: Unable to parse config file: %v\n", err)
-		os.Exit(1)
-	}
+	setCmd.Flags().StringP("group", "g", "", "Device group to use")
+	setCmd.Flags().StringP("reason", "m", "", "Add a message to store as the \"reason\" for this change")
+	setCmd.Flags().BoolP("raw", "", false, "Use raw configuration file")
+	setCmd.Flags().BoolP("create", "", false, "Replace the whole config with these values. Default is to merge these values in with the existing config values")
 }
 
 func doConfigSet(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
-	logrus.Debugf("Creating new config for %s", factory)
+	group, _ := cmd.Flags().GetString("group")
+	reason, _ := cmd.Flags().GetString("reason")
+	isRaw, _ := cmd.Flags().GetBool("raw")
+	shouldCreate, _ := cmd.Flags().GetBool("create")
+	opts := subcommands.SetConfigOptions{FileArgs: args, Reason: reason, IsRawFile: isRaw}
 
-	cfg := client.ConfigCreateRequest{Reason: configReason}
-	if configRaw {
-		loadConfig(args[0], &cfg)
-	} else {
-		for _, keyval := range args {
-			parts := strings.SplitN(keyval, "=", 2)
-			if len(parts) != 2 {
-				fmt.Println("ERROR: Invalid file=content argument: ", keyval)
-				os.Exit(1)
+	if group == "" {
+		logrus.Debugf("Creating new config for %s", factory)
+		opts.SetFunc = func(cfg client.ConfigCreateRequest) error {
+			if shouldCreate {
+				return api.FactoryCreateConfig(factory, cfg)
+			} else {
+				return api.FactoryPatchConfig(factory, cfg, false)
 			}
-			cfg.Files = append(cfg.Files, client.ConfigFile{Name: parts[0], Value: parts[1]})
+		}
+	} else {
+		logrus.Debugf("Creating new config for %s group %s", factory, group)
+		opts.SetFunc = func(cfg client.ConfigCreateRequest) error {
+			if shouldCreate {
+				return api.GroupCreateConfig(factory, group, cfg)
+			} else {
+				return api.GroupPatchConfig(factory, group, cfg, false)
+			}
 		}
 	}
-
-	if configCreate {
-		subcommands.DieNotNil(api.FactoryCreateConfig(factory, cfg))
-	} else {
-		subcommands.DieNotNil(api.FactoryPatchConfig(factory, cfg))
-	}
+	subcommands.SetConfig(&opts)
 }
