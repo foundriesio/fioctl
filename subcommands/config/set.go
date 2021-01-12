@@ -40,7 +40,7 @@ advantage of this, the "--raw" flag must be used. eg::
         "unencrypted": true
       },
       {
-        "name": "githubok",
+        "name": "githubtok",
         "value": "1234"
       }
     ]
