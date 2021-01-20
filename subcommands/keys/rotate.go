@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
-	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -92,6 +91,7 @@ with TemporaryDirectory() as tempdir:
 	if err := pullContainer(aktualizrImageName); err != nil {
 		exitf("failed to pull image, %q, %s", aktualizrImageName, err)
 	}
+
 	scriptPath, err := loadScript(rotateCmd)
 	if err != nil {
 		exitf("failed to load script, %s", err)
@@ -150,12 +150,11 @@ func runRotationScript(imageName string, sourcePath string, credentialsPath stri
 }
 
 func pullContainer(name string) error {
-	command := fmt.Sprintf("docker pull %s", name)
-	return cli(command)
+	return RunStreamed("docker", "pull", name)
 }
 
 func verifyDocker() error {
-	if err := cli("docker --version"); err != nil {
+	if err := RunStreamed("docker", "--version"); err != nil {
 		return fmt.Errorf("docker not available")
 	}
 	return nil
@@ -185,33 +184,8 @@ func copyFile(source string, target string) error {
 	return nil
 }
 
-func cli(input string) error {
-	return RunStreamed("/bin/sh", "-c", input)
-}
-
 //Allows tests to mock this command
 var execCommand = exec.Command
-
-func errorIndent(content string) string {
-	return "| " + strings.Replace(content, "\n", "\n| ", -1) + "_"
-}
-
-func RunFrom(fromDir string, command string, args ...string) (string, error) {
-	cmd := execCommand(command, args...)
-	cmd.Dir = fromDir
-	binaryOut, err := cmd.CombinedOutput()
-	out := string(binaryOut)
-	if err != nil {
-		return "", fmt.Errorf("Unable to run '%s'. err(%s), output=\n%s",
-			cmd.Args, err, errorIndent(out))
-	}
-
-	return out, nil
-}
-
-func Run(command string, args ...string) (string, error) {
-	return RunFrom("", command, args...)
-}
 
 func RunFromStreamedTo(fromDir string, stdOut, stdErr io.Writer, command string, args ...string) error {
 	cmd := execCommand(command, args...)
