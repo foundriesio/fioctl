@@ -67,12 +67,23 @@ def find_current_root(repodir):
     print('could not find root key name')
     sys.exit(1)
 
+def update_creds(config_json, client_id, client_secret):
+    with open(config_json) as f:
+        data = json.load(f)
+    data['auth']['server'] = 'https://app.foundries.io/oauth'
+    data['auth']['client_id'] = client_id
+    data['auth']['client_secret'] = client_secret
+
+    with open(config_json, 'w') as f:
+        json.dump(data, f)
+
 with TemporaryDirectory() as tempdir:
     os.chdir(tempdir)
     os.mkdir('tuf')
     creds_file = '/creds.tgz'
     expires = (datetime.datetime.now() + datetime.timedelta(days=2*365)).strftime('%Y-%m-%dT%H:%M:%SZ')
     cmd('tar', 'xf', creds_file, cwd='./tuf')
+    update_creds('./tuf/tufrepo/config.json', sys.argv[1], sys.argv[2])
     cmd('garage-sign', 'root', 'pull', '--repo', './tufrepo')
     old_keyname, old_keyid = find_current_root('./tuf/tufrepo')
     keyname = 'offline-root-' + datetime.datetime.now().isoformat()
@@ -134,6 +145,8 @@ func loadScript(script string) (string, error) {
 }
 
 func runRotationScript(imageName string, sourcePath string, credentialsPath string) error {
+	oauth := api.GetOauthConfig()
+
 	targetPath := "/tmp/tmp.py"
 	args := []string{
 		// base args
@@ -144,9 +157,12 @@ func runRotationScript(imageName string, sourcePath string, credentialsPath stri
 		"-v", fmt.Sprintf("%s:/creds.tgz", credentialsPath),
 		"-v", fmt.Sprintf("%s:%s", sourcePath, targetPath),
 		// load args
-		imageName, targetPath,
+		imageName, targetPath, oauth.ClientId, oauth.ClientSecret,
 	}
-	return RunStreamed("docker", args...)
+	if err := RunStreamed("docker", args...); err != nil {
+		return fmt.Errorf("Unable to rotate keys")
+	}
+	return nil
 }
 
 func pullContainer(name string) error {

@@ -398,6 +398,10 @@ func (a *Api) setReqHeaders(req *http.Request, jsonContent bool) {
 	}
 }
 
+func (a *Api) GetOauthConfig() OAuthConfig {
+	return a.config.ClientCredentials
+}
+
 func (a *Api) RawGet(url string, headers *map[string]string) (*http.Response, error) {
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
