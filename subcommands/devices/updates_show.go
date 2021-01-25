@@ -2,6 +2,7 @@ package devices
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -32,6 +33,11 @@ func doShowUpdate(cmd *cobra.Command, args []string) {
 			}
 		} else {
 			fmt.Println()
+		}
+		if len(event.Detail.Details) > 0 {
+			fmt.Println(" Details:")
+			indented := " | " + strings.Replace(event.Detail.Details, "\n", "\n | ", -1)
+			fmt.Println(indented)
 		}
 	}
 }

@@ -97,6 +97,7 @@ type EventDetail struct {
 	Version    string `json:"version"`
 	TargetName string `json:"targetName"`
 	Success    *bool  `json:"success,omitempty"`
+	Details    string `json:"details"`
 }
 
 type UpdateEvent struct {
