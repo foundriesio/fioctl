@@ -12,10 +12,11 @@ import (
 
 func init() {
 	updatesCmd.AddCommand(&cobra.Command{
-		Use:   "show <name> <update-id>",
-		Short: "Show details of a specific device update",
-		Run:   doShowUpdate,
-		Args:  cobra.ExactArgs(2),
+		Use:    "show <name> <update-id>",
+		Short:  "[DEPRECATED] Please use: fioctl devices updates <device> <update-id>",
+		Hidden: true,
+		Run:    doShowUpdate,
+		Args:   cobra.ExactArgs(2),
 	})
 }
 
