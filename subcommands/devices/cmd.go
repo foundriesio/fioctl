@@ -27,12 +27,36 @@ var configCmd = &cobra.Command{
 }
 
 var updatesCmd = &cobra.Command{
-	Use:   "updates",
-	Short: "Device update history",
+	Use:   "updates <device> [<update-id>]",
+	Short: "Show updates performed on a device",
+	Args:  cobra.RangeArgs(1, 2),
+	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) == 1 {
+			doListUpdates(cmd, args)
+		} else {
+			doShowUpdate(cmd, args)
+		}
+	},
+	Example: `
+# List all updates performed on a device:
+fioctl devices updates <device1>
+
+# List the last 2 updates:
+fioctl devices updates <device> -n2
+
+# Show the details of an update:
+fioctl devices updates <device> <update-id>
+
+# Show the most recent update with bash help:
+fioctl devices updates <device> $(fioctl devices updates <device> -n1 | tail -n1 | cut -f1 -d\ )
+`,
 }
 
 func NewCommand() *cobra.Command {
 	cmd.PersistentFlags().StringP("token", "t", "", "API token from https://app.foundries.io/settings/tokens/")
+
+	updatesCmd.Flags().IntVarP(&listLimit, "limit", "n", 0, "Limit the number of updates displayed.")
+
 	cmd.AddCommand(configCmd)
 	cmd.AddCommand(updatesCmd)
 	return cmd
