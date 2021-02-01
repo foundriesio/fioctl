@@ -43,8 +43,8 @@ func init() {
 		Args:  cobra.ExactArgs(1),
 	}
 	groupCmd.AddCommand(updateCmd)
-	updateCmd.Flags().StringP("name", "n", "", "Change a device name")
-	updateCmd.Flags().StringP("description", "d", "", "Change a device description")
+	updateCmd.Flags().StringP("name", "n", "", "Change a device group name")
+	updateCmd.Flags().StringP("description", "d", "", "Change a device group description")
 }
 
 func doListDeviceGroup(cmd *cobra.Command, args []string) {
