@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
-	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -68,12 +67,23 @@ def find_current_root(repodir):
     print('could not find root key name')
     sys.exit(1)
 
+def update_creds(config_json, client_id, client_secret):
+    with open(config_json) as f:
+        data = json.load(f)
+    data['auth']['server'] = 'https://app.foundries.io/oauth'
+    data['auth']['client_id'] = client_id
+    data['auth']['client_secret'] = client_secret
+
+    with open(config_json, 'w') as f:
+        json.dump(data, f)
+
 with TemporaryDirectory() as tempdir:
     os.chdir(tempdir)
     os.mkdir('tuf')
     creds_file = '/creds.tgz'
     expires = (datetime.datetime.now() + datetime.timedelta(days=2*365)).strftime('%Y-%m-%dT%H:%M:%SZ')
     cmd('tar', 'xf', creds_file, cwd='./tuf')
+    update_creds('./tuf/tufrepo/config.json', sys.argv[1], sys.argv[2])
     cmd('garage-sign', 'root', 'pull', '--repo', './tufrepo')
     old_keyname, old_keyid = find_current_root('./tuf/tufrepo')
     keyname = 'offline-root-' + datetime.datetime.now().isoformat()
@@ -92,6 +102,7 @@ with TemporaryDirectory() as tempdir:
 	if err := pullContainer(aktualizrImageName); err != nil {
 		exitf("failed to pull image, %q, %s", aktualizrImageName, err)
 	}
+
 	scriptPath, err := loadScript(rotateCmd)
 	if err != nil {
 		exitf("failed to load script, %s", err)
@@ -134,6 +145,8 @@ func loadScript(script string) (string, error) {
 }
 
 func runRotationScript(imageName string, sourcePath string, credentialsPath string) error {
+	oauth := api.GetOauthConfig()
+
 	targetPath := "/tmp/tmp.py"
 	args := []string{
 		// base args
@@ -144,18 +157,20 @@ func runRotationScript(imageName string, sourcePath string, credentialsPath stri
 		"-v", fmt.Sprintf("%s:/creds.tgz", credentialsPath),
 		"-v", fmt.Sprintf("%s:%s", sourcePath, targetPath),
 		// load args
-		imageName, targetPath,
+		imageName, targetPath, oauth.ClientId, oauth.ClientSecret,
 	}
-	return RunStreamed("docker", args...)
+	if err := RunStreamed("docker", args...); err != nil {
+		return fmt.Errorf("Unable to rotate keys")
+	}
+	return nil
 }
 
 func pullContainer(name string) error {
-	command := fmt.Sprintf("docker pull %s", name)
-	return cli(command)
+	return RunStreamed("docker", "pull", name)
 }
 
 func verifyDocker() error {
-	if err := cli("docker --version"); err != nil {
+	if err := RunStreamed("docker", "--version"); err != nil {
 		return fmt.Errorf("docker not available")
 	}
 	return nil
@@ -185,33 +200,8 @@ func copyFile(source string, target string) error {
 	return nil
 }
 
-func cli(input string) error {
-	return RunStreamed("/bin/sh", "-c", input)
-}
-
 //Allows tests to mock this command
 var execCommand = exec.Command
-
-func errorIndent(content string) string {
-	return "| " + strings.Replace(content, "\n", "\n| ", -1) + "_"
-}
-
-func RunFrom(fromDir string, command string, args ...string) (string, error) {
-	cmd := execCommand(command, args...)
-	cmd.Dir = fromDir
-	binaryOut, err := cmd.CombinedOutput()
-	out := string(binaryOut)
-	if err != nil {
-		return "", fmt.Errorf("Unable to run '%s'. err(%s), output=\n%s",
-			cmd.Args, err, errorIndent(out))
-	}
-
-	return out, nil
-}
-
-func Run(command string, args ...string) (string, error) {
-	return RunFrom("", command, args...)
-}
 
 func RunFromStreamedTo(fromDir string, stdOut, stdErr io.Writer, command string, args ...string) error {
 	cmd := execCommand(command, args...)

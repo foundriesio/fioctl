@@ -399,6 +399,10 @@ func (a *Api) setReqHeaders(req *http.Request, jsonContent bool) {
 	}
 }
 
+func (a *Api) GetOauthConfig() OAuthConfig {
+	return a.config.ClientCredentials
+}
+
 func (a *Api) RawGet(url string, headers *map[string]string) (*http.Response, error) {
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
@@ -418,7 +422,7 @@ func (a *Api) RawGet(url string, headers *map[string]string) (*http.Response, er
 func (a *Api) Get(url string) (*[]byte, error) {
 	res, err := a.RawGet(url, nil)
 
-	log := httpLogger(res.Request)
+	log := logrus.WithFields(logrus.Fields{"url": url, "method": "GET"})
 	if err != nil {
 		log.Debugf("Network Error: %s", err)
 		return nil, err
