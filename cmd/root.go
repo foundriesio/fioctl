@@ -55,6 +55,7 @@ func init() {
 	rootCmd.AddCommand(status.NewCommand())
 	rootCmd.AddCommand(targets.NewCommand())
 	rootCmd.AddCommand(version.NewCommand())
+	rootCmd.AddCommand(subcommands.GetCommand)
 
 	rootCmd.AddCommand(docsCmd)
 }
