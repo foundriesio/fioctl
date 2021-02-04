@@ -1,220 +1,290 @@
 package keys
 
 import (
+	"archive/tar"
+	"bytes"
+	"compress/gzip"
+	"crypto"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/sha256"
+	"crypto/x509"
+	"encoding/json"
+	"encoding/pem"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
-	"os/exec"
+	"strings"
+	"time"
 
+	canonical "github.com/docker/go/canonical/json"
+	"github.com/foundriesio/fioctl/client"
+	"github.com/foundriesio/fioctl/subcommands"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	tuf "github.com/theupdateframework/notary/tuf/data"
 )
 
+type OfflineCreds map[string][]byte
+type TufSigner struct {
+	Id  string
+	Key *rsa.PrivateKey
+}
+
 func init() {
-	cmd.AddCommand(&cobra.Command{
+	rotate := &cobra.Command{
 		Use:     "rotate-root <offline key archive>",
 		Aliases: []string{"rotate"},
 		Short:   "Rotate root signing key used by the Factory",
-		Run:     doKeyRotation,
+		Run:     doRotateRoot,
 		Args:    cobra.ExactArgs(1),
-	})
+	}
+	subcommands.RequireFactory(rotate)
+	cmd.AddCommand(rotate)
 }
 
-func doKeyRotation(cmd *cobra.Command, args []string) {
-	credentialsPath := args[0]
-	credentialsBackupPath := fmt.Sprintf("%s.bak", credentialsPath)
-	if err := verifyDocker(); err != nil {
-		exitf("invalid environment, %s", err)
+func doRotateRoot(cmd *cobra.Command, args []string) {
+	factory := viper.GetString("factory")
+	credsFile := args[0]
+	assertWritable(credsFile)
+	creds := getOfflineCreds(credsFile)
+
+	root, err := api.TufRootGet(factory)
+	subcommands.DieNotNil(err)
+
+	curid, curPk, err := findRoot(*root, creds)
+	fmt.Println("= Current root:", curid)
+	subcommands.DieNotNil(err)
+
+	// A rotation is pretty easy:
+	// 1. change the who's listed as the root key: "swapRootKey"
+	// 2. sign the new root.json with both the old and new root
+
+	newid, newPk, newCreds := swapRootKey(root, curid, creds)
+	fmt.Println("= New root:", newid)
+
+	fmt.Println("= Resigning root.json")
+	signers := []TufSigner{
+		{Id: curid, Key: curPk},
+		{Id: newid, Key: newPk},
 	}
-	const aktualizrImageName = "foundries/ota-lite-targets"
-	const rotateCmd = `#!/usr/bin/python3
-import datetime
-import json
-import os
-import subprocess
-import sys
-from tempfile import TemporaryDirectory
+	subcommands.DieNotNil(signRoot(root, signers...))
 
-def cmd(*args, cwd=None):
-    print('running: %s' % ' '.join(args))
-    p = subprocess.Popen(
-        args, cwd=cwd, stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
-    for line in p.stdout:
-        sys.stdout.buffer.write(line)
-    p.wait()
-    if p.returncode != 0:
-        raise subprocess.CalledProcessError(p.returncode, args)
+	bytes, err := json.Marshal(root)
+	subcommands.DieNotNil(err)
 
-def find_current_root(repodir):
-    print("finding root key name and key id")
-    with open(os.path.join(repodir, 'roles/unsigned/root.json')) as f:
-        root_role = json.load(f)
+	// Create a backup before we try and commit this:
+	tmpCreds := saveTempCreds(credsFile, newCreds)
 
-    key_ids = root_role['roles']['root']['keyids']
-    assert len(key_ids) == 1, "Unexpected number of root keys"
-    print("current root keyid:", key_ids[0])
-    pubkey = root_role['keys'][key_ids[0]]["keyval"]["public"]
-
-    # now find pubkey:
-    keydir = os.path.join(repodir, 'keys')
-    for x in os.listdir(keydir):
-        if x.endswith('.pub'):
-            with open(os.path.join(keydir, x)) as f:
-                key = json.load(f)['keyval']['public']
-                if pubkey == key:
-                    keyname = x[:-4]  # strip off .pub
-                    print("current root keyname:", keyname)
-                    return keyname, key_ids[0]
-    print('could not find root key name')
-    sys.exit(1)
-
-def update_creds(config_json, client_id, client_secret):
-    with open(config_json) as f:
-        data = json.load(f)
-    data['auth']['server'] = 'https://app.foundries.io/oauth'
-    data['auth']['client_id'] = client_id
-    data['auth']['client_secret'] = client_secret
-
-    with open(config_json, 'w') as f:
-        json.dump(data, f)
-
-with TemporaryDirectory() as tempdir:
-    os.chdir(tempdir)
-    os.mkdir('tuf')
-    creds_file = '/creds.tgz'
-    expires = (datetime.datetime.now() + datetime.timedelta(days=2*365)).strftime('%Y-%m-%dT%H:%M:%SZ')
-    cmd('tar', 'xf', creds_file, cwd='./tuf')
-    update_creds('./tuf/tufrepo/config.json', sys.argv[1], sys.argv[2])
-    cmd('garage-sign', 'root', 'pull', '--repo', './tufrepo')
-    old_keyname, old_keyid = find_current_root('./tuf/tufrepo')
-    keyname = 'offline-root-' + datetime.datetime.now().isoformat()
-    cmd('garage-sign', 'key', 'generate', '--repo', './tufrepo',
-    '--type', 'rsa', '--name', keyname)
-    cmd('garage-sign', 'root', 'key', 'add', '--repo', './tufrepo',
-    '--key-name', keyname)
-    cmd('garage-sign', 'root', 'key', 'remove', '--repo', './tufrepo',
-    '--key-id', old_keyid, '--key-name', old_keyname)
-    cmd('garage-sign', 'root', 'sign', '--repo', './tufrepo',
-    '--key-name', keyname, '--key-name', old_keyname, '--expires', expires)
-    cmd('tar', 'czf', creds_file, 'tufrepo', cwd='./tuf')
-    cmd('garage-sign', 'root', 'push', '--repo', './tufrepo')
-`
-	fmt.Println("Pulling aktualizr image...")
-	if err := pullContainer(aktualizrImageName); err != nil {
-		exitf("failed to pull image, %q, %s", aktualizrImageName, err)
-	}
-
-	scriptPath, err := loadScript(rotateCmd)
+	fmt.Println("= Uploading rotated root")
+	body, err := api.TufRootPost(factory, bytes)
 	if err != nil {
-		exitf("failed to load script, %s", err)
+		fmt.Println("\nERROR:", err)
+		fmt.Println(body)
+		fmt.Println("A temporary copy of the new root was saved:", tmpCreds)
+		fmt.Println("Before deleting this please ensure your factory isn't configured with this new key")
+		os.Exit(1)
 	}
-	defer os.Remove(scriptPath) // clean up
-	if err := copyFile(credentialsPath, credentialsBackupPath); err != nil {
-		exitf("failed to backup offline credentials, %s", err)
+	if err := os.Rename(tmpCreds, credsFile); err != nil {
+		fmt.Println("\nERROR: Unable to update offline creds file.", err)
+		fmt.Println("Temp copy still available at:", tmpCreds)
+		fmt.Println("This temp file contains your new factory root private key. You must copy this file.")
 	}
-	fmt.Printf("Original credentials --> %q\n", credentialsBackupPath)
-	fmt.Println("Rotating offline credentials...")
-	if err := runRotationScript(aktualizrImageName, scriptPath, credentialsPath); err != nil {
-		exitf("failed key rotation %s", err)
-	}
-	fmt.Printf("Updated credentials --> %q\n", credentialsPath)
 }
 
-func exitf(format string, args ...interface{}) {
-	errFormat := fmt.Sprintf("Error: %s\n", format)
-	fmt.Printf(errFormat, args...)
-	os.Exit(1)
+func removeUnusedKeys(root *client.AtsTufRoot) {
+	var inuse []string
+	for _, role := range root.Signed.Roles {
+		inuse = append(inuse, role.KeyIDs...)
+	}
+	// we also have to be careful to not loose the extra root key when doing
+	// a root key rotation
+	for _, sig := range root.Signatures {
+		inuse = append(inuse, sig.KeyID)
+	}
+
+	for k := range root.Signed.Keys {
+		// is k in inuse?
+		found := false
+		for _, val := range inuse {
+			if k == val {
+				found = true
+				break
+			}
+		}
+		if !found {
+			fmt.Println("= Removing unused key:", k)
+			delete(root.Signed.Keys, k)
+		}
+	}
 }
 
-func loadScript(script string) (string, error) {
-	content := []byte(script)
-	tmpFile, err := ioutil.TempFile("/tmp", "*tmpScript")
+func signRoot(root *client.AtsTufRoot, signers ...TufSigner) error {
+	removeUnusedKeys(root)
+
+	bytes, err := canonical.MarshalCanonical(root.Signed)
 	if err != nil {
-		return "", fmt.Errorf("failed to create temporary script: %w", err)
-	}
-	scriptPath := tmpFile.Name()
-	if _, err := tmpFile.Write(content); err != nil {
-		return "", fmt.Errorf("failed to write temporary script: %w", err)
-	}
-	if err := tmpFile.Close(); err != nil {
-		return "", fmt.Errorf("failed to save temporary script: %w", err)
-	}
-	if err := os.Chmod(scriptPath, 0777); err != nil {
-		return "", fmt.Errorf("failed to make script executable: %w", err)
-	}
-	return scriptPath, nil
-}
-
-func runRotationScript(imageName string, sourcePath string, credentialsPath string) error {
-	oauth := api.GetOauthConfig()
-
-	targetPath := "/tmp/tmp.py"
-	args := []string{
-		// base args
-		"run", "--rm",
-		// env args
-		"--env", "PYTHONUNBUFFERED=1",
-		// mount args
-		"-v", fmt.Sprintf("%s:/creds.tgz", credentialsPath),
-		"-v", fmt.Sprintf("%s:%s", sourcePath, targetPath),
-		// load args
-		imageName, targetPath, oauth.ClientId, oauth.ClientSecret,
-	}
-	if err := RunStreamed("docker", args...); err != nil {
-		return fmt.Errorf("Unable to rotate keys")
-	}
-	return nil
-}
-
-func pullContainer(name string) error {
-	return RunStreamed("docker", "pull", name)
-}
-
-func verifyDocker() error {
-	if err := RunStreamed("docker", "--version"); err != nil {
-		return fmt.Errorf("docker not available")
-	}
-	return nil
-}
-
-func copyFile(source string, target string) error {
-	from, err := os.Open(source)
-	if err != nil {
-		return fmt.Errorf("opening credentials path failed: %w", err)
-	}
-	defer from.Close()
-	fromStat, err := from.Stat()
-	if err != nil {
-		return fmt.Errorf("credentials details retrieval failed: %w", err)
-	}
-	to, err := os.OpenFile(target, os.O_RDWR|os.O_CREATE, 0666)
-	if err != nil {
-		return fmt.Errorf("opening backup path failed: %w", err)
-	}
-	defer to.Close()
-	if _, err = io.Copy(to, from); err != nil {
 		return err
 	}
-	if err = to.Chmod(fromStat.Mode()); err != nil {
-		return fmt.Errorf("backup permissions failed: %w", err)
+
+	opts := rsa.PSSOptions{SaltLength: 32, Hash: crypto.SHA256}
+	hashed := sha256.Sum256(bytes)
+
+	root.Signatures = []tuf.Signature{}
+
+	for _, signer := range signers {
+		bytes, err = signer.Key.Sign(rand.Reader, hashed[:], &opts)
+		if err != nil {
+			return err
+		}
+		sig := tuf.Signature{
+			KeyID:     signer.Id,
+			Method:    "rsassa-pss-sha256",
+			Signature: bytes,
+		}
+		root.Signatures = append(root.Signatures, sig)
 	}
 	return nil
 }
 
-//Allows tests to mock this command
-var execCommand = exec.Command
+func swapRootKey(root *client.AtsTufRoot, curid string, creds OfflineCreds) (string, *rsa.PrivateKey, OfflineCreds) {
+	pk, err := rsa.GenerateKey(rand.Reader, 2048)
+	subcommands.DieNotNil(err)
 
-func RunFromStreamedTo(fromDir string, stdOut, stdErr io.Writer, command string, args ...string) error {
-	cmd := execCommand(command, args...)
-	cmd.Dir = fromDir
-	cmd.Stdout = stdOut
-	cmd.Stderr = stdErr
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("Unable to run '%s': err=%s", cmd.Args, err)
+	var privBytes []byte = x509.MarshalPKCS1PrivateKey(pk)
+	block := &pem.Block{
+		Type:  "RSA PRIVATE KEY",
+		Bytes: privBytes,
 	}
-	return nil
+	privBytes, err = json.Marshal(client.AtsKey{
+		KeyType:  "RSA",
+		KeyValue: client.AtsKeyVal{Private: string(pem.EncodeToMemory(block))},
+	})
+	subcommands.DieNotNil(err)
+
+	pubBytes, err := x509.MarshalPKIXPublicKey(&pk.PublicKey)
+	subcommands.DieNotNil(err)
+
+	block = &pem.Block{
+		Type:  "PUBLIC KEY",
+		Bytes: pubBytes,
+	}
+	id := fmt.Sprintf("%x", sha256.Sum256(privBytes))
+	root.Signed.Keys[id] = client.AtsKey{
+		KeyType:  "RSA",
+		KeyValue: client.AtsKeyVal{Public: string(pem.EncodeToMemory(block))},
+	}
+	root.Signed.Expires = time.Now().AddDate(1, 0, 0).UTC().Round(time.Second) // 1 year validity
+	root.Signed.Roles["root"].KeyIDs = []string{id}
+	root.Signed.Version += 1
+
+	pubBytes, err = json.Marshal(root.Signed.Keys[id])
+	subcommands.DieNotNil(err)
+
+	base := "tufrepo/keys/fioctl-root-" + id
+	creds[base+".pub"] = pubBytes
+	creds[base+".sec"] = privBytes
+	return id, pk, creds
 }
 
-func RunStreamed(command string, args ...string) error {
-	return RunFromStreamedTo("", os.Stdout, os.Stderr, command, args...)
+func assertWritable(path string) {
+	st, err := os.Stat(path)
+	subcommands.DieNotNil(err)
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, st.Mode())
+	if err != nil {
+		fmt.Println("ERROR: File is not writeable:", path)
+		os.Exit(1)
+	}
+	f.Close()
+}
+
+func saveTempCreds(credsFile string, creds OfflineCreds) string {
+	path := credsFile + ".tmp"
+	if _, err := os.Stat(path); err == nil {
+		fmt.Println("ERROR: Backup file exists:", path)
+		fmt.Println("This file may be from a previous failed key rotation and include critical data. Please move this file somewhere safe before re-running this command.")
+	}
+
+	file, err := os.Create(path)
+	subcommands.DieNotNil(err)
+	defer file.Close()
+
+	gzipWriter := gzip.NewWriter(file)
+	defer gzipWriter.Close()
+
+	tarWriter := tar.NewWriter(gzipWriter)
+	defer tarWriter.Close()
+
+	for name, val := range creds {
+		header := &tar.Header{
+			Name: name,
+			Size: int64(len(val)),
+		}
+		subcommands.DieNotNil(tarWriter.WriteHeader(header))
+		_, err := tarWriter.Write(val)
+		subcommands.DieNotNil(err)
+	}
+	return path
+}
+
+func findPrivKey(pubkey string, creds OfflineCreds) (*rsa.PrivateKey, error) {
+	pubkey = strings.TrimSpace(pubkey)
+	for k, v := range creds {
+		if strings.HasSuffix(k, ".pub") {
+			tk := client.AtsKey{}
+			subcommands.DieNotNil(json.Unmarshal(v, &tk))
+			if strings.TrimSpace(tk.KeyValue.Public) == pubkey {
+				pkbytes := creds[strings.Replace(k, ".pub", ".sec", 1)]
+				tk = client.AtsKey{}
+				subcommands.DieNotNil(json.Unmarshal(pkbytes, &tk))
+				privPem, _ := pem.Decode([]byte(tk.KeyValue.Private))
+				if privPem == nil {
+					return nil, fmt.Errorf("Unable to parse private key: %s", string(creds[k]))
+				}
+				if privPem.Type != "RSA PRIVATE KEY" {
+					return nil, fmt.Errorf("Invalid private key???: %s", string(k))
+				}
+				pk, err := x509.ParsePKCS1PrivateKey(privPem.Bytes)
+				return pk, err
+			}
+		}
+	}
+	return nil, fmt.Errorf("Can not find private key for: %s", pubkey)
+}
+
+func findRoot(root client.AtsTufRoot, creds OfflineCreds) (string, *rsa.PrivateKey, error) {
+	kid := root.Signed.Roles["root"].KeyIDs[0]
+	pub := root.Signed.Keys[kid].KeyValue.Public
+	key, err := findPrivKey(pub, creds)
+	return kid, key, err
+}
+
+func getOfflineCreds(credsFile string) OfflineCreds {
+	f, err := os.Open(credsFile)
+	subcommands.DieNotNil(err)
+	defer f.Close()
+
+	files := make(OfflineCreds)
+
+	gzf, err := gzip.NewReader(f)
+	subcommands.DieNotNil(err)
+	tr := tar.NewReader(gzf)
+
+	for {
+		hdr, err := tr.Next()
+		if err == io.EOF {
+			break // End of archive
+		}
+		subcommands.DieNotNil(err)
+
+		if hdr.Typeflag == tar.TypeDir {
+			continue
+		}
+
+		var b bytes.Buffer
+		_, err = io.Copy(&b, tr)
+		subcommands.DieNotNil(err)
+		files[hdr.Name] = b.Bytes()
+	}
+	return files
 }

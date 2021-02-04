@@ -204,6 +204,28 @@ type TufCustom struct {
 	OverridesSha   string                `json:"meta-subscriber-overrides-sha,omitempty"`
 }
 
+// ota-tuf serializes root.json differently from Notary. The key representation
+// and signing algoritms differ slightly. These Ats* structs provide an
+// an implementation compatible with ota-tuf and libaktualizr.
+type AtsKeyVal struct {
+	Public  string `json:"public,omitempty"`
+	Private string `json:"private,omitempty"`
+}
+type AtsKey struct {
+	KeyType  string    `json:"keytype"`
+	KeyValue AtsKeyVal `json:"keyval"`
+}
+type AtsRootMeta struct {
+	tuf.SignedCommon
+	Consistent bool                           `json:"consistent_snapshot"`
+	Keys       map[string]AtsKey              `json:"keys"`
+	Roles      map[tuf.RoleName]*tuf.RootRole `json:"roles"`
+}
+type AtsTufRoot struct {
+	Signatures []tuf.Signature `json:"signatures"`
+	Signed     AtsRootMeta     `json:"signed"`
+}
+
 type ComposeAppContent struct {
 	Files       []string               `json:"files"`
 	ComposeSpec map[string]interface{} `json:"compose_spec"`
@@ -838,6 +860,25 @@ func (a *Api) FactoryListDeviceGroup(factory string) (*[]DeviceGroup, error) {
 		return nil, err
 	}
 	return &resp.Groups, nil
+}
+
+func (a *Api) TufRootGet(factory string) (*AtsTufRoot, error) {
+	url := a.serverUrl + "/ota/repo/" + factory + "/api/v1/user_repo/root.json"
+	body, err := a.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	root := AtsTufRoot{}
+	err = json.Unmarshal(*body, &root)
+	return &root, err
+}
+func (a *Api) TufRootPost(factory string, root []byte) (string, error) {
+	url := a.serverUrl + "/ota/repo/" + factory + "/api/v1/user_repo/root"
+	body, err := a.Post(url, root)
+	if body != nil {
+		return string(*body), err
+	}
+	return "", err
 }
 
 func (a *Api) TargetsListRaw(factory string) (*[]byte, error) {
