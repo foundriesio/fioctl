@@ -12,10 +12,11 @@ import (
 
 func init() {
 	cmd.AddCommand(&cobra.Command{
-		Use:   "rotate <offline key archive>",
-		Short: "Rotate root signing key used by the Factory",
-		Run:   doKeyRotation,
-		Args:  cobra.ExactArgs(1),
+		Use:     "rotate-root <offline key archive>",
+		Aliases: []string{"rotate"},
+		Short:   "Rotate root signing key used by the Factory",
+		Run:     doKeyRotation,
+		Args:    cobra.ExactArgs(1),
 	})
 }
 
