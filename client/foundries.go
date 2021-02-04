@@ -204,6 +204,33 @@ type TufCustom struct {
 	OverridesSha   string                `json:"meta-subscriber-overrides-sha,omitempty"`
 }
 
+// OTA Community Edition serializes root.json differently from Notary
+type TufKeyVal struct {
+	Public  string `json:"public,omitempty"`
+	Private string `json:"private,omitempty"`
+}
+type TufKey struct {
+	KeyType  string    `json:"keytype"`
+	KeyValue TufKeyVal `json:"keyval"`
+}
+type TufSig struct {
+	KeyId     string `json:"keyid"`
+	Method    string `json:"method"`
+	Signature string `json:"sig"`
+}
+type TufRootSignedMeta struct {
+	Type       string                         `json:"_type"`
+	Consistent bool                           `json:"consistent_snapshot"`
+	Expires    time.Time                      `json:"expires"`
+	Keys       map[string]TufKey              `json:"keys"`
+	Roles      map[tuf.RoleName]*tuf.RootRole `json:"roles"`
+	Version    int                            `json:"version"`
+}
+type TufRoot struct {
+	Signatures []TufSig          `json:"signatures"`
+	Signed     TufRootSignedMeta `json:"signed"`
+}
+
 type ComposeAppContent struct {
 	Files       []string               `json:"files"`
 	ComposeSpec map[string]interface{} `json:"compose_spec"`
@@ -838,6 +865,25 @@ func (a *Api) FactoryListDeviceGroup(factory string) (*[]DeviceGroup, error) {
 		return nil, err
 	}
 	return &resp.Groups, nil
+}
+
+func (a *Api) TufRootGet(factory string) (*TufRoot, error) {
+	url := a.serverUrl + "/ota/repo/" + factory + "/api/v1/user_repo/root.json"
+	body, err := a.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	root := TufRoot{}
+	err = json.Unmarshal(*body, &root)
+	return &root, err
+}
+func (a *Api) TufRootPost(factory string, root []byte) (string, error) {
+	url := a.serverUrl + "/ota/repo/" + factory + "/api/v1/user_repo/root"
+	body, err := a.Post(url, root)
+	if body != nil {
+		return string(*body), err
+	}
+	return "", err
 }
 
 func (a *Api) TargetsListRaw(factory string) (*[]byte, error) {
