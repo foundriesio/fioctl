@@ -41,7 +41,7 @@ func doTag(cmd *cobra.Command, args []string) {
 	var target_names []string
 	if tagByVersion {
 		target_names = make([]string, 0, 10)
-		for name, target := range targets.Signed.Targets {
+		for name, target := range targets {
 			custom, err := api.TargetCustom(target)
 			if err != nil {
 				fmt.Printf("ERROR: %s\n", err)
@@ -58,7 +58,7 @@ func doTag(cmd *cobra.Command, args []string) {
 		}
 	} else {
 		for _, name := range args {
-			if target, ok := targets.Signed.Targets[name]; ok {
+			if target, ok := targets[name]; ok {
 				custom, err := api.TargetCustom(target)
 				subcommands.DieNotNil(err)
 				fmt.Printf("Changing tags of %s from %s -> %s\n", name, custom.Tags, tags)

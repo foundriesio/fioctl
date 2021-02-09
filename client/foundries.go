@@ -908,18 +908,22 @@ func (a *Api) TargetsListRaw(factory string) (*[]byte, error) {
 	return a.Get(url)
 }
 
-func (a *Api) TargetsList(factory string) (*tuf.SignedTargets, error) {
-	body, err := a.TargetsListRaw(factory)
+func (a *Api) TargetsList(factory string, version ...string) (tuf.Files, error) {
+	url := a.serverUrl + "/ota/factories/" + factory + "/targets/"
+	if len(version) == 1 {
+		url += "?version=" + version[0]
+	}
+	body, err := a.Get(url)
 	if err != nil {
 		return nil, err
 	}
-	targets := tuf.SignedTargets{}
+	targets := make(tuf.Files)
 	err = json.Unmarshal(*body, &targets)
 	if err != nil {
 		return nil, err
 	}
 
-	return &targets, nil
+	return targets, nil
 }
 
 func (a *Api) TargetCustom(target tuf.FileMeta) (*TufCustom, error) {
@@ -1255,4 +1259,48 @@ func (a *Api) FactoryPatchCA(factory string, certs CaCerts) error {
 
 	_, err = a.Patch(url, data)
 	return err
+}
+
+func (a *Api) FactoryCreateWave(factory string, wave WaveCreate) error {
+	url := a.serverUrl + "/ota/factories/" + factory + "/waves/"
+	logrus.Debugf("Creating factory wave %s", url)
+
+	data, err := json.Marshal(wave)
+	if err != nil {
+		return err
+	}
+
+	_, err = a.Post(url, data)
+	return err
+}
+
+func (a *Api) FactoryListWaves(factory string) ([]Wave, error) {
+	url := a.serverUrl + "/ota/factories/" + factory + "/waves/"
+	logrus.Debugf("Listing factory waves %s", url)
+
+	body, err := a.Get(url)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp []Wave
+	err = json.Unmarshal(*body, &resp)
+	return resp, err
+}
+
+func (a *Api) FactoryGetWave(factory string, wave string, showTargets bool) (*Wave, error) {
+	url := a.serverUrl + "/ota/factories/" + factory + "/waves/" + wave + "/"
+	if showTargets {
+		url += "?show-targets=1"
+	}
+	logrus.Debugf("Viewing factory wave %s", url)
+
+	body, err := a.Get(url)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp Wave
+	err = json.Unmarshal(*body, &resp)
+	return &resp, err
 }
