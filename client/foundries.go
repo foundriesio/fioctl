@@ -275,6 +275,23 @@ type TargetTestList struct {
 	Next  *string      `json:"next"`
 }
 
+type Wave struct {
+	Name       string            `json:"name"`
+	Version    string            `json:"version"`
+	Tag        string            `json:"tag"`
+	Targets    tuf.SignedTargets `json:"targets"`
+	CreatedAt  string            `json:"created-at"`
+	FinishedAt string            `json:"finished-at"`
+	Status     string            `json:"status"`
+}
+
+type WaveCreate struct {
+	Name    string      `json:"name"`
+	Version string      `json:"version"`
+	Tag     string      `json:"tag"`
+	Targets tuf.Targets `json:"targets"`
+}
+
 // This is an error returned in case if we've successfully received an HTTP response which contains
 // an unexpected HTTP status code
 type HttpError struct {
@@ -1274,8 +1291,8 @@ func (a *Api) FactoryCreateWave(factory string, wave WaveCreate) error {
 	return err
 }
 
-func (a *Api) FactoryListWaves(factory string) ([]Wave, error) {
-	url := a.serverUrl + "/ota/factories/" + factory + "/waves/"
+func (a *Api) FactoryListWaves(factory string, limit uint64) ([]Wave, error) {
+	url := a.serverUrl + "/ota/factories/" + factory + "/waves/?limit=" + strconv.FormatUint(limit, 10)
 	logrus.Debugf("Listing factory waves %s", url)
 
 	body, err := a.Get(url)

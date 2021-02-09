@@ -20,6 +20,7 @@ import (
 	"github.com/foundriesio/fioctl/subcommands/targets"
 	"github.com/foundriesio/fioctl/subcommands/users"
 	"github.com/foundriesio/fioctl/subcommands/version"
+	"github.com/foundriesio/fioctl/subcommands/waves"
 )
 
 var (
@@ -55,6 +56,7 @@ func init() {
 	rootCmd.AddCommand(status.NewCommand())
 	rootCmd.AddCommand(targets.NewCommand())
 	rootCmd.AddCommand(version.NewCommand())
+	rootCmd.AddCommand(waves.NewCommand())
 	rootCmd.AddCommand(subcommands.GetCommand)
 
 	rootCmd.AddCommand(docsCmd)
