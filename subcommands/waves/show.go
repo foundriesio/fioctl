@@ -13,8 +13,8 @@ import (
 
 func init() {
 	showCmd := &cobra.Command{
-		Use:   "show",
-		Short: "Show Ra given wave",
+		Use:   "show <wave>",
+		Short: "Show a given wave by name",
 		Run:   doShowWave,
 		Args:  cobra.ExactArgs(1),
 	}
@@ -41,10 +41,7 @@ func doShowWave(cmd *cobra.Command, args []string) {
 	}
 	if showTargets {
 		fmt.Printf("Targets:\n")
-		// No need to canonicalize, a user may call an API like below to view raw JSON from database:
-		// fioctl get /ota/factories/<factory>/waves/<wave>/?raw-targets=1 | jq '.targets|fromjson'
-		// I'd like to show YAML here, but it shows TUF []byte signatures as lists.
-		meta, _ := json.MarshalIndent(wave.Targets, "  ", "  ")
-		fmt.Println("  " + string(meta))
+		data, _ := json.MarshalIndent(wave.Targets, "  ", "  ")
+		fmt.Println("  " + string(data))
 	}
 }
