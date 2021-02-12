@@ -31,6 +31,8 @@ type TufSigner struct {
 	Key *rsa.PrivateKey
 }
 
+var doRootSync bool
+
 func init() {
 	rotate := &cobra.Command{
 		Use:     "rotate-root <offline key archive>",
@@ -40,6 +42,7 @@ func init() {
 		Args:    cobra.ExactArgs(1),
 	}
 	subcommands.RequireFactory(rotate)
+	rotate.Flags().BoolVarP(&doRootSync, "sync-prod", "", false, "Make sure production root.json is up-to-date and exit")
 	cmd.AddCommand(rotate)
 }
 
@@ -51,6 +54,11 @@ func doRotateRoot(cmd *cobra.Command, args []string) {
 
 	root, err := api.TufRootGet(factory)
 	subcommands.DieNotNil(err)
+
+	if doRootSync {
+		subcommands.DieNotNil(syncProdRoot(factory, *root, creds))
+		return
+	}
 
 	curid, curPk, err := findRoot(*root, creds)
 	fmt.Println("= Current root:", curid)
@@ -68,6 +76,7 @@ func doRotateRoot(cmd *cobra.Command, args []string) {
 		{Id: curid, Key: curPk},
 		{Id: newid, Key: newPk},
 	}
+	removeUnusedKeys(root)
 	subcommands.DieNotNil(signRoot(root, signers...))
 
 	tufRootPost(factory, credsFile, root, newCreds)
@@ -94,6 +103,9 @@ func tufRootPost(factory, credsFile string, root *client.AtsTufRoot, creds Offli
 		fmt.Println("Temp copy still available at:", tmpCreds)
 		fmt.Println("This temp file contains your new factory root private key. You must copy this file.")
 	}
+
+	// backfill this new key
+	subcommands.DieNotNil(syncProdRoot(factory, *root, creds))
 }
 
 func removeUnusedKeys(root *client.AtsTufRoot) {
@@ -124,8 +136,6 @@ func removeUnusedKeys(root *client.AtsTufRoot) {
 }
 
 func signRoot(root *client.AtsTufRoot, signers ...TufSigner) error {
-	removeUnusedKeys(root)
-
 	bytes, err := canonical.MarshalCanonical(root.Signed)
 	if err != nil {
 		return err
@@ -317,4 +327,46 @@ func getOfflineCreds(credsFile string) OfflineCreds {
 		files[hdr.Name] = b.Bytes()
 	}
 	return files
+}
+
+func syncProdRoot(factory string, root client.AtsTufRoot, creds OfflineCreds) error {
+	fmt.Println("= Populating production root version")
+
+	// Bump the threshold
+	root.Signed.Roles["targets"].Threshold = 2
+
+	// Sign with the same keys used for the ci copy
+	var signers []TufSigner
+	for _, sig := range root.Signatures {
+		key, ok := root.Signed.Keys[sig.KeyID]
+		if !ok {
+			// Root key was rotated, this pub key is previous version
+			prev, err := api.TufRootGetVer(factory, root.Signed.Version-1)
+			if err != nil {
+				return err
+			}
+			key = prev.Signed.Keys[sig.KeyID]
+		}
+		pkey, err := findPrivKey(key.KeyValue.Public, creds)
+		if err != nil {
+			return err
+		}
+		signers = append(signers, TufSigner{
+			Id:  sig.KeyID,
+			Key: pkey,
+		})
+	}
+	if err := signRoot(&root, signers...); err != nil {
+		return err
+	}
+
+	bytes, err := json.Marshal(root)
+	if err != nil {
+		return err
+	}
+	_, err = api.TufProdRootPost(factory, bytes)
+	if err != nil {
+		return err
+	}
+	return nil
 }

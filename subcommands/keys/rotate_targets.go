@@ -48,6 +48,7 @@ func doRotateTargets(cmd *cobra.Command, args []string) {
 	subcommands.DieNotNil(err)
 	targetid, newCreds := replaceOfflineTargetKey(root, onlineTargetId, creds)
 	fmt.Println("= New target:", targetid)
+	removeUnusedKeys(root)
 	subcommands.DieNotNil(signRoot(root, TufSigner{rootid, rootPk}))
 
 	tufRootPost(factory, credsFile, root, newCreds)
