@@ -867,8 +867,16 @@ func (a *Api) FactoryListDeviceGroup(factory string) (*[]DeviceGroup, error) {
 	return &resp.Groups, nil
 }
 
-func (a *Api) TufRootGet(factory string) (*TufRoot, error) {
-	url := a.serverUrl + "/ota/repo/" + factory + "/api/v1/user_repo/root.json"
+func (a *Api) tufRootGet(factory string, prod bool, version int) (*TufRoot, error) {
+	url := a.serverUrl + "/ota/repo/" + factory + "/api/v1/user_repo/"
+	if version > 0 {
+		url += fmt.Sprintf("%d.", version)
+	}
+	url += "root.json"
+	if prod {
+		url += "?production=1"
+	}
+	logrus.Debugf("Fetch root %s", url)
 	body, err := a.Get(url)
 	if err != nil {
 		return nil, err
@@ -877,13 +885,31 @@ func (a *Api) TufRootGet(factory string) (*TufRoot, error) {
 	err = json.Unmarshal(*body, &root)
 	return &root, err
 }
-func (a *Api) TufRootPost(factory string, root []byte) (string, error) {
+func (a *Api) TufRootGet(factory string) (*TufRoot, error) {
+	return a.tufRootGet(factory, false, -1)
+}
+func (a *Api) TufRootGetVer(factory string, version int) (*TufRoot, error) {
+	return a.tufRootGet(factory, false, version)
+}
+func (a *Api) TufProdRootGet(factory string) (*TufRoot, error) {
+	return a.tufRootGet(factory, true, -1)
+}
+func (a *Api) tufRootPost(factory string, prod bool, root []byte) (string, error) {
 	url := a.serverUrl + "/ota/repo/" + factory + "/api/v1/user_repo/root"
+	if prod {
+		url += "?production=1"
+	}
 	body, err := a.Post(url, root)
 	if body != nil {
 		return string(*body), err
 	}
 	return "", err
+}
+func (a *Api) TufRootPost(factory string, root []byte) (string, error) {
+	return a.tufRootPost(factory, false, root)
+}
+func (a *Api) TufProdRootPost(factory string, root []byte) (string, error) {
+	return a.tufRootPost(factory, true, root)
 }
 
 func (a *Api) TargetsListRaw(factory string) (*[]byte, error) {

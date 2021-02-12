@@ -54,6 +54,7 @@ func doRotateTargets(cmd *cobra.Command, args []string) {
 	subcommands.DieNotNil(err)
 	targetid, newCreds := addNewTargetKey(root, onlineTargetId, creds)
 	fmt.Println("= New target:", targetid)
+	removeUnusedKeys(root)
 	subcommands.DieNotNil(signRoot(root, TufSigner{rootid, rootPk}))
 
 	tmpCreds := saveTempCreds(credsFile, newCreds)
@@ -71,6 +72,7 @@ func doRotateTargets(cmd *cobra.Command, args []string) {
 		fmt.Println("\nERROR: Unable to update offline creds file.", err)
 		fmt.Println("Temp copy still available at:", tmpCreds)
 	}
+	subcommands.DieNotNil(syncProdRoot(factory, *root, creds))
 }
 
 func findOnlineTargetId(factory string) (string, error) {

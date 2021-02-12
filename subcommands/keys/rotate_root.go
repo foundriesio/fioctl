@@ -53,6 +53,8 @@ func doRotateRoot(cmd *cobra.Command, args []string) {
 	root, err := api.TufRootGet(factory)
 	subcommands.DieNotNil(err)
 
+	subcommands.DieNotNil(syncProdRoot(factory, *root, creds))
+
 	curid, curPk, err := findRoot(*root, creds)
 	fmt.Println("= Current root:", curid)
 	subcommands.DieNotNil(err)
@@ -69,6 +71,7 @@ func doRotateRoot(cmd *cobra.Command, args []string) {
 		{Id: curid, Key: curPk},
 		{Id: newid, Key: newPk},
 	}
+	removeUnusedKeys(root)
 	subcommands.DieNotNil(signRoot(root, signers...))
 
 	bytes, err := json.MarshalIndent(root, "", "  ")
@@ -88,6 +91,9 @@ func doRotateRoot(cmd *cobra.Command, args []string) {
 		fmt.Println("\nERROR: Unable to update offline creds file.", err)
 		fmt.Println("Temp copy still available at:", tmpCreds)
 	}
+
+	// backfill this new key
+	subcommands.DieNotNil(syncProdRoot(factory, *root, creds))
 }
 
 func removeUnusedKeys(root *client.TufRoot) {
@@ -118,8 +124,6 @@ func removeUnusedKeys(root *client.TufRoot) {
 }
 
 func signRoot(root *client.TufRoot, signers ...TufSigner) error {
-	removeUnusedKeys(root)
-
 	bytes, err := canonical.MarshalCanonical(root.Signed)
 	if err != nil {
 		return err
@@ -277,4 +281,72 @@ func getOfflineCreds(credsFile string) OfflineCreds {
 		files[hdr.Name] = b.Bytes()
 	}
 	return files
+}
+
+func syncProdRoot(factory string, curRoot client.TufRoot, creds OfflineCreds) error {
+	curProd, err := api.TufProdRootGet(factory)
+	if err != nil {
+		if httpE := client.AsHttpError(err); httpE != nil {
+			if httpE.Response.StatusCode == 404 {
+				// this is okay. it means we need to create the 1.rootjson
+				err = nil
+			}
+		}
+	}
+	if err != nil {
+		return err
+	}
+	prodVer := 0
+	if curProd != nil {
+		prodVer = curProd.Signed.Version
+	}
+	if prodVer == curRoot.Signed.Version {
+		return nil
+	}
+
+	for i := prodVer + 1; i <= curRoot.Signed.Version; i++ {
+		fmt.Println("= Populating production root version", i)
+		root, err := api.TufRootGetVer(factory, i)
+		if err != nil {
+			return err
+		}
+
+		// Bump the threshold
+		root.Signed.Roles["targets"].Threshold = 2
+
+		// Sign with the same keys used for the ci copy
+		var signers []TufSigner
+		for _, sig := range root.Signatures {
+			key, ok := root.Signed.Keys[sig.KeyId]
+			if !ok && i > 1 {
+				// Root key was rotated, this pub key is previous version
+				prev, err := api.TufRootGetVer(factory, i-1)
+				if err != nil {
+					return err
+				}
+				key = prev.Signed.Keys[sig.KeyId]
+			}
+			pkey, err := findPrivKey(key.KeyValue.Public, creds)
+			if err != nil {
+				return err
+			}
+			signers = append(signers, TufSigner{
+				Id:  sig.KeyId,
+				Key: pkey,
+			})
+		}
+		if err := signRoot(root, signers...); err != nil {
+			return err
+		}
+
+		bytes, err := json.MarshalIndent(root, "", "  ")
+		if err != nil {
+			return err
+		}
+		body, err := api.TufProdRootPost(factory, bytes)
+		if err != nil {
+			return fmt.Errorf("%s: %s", err, body)
+		}
+	}
+	return nil
 }
