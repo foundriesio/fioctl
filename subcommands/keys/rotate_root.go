@@ -217,31 +217,36 @@ func saveTempCreds(credsFile string, creds OfflineCreds) string {
 	return path
 }
 
-func findRoot(root client.TufRoot, creds OfflineCreds) (string, *rsa.PrivateKey, error) {
-	kid := root.Signed.Roles["root"].KeyIDs[0]
-	pub := root.Signed.Keys[kid].KeyValue.Public
-
+func findPrivKey(pubkey string, creds OfflineCreds) (*rsa.PrivateKey, error) {
+	pubkey = strings.TrimSpace(pubkey)
 	for k, v := range creds {
 		if strings.HasSuffix(k, ".pub") {
 			tk := client.TufKey{}
 			subcommands.DieNotNil(json.Unmarshal(v, &tk))
-			if tk.KeyValue.Public == pub {
+			if strings.TrimSpace(tk.KeyValue.Public) == pubkey {
 				pkbytes := creds[strings.Replace(k, ".pub", ".sec", 1)]
 				tk = client.TufKey{}
 				subcommands.DieNotNil(json.Unmarshal(pkbytes, &tk))
 				privPem, _ := pem.Decode([]byte(tk.KeyValue.Private))
 				if privPem == nil {
-					return kid, nil, fmt.Errorf("Unable to parse private key: %s", string(creds[k]))
+					return nil, fmt.Errorf("Unable to parse private key: %s", string(creds[k]))
 				}
 				if privPem.Type != "RSA PRIVATE KEY" {
-					return kid, nil, fmt.Errorf("Invalid private key???: %s", string(k))
+					return nil, fmt.Errorf("Invalid private key???: %s", string(k))
 				}
 				pk, err := x509.ParsePKCS1PrivateKey(privPem.Bytes)
-				return kid, pk, err
+				return pk, err
 			}
 		}
 	}
-	return kid, nil, fmt.Errorf("Can not find current root key. keyid=%s", kid)
+	return nil, fmt.Errorf("Can not find private key for: %s", pubkey)
+}
+
+func findRoot(root client.TufRoot, creds OfflineCreds) (string, *rsa.PrivateKey, error) {
+	kid := root.Signed.Roles["root"].KeyIDs[0]
+	pub := root.Signed.Keys[kid].KeyValue.Public
+	key, err := findPrivKey(pub, creds)
+	return kid, key, err
 }
 
 func getOfflineCreds(credsFile string) OfflineCreds {
