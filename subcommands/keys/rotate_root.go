@@ -32,6 +32,8 @@ type TufSigner struct {
 	Key *rsa.PrivateKey
 }
 
+var doRootSync bool
+
 func init() {
 	rotate := &cobra.Command{
 		Use:     "rotate-root <offline key archive>",
@@ -41,6 +43,7 @@ func init() {
 		Args:    cobra.ExactArgs(1),
 	}
 	subcommands.RequireFactory(rotate)
+	rotate.Flags().BoolVarP(&doRootSync, "--sync-prod", "", false, "Make sure production root.json is up-to-date")
 	cmd.AddCommand(rotate)
 }
 
@@ -54,6 +57,9 @@ func doRotateRoot(cmd *cobra.Command, args []string) {
 	subcommands.DieNotNil(err)
 
 	subcommands.DieNotNil(syncProdRoot(factory, *root, creds))
+	if doRootSync {
+		return
+	}
 
 	curid, curPk, err := findRoot(*root, creds)
 	fmt.Println("= Current root:", curid)
@@ -93,7 +99,7 @@ func doRotateRoot(cmd *cobra.Command, args []string) {
 	}
 
 	// backfill this new key
-	subcommands.DieNotNil(syncProdRoot(factory, *root, creds))
+	syncProdRootOrDie(factory, *root, creds)
 }
 
 func removeUnusedKeys(root *client.TufRoot) {
@@ -349,4 +355,12 @@ func syncProdRoot(factory string, curRoot client.TufRoot, creds OfflineCreds) er
 		}
 	}
 	return nil
+}
+
+func syncProdRootOrDie(factory string, curRoot client.TufRoot, creds OfflineCreds) {
+	if err := syncProdRoot(factory, curRoot, creds); err != nil {
+		fmt.Println("ERROR:", err)
+		fmt.Println("Your production root.json is out of sync. Production devices are okay, but you need to run `fioctl rotate-root --sync-prod` to correct this situation.")
+		os.Exit(1)
+	}
 }
