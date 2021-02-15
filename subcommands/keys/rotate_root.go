@@ -208,6 +208,11 @@ func assertWritable(path string) {
 
 func saveTempCreds(credsFile string, creds OfflineCreds) string {
 	path := credsFile + ".tmp"
+	if _, err := os.Stat(path); err == nil {
+		fmt.Println("ERROR: Backup file exists:", path)
+		fmt.Println("This file may be from a previous failed key rotation and include critical data. Please move this file somewhere safe before re-running this command.")
+	}
+
 	file, err := os.Create(path)
 	subcommands.DieNotNil(err)
 	defer file.Close()
