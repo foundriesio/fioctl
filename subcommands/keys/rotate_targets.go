@@ -52,7 +52,7 @@ func doRotateTargets(cmd *cobra.Command, args []string) {
 	rootid, rootPk, err := findRoot(*root, creds)
 	fmt.Println("= Root keyid:", rootid)
 	subcommands.DieNotNil(err)
-	targetid, newCreds := addNewTargetKey(root, onlineTargetId, creds)
+	targetid, newCreds := replaceProdTargetKey(root, onlineTargetId, creds)
 	fmt.Println("= New target:", targetid)
 	removeUnusedKeys(root)
 	subcommands.DieNotNil(signRoot(root, TufSigner{rootid, rootPk}))
@@ -84,7 +84,7 @@ func findOnlineTargetId(factory string) (string, error) {
 	return meta.Signatures[0].KeyID, nil
 }
 
-func addNewTargetKey(root *client.TufRoot, onlineTargetId string, creds OfflineCreds) (string, OfflineCreds) {
+func replaceProdTargetKey(root *client.TufRoot, onlineTargetId string, creds OfflineCreds) (string, OfflineCreds) {
 	pk, err := rsa.GenerateKey(rand.Reader, 2048)
 	subcommands.DieNotNil(err)
 
