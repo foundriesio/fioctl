@@ -96,6 +96,7 @@ func doRotateRoot(cmd *cobra.Command, args []string) {
 	if err := os.Rename(tmpCreds, credsFile); err != nil {
 		fmt.Println("\nERROR: Unable to update offline creds file.", err)
 		fmt.Println("Temp copy still available at:", tmpCreds)
+		fmt.Println("This temp file contains your new factory root private key. You must copy this file.")
 	}
 
 	// backfill this new key
