@@ -7,6 +7,7 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"os"
 
@@ -46,7 +47,7 @@ func doRotateTargets(cmd *cobra.Command, args []string) {
 	// 2. Generate a new key.
 	// 3. Set these keys in root.json
 
-	onlineTargetId, err := findOnlineTargetId(factory)
+	onlineTargetId, err := findOnlineTargetId(factory, *root, creds)
 	subcommands.DieNotNil(err)
 
 	rootid, rootPk, err := findRoot(*root, creds)
@@ -76,12 +77,20 @@ func doRotateTargets(cmd *cobra.Command, args []string) {
 	syncProdRootOrDie(factory, *root, creds)
 }
 
-func findOnlineTargetId(factory string) (string, error) {
-	meta, err := api.TargetsList(factory)
-	if err != nil {
-		return "", err
+func findOnlineTargetId(factory string, root client.TufRoot, creds OfflineCreds) (string, error) {
+	// The targets key used by CI is stored in creds as offline-targets.pub
+	// Pick the key that doesn't match this.
+	onlinePub, ok := creds["tufrepo/key/offline-targets.pub"]
+	if !ok {
+		onlinePub = []byte("")
 	}
-	return meta.Signatures[0].KeyID, nil
+	for _, sig := range root.Signatures {
+		pub := root.Signed.Keys[sig.KeyId].KeyValue.Public
+		if pub == string(onlinePub) {
+			return sig.KeyId, nil
+		}
+	}
+	return "", errors.New("Unable to find online target key for factory")
 }
 
 func replaceProdTargetKey(root *client.TufRoot, onlineTargetId string, creds OfflineCreds) (string, OfflineCreds) {
