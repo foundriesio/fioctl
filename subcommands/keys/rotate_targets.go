@@ -108,7 +108,7 @@ func addNewTargetKey(root *client.TufRoot, onlineTargetId string, creds OfflineC
 		Bytes: pubBytes,
 	}
 	pubBytes = pem.EncodeToMemory(block)
-	id := fmt.Sprintf("%x", sha256.Sum256(privBytes))
+	id := fmt.Sprintf("%x", sha256.Sum256(pubBytes))
 	root.Signed.Keys[id] = client.TufKey{
 		KeyType:  "RSA",
 		KeyValue: client.TufKeyVal{Public: string(pubBytes)},
