@@ -91,6 +91,8 @@ func doRotateRoot(cmd *cobra.Command, args []string) {
 	if err != nil {
 		fmt.Println("\nERROR:", err)
 		fmt.Println(body)
+		fmt.Println("A temporary copy of the new root was saved:", tmpCreds)
+		fmt.Println("Before deleting this please ensure your factory isn't configured with this new key")
 		os.Exit(1)
 	}
 	if err := os.Rename(tmpCreds, credsFile); err != nil {
