@@ -353,7 +353,7 @@ func syncProdRoot(factory string, curRoot client.TufRoot, creds OfflineCreds) er
 			return err
 		}
 
-		bytes, err := json.MarshalIndent(root, "", "  ")
+		bytes, err := json.Marshal(root)
 		if err != nil {
 			return err
 		}
