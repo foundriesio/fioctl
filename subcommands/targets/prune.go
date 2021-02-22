@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -14,9 +15,10 @@ import (
 )
 
 var (
-	pruneNoTail bool
-	pruneByTag  bool
-	pruneDryRun bool
+	pruneNoTail   bool
+	pruneByTag    bool
+	pruneDryRun   bool
+	pruneKeepLast int
 )
 
 func init() {
@@ -29,6 +31,7 @@ func init() {
 	cmd.AddCommand(pruneCmd)
 	pruneCmd.Flags().BoolVarP(&pruneNoTail, "no-tail", "", false, "Don't tail output of CI Job")
 	pruneCmd.Flags().BoolVarP(&pruneByTag, "by-tag", "", false, "Prune all targets by tags instead of name")
+	pruneCmd.Flags().IntVarP(&pruneKeepLast, "keep-last", "", 0, "Keep the last X number of builds for a tag when pruning")
 	pruneCmd.Flags().BoolVarP(&pruneDryRun, "dryrun", "", false, "Only show what would be pruned")
 }
 
@@ -108,6 +111,41 @@ func doPrune(cmd *cobra.Command, args []string) {
 				if sortedListsMatch(args, custom.Tags) {
 					target_names = append(target_names, name)
 				}
+			}
+		}
+		if pruneKeepLast > 0 {
+			versions := make(map[int][]string)
+			for _, name := range target_names {
+				parts := strings.SplitN(name, "lmp-", 2)
+				if len(parts) != 2 {
+					fmt.Printf("Unable to decode target name: %s\n", name)
+					os.Exit(1)
+				}
+				verI, err := strconv.Atoi(parts[1])
+				subcommands.DieNotNil(err)
+				vals, ok := versions[verI]
+				if ok {
+					versions[verI] = append(vals, name)
+				} else {
+					versions[verI] = []string{name}
+				}
+			}
+			var versionNums []int
+			for k := range versions {
+				versionNums = append(versionNums, k)
+			}
+			sort.Sort(sort.Reverse(sort.IntSlice(versionNums)))
+			if len(versionNums) > pruneKeepLast {
+				for i := 0; i < pruneKeepLast; i++ {
+					delete(versions, versionNums[i])
+				}
+				target_names = []string{}
+				for _, names := range versions {
+					target_names = append(target_names, names...)
+				}
+			} else {
+				fmt.Println("Nothing to prune")
+				os.Exit(0)
 			}
 		}
 	} else {
