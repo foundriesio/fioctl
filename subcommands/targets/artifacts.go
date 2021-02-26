@@ -27,8 +27,8 @@ func init() {
 
   # Dump console.log artifact to STDOUT
   fioctl targets artifacts 12 publish-compose-apps/console.log
-  
-  # Download an artifact. Progress is printed to STDERR, the contents is 
+
+  # Download an artifact. Progress is printed to STDERR, the contents is
   # re-directed /tmp/tmp.gz
   fioctl-linux-amd64 targets artifacts 207 \
     raspberrypi3-64/lmp-factory-image-raspberrypi3-64.wic.gz >/tmp/tmp.gz
@@ -110,7 +110,9 @@ func doArtifacts(cmd *cobra.Command, args []string) {
 	}
 
 	target, err := strconv.Atoi(args[0])
-	subcommands.DieNotNil(err)
+	if err != nil {
+		subcommands.DieNotNil(fmt.Errorf("Invalid Target number: %s", args[0]))
+	}
 	if len(args) == 1 {
 		logrus.Debugf("Showing target artifacts for %s %d", factory, target)
 		listArtifacts(factory, target)
