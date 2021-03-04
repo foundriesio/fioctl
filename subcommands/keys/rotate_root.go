@@ -169,7 +169,7 @@ func swapRootKey(root *client.AtsTufRoot, curid string, creds OfflineCreds) (str
 		Type:  "PUBLIC KEY",
 		Bytes: pubBytes,
 	}
-	id := fmt.Sprintf("%x", sha256.Sum256(privBytes))
+	id := fmt.Sprintf("%x", sha256.Sum256(pubBytes))
 	root.Signed.Keys[id] = client.AtsKey{
 		KeyType:  "RSA",
 		KeyValue: client.AtsKeyVal{Public: string(pem.EncodeToMemory(block))},
