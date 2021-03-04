@@ -275,14 +275,21 @@ type TargetTestList struct {
 	Next  *string      `json:"next"`
 }
 
+type WaveRolloutGroupRef struct {
+	GroupId   int    `json:"group-id"`
+	GroupName string `json:"group-name"`
+	CreatedAt string `json:"created-at"`
+}
+
 type Wave struct {
-	Name       string           `json:"name"`
-	Version    string           `json:"version"`
-	Tag        string           `json:"tag"`
-	Targets    *json.RawMessage `json:"targets"`
-	CreatedAt  string           `json:"created-at"`
-	FinishedAt string           `json:"finished-at"`
-	Status     string           `json:"status"`
+	Name          string                         `json:"name"`
+	Version       string                         `json:"version"`
+	Tag           string                         `json:"tag"`
+	Targets       *json.RawMessage               `json:"targets"`
+	CreatedAt     string                         `json:"created-at"`
+	FinishedAt    string                         `json:"finished-at"`
+	Status        string                         `json:"status"`
+	RolloutGroups map[string]WaveRolloutGroupRef `json:"rollout-groups"`
 }
 
 type WaveCreate struct {
@@ -290,6 +297,10 @@ type WaveCreate struct {
 	Version string     `json:"version"`
 	Tag     string     `json:"tag"`
 	Targets tuf.Signed `json:"targets"`
+}
+
+type WaveRolloutOptions struct {
+	Group string `json:"group"`
 }
 
 // This is an error returned in case if we've successfully received an HTTP response which contains
@@ -1320,6 +1331,19 @@ func (a *Api) FactoryGetWave(factory string, wave string, showTargets bool) (*Wa
 	var resp Wave
 	err = json.Unmarshal(*body, &resp)
 	return &resp, err
+}
+
+func (a *Api) FactoryRolloutWave(factory string, wave string, options WaveRolloutOptions) error {
+	url := a.serverUrl + "/ota/factories/" + factory + "/waves/" + wave + "/rollout/"
+	logrus.Debugf("Rolling out factory wave %s", url)
+
+	data, err := json.Marshal(options)
+	if err != nil {
+		return err
+	}
+
+	_, err = a.Post(url, data)
+	return err
 }
 
 func (a *Api) FactoryCancelWave(factory string, wave string) error {
