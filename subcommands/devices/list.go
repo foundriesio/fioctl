@@ -62,19 +62,11 @@ func ownerFormatter(d *client.Device) string {
 	return id
 }
 
-func groupFormatter(d *client.Device) string {
-	if d.Group != nil {
-		return d.Group.Name
-	}
-	return ""
-}
-
 var Columns = map[string]column{
 	"name":          {func(d *client.Device) string { return d.Name }},
 	"uuid":          {func(d *client.Device) string { return d.Uuid }},
 	"factory":       {func(d *client.Device) string { return d.Factory }},
 	"owner":         {ownerFormatter},
-	"device-group":  {groupFormatter},
 	"target":        {func(d *client.Device) string { return d.TargetName }},
 	"status":        {statusFormatter},
 	"apps":          {func(d *client.Device) string { return strings.Join(d.DockerApps, ",") }},
