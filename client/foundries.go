@@ -2,6 +2,7 @@ package client
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/base64"
@@ -15,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	canonical "github.com/docker/go/canonical/json"
 	"github.com/sirupsen/logrus"
 	tuf "github.com/theupdateframework/notary/tuf/data"
 )
@@ -215,6 +217,15 @@ type AtsKey struct {
 	KeyType  string    `json:"keytype"`
 	KeyValue AtsKeyVal `json:"keyval"`
 }
+
+func (k AtsKey) KeyID() (string, error) {
+	bytes, err := canonical.MarshalCanonical(k)
+	if err != nil {
+		return "", nil
+	}
+	return fmt.Sprintf("%x", sha256.Sum256(bytes)), nil
+}
+
 type AtsRootMeta struct {
 	tuf.SignedCommon
 	Consistent bool                           `json:"consistent_snapshot"`
