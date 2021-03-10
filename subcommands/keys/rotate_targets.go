@@ -1,12 +1,7 @@
 package keys
 
 import (
-	"crypto/rand"
-	"crypto/rsa"
-	"crypto/sha256"
-	"crypto/x509"
 	"encoding/json"
-	"encoding/pem"
 	"errors"
 	"fmt"
 	"os"
@@ -87,43 +82,14 @@ func findOnlineTargetId(factory string, root client.AtsTufRoot, creds OfflineCre
 }
 
 func replaceOfflineTargetKey(root *client.AtsTufRoot, onlineTargetId string, creds OfflineCreds) (string, OfflineCreds) {
-	pk, err := rsa.GenerateKey(rand.Reader, 2048)
-	subcommands.DieNotNil(err)
-
-	var privBytes []byte = x509.MarshalPKCS1PrivateKey(pk)
-	block := &pem.Block{
-		Type:  "RSA PRIVATE KEY",
-		Bytes: privBytes,
-	}
-
-	privBytes, err = json.Marshal(client.AtsKey{
-		KeyType:  "RSA",
-		KeyValue: client.AtsKeyVal{Private: string(pem.EncodeToMemory(block))},
-	})
-	subcommands.DieNotNil(err)
-
-	pubBytes, err := x509.MarshalPKIXPublicKey(&pk.PublicKey)
-	subcommands.DieNotNil(err)
-
-	block = &pem.Block{
-		Type:  "PUBLIC KEY",
-		Bytes: pubBytes,
-	}
-	pubBytes = pem.EncodeToMemory(block)
-	id := fmt.Sprintf("%x", sha256.Sum256(pubBytes))
-	root.Signed.Keys[id] = client.AtsKey{
-		KeyType:  "RSA",
-		KeyValue: client.AtsKeyVal{Public: string(pubBytes)},
-	}
-	root.Signed.Roles["targets"].KeyIDs = []string{onlineTargetId, id}
+	kp := genKeyPair()
+	root.Signed.Keys[kp.keyid] = kp.atsPub
+	root.Signed.Roles["targets"].KeyIDs = []string{onlineTargetId, kp.keyid}
 	root.Signed.Roles["targets"].Threshold = 1
 	root.Signed.Version += 1
 
-	pubBytes, err = json.Marshal(root.Signed.Keys[id])
-	subcommands.DieNotNil(err)
-
-	base := "tufrepo/keys/fioctl-targets-" + id
-	creds[base+".pub"] = pubBytes
-	creds[base+".sec"] = privBytes
-	return id, creds
+	base := "tufrepo/keys/fioctl-targets-" + kp.keyid
+	creds[base+".pub"] = kp.atsPubBytes
+	creds[base+".sec"] = kp.atsPrivBytes
+	return kp.keyid, creds
 }
