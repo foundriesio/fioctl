@@ -147,7 +147,18 @@ func signRoot(root *client.AtsTufRoot, signers ...TufSigner) error {
 	return nil
 }
 
-func swapRootKey(root *client.AtsTufRoot, curid string, creds OfflineCreds) (string, *rsa.PrivateKey, OfflineCreds) {
+type keypair struct {
+	rsaPriv      *rsa.PrivateKey
+	atsPriv      client.AtsKey
+	atsPrivBytes []byte
+
+	atsPub      client.AtsKey
+	atsPubBytes []byte
+
+	keyid string
+}
+
+func genKeyPair() keypair {
 	pk, err := rsa.GenerateKey(rand.Reader, 2048)
 	subcommands.DieNotNil(err)
 
@@ -156,15 +167,15 @@ func swapRootKey(root *client.AtsTufRoot, curid string, creds OfflineCreds) (str
 		Type:  "RSA PRIVATE KEY",
 		Bytes: privBytes,
 	}
-	privBytes, err = json.Marshal(client.AtsKey{
+	priv := client.AtsKey{
 		KeyType:  "RSA",
 		KeyValue: client.AtsKeyVal{Private: string(pem.EncodeToMemory(block))},
-	})
+	}
+	atsPrivBytes, err := json.Marshal(priv)
 	subcommands.DieNotNil(err)
 
 	pubBytes, err := x509.MarshalPKIXPublicKey(&pk.PublicKey)
 	subcommands.DieNotNil(err)
-
 	block = &pem.Block{
 		Type:  "PUBLIC KEY",
 		Bytes: pubBytes,
@@ -173,20 +184,33 @@ func swapRootKey(root *client.AtsTufRoot, curid string, creds OfflineCreds) (str
 		KeyType:  "RSA",
 		KeyValue: client.AtsKeyVal{Public: string(pem.EncodeToMemory(block))},
 	}
+	atsPubBytes, err := json.Marshal(pub)
+	subcommands.DieNotNil(err)
+
 	id, err := pub.KeyID()
 	subcommands.DieNotNil(err)
-	root.Signed.Keys[id] = pub
+
+	return keypair{
+		atsPriv:      priv,
+		atsPrivBytes: atsPrivBytes,
+		atsPub:       pub,
+		atsPubBytes:  atsPubBytes,
+		keyid:        id,
+		rsaPriv:      pk,
+	}
+}
+
+func swapRootKey(root *client.AtsTufRoot, curid string, creds OfflineCreds) (string, *rsa.PrivateKey, OfflineCreds) {
+	kp := genKeyPair()
+	root.Signed.Keys[kp.keyid] = kp.atsPub
 	root.Signed.Expires = time.Now().AddDate(1, 0, 0).UTC().Round(time.Second) // 1 year validity
-	root.Signed.Roles["root"].KeyIDs = []string{id}
+	root.Signed.Roles["root"].KeyIDs = []string{kp.keyid}
 	root.Signed.Version += 1
 
-	pubBytes, err = json.Marshal(root.Signed.Keys[id])
-	subcommands.DieNotNil(err)
-
-	base := "tufrepo/keys/fioctl-root-" + id
-	creds[base+".pub"] = pubBytes
-	creds[base+".sec"] = privBytes
-	return id, pk, creds
+	base := "tufrepo/keys/fioctl-root-" + kp.keyid
+	creds[base+".pub"] = kp.atsPubBytes
+	creds[base+".sec"] = kp.atsPrivBytes
+	return kp.keyid, kp.rsaPriv, creds
 }
 
 func assertWritable(path string) {

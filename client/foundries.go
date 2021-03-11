@@ -873,6 +873,17 @@ func (a *Api) FactoryListDeviceGroup(factory string) (*[]DeviceGroup, error) {
 	return &resp.Groups, nil
 }
 
+func (a *Api) GetFoundriesTargetsKey(factory string) (*AtsKey, error) {
+	url := a.serverUrl + "/ota/factories/" + factory + "/ci-targets.pub"
+	body, err := a.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	key := AtsKey{}
+	err = json.Unmarshal(*body, &key)
+	return &key, err
+}
+
 func (a *Api) TufRootGet(factory string) (*AtsTufRoot, error) {
 	url := a.serverUrl + "/ota/repo/" + factory + "/api/v1/user_repo/root.json"
 	body, err := a.Get(url)
