@@ -38,7 +38,7 @@ func init() {
 func doShow(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 	version := args[0]
-	logrus.Debugf("Showing target for %s %s", factory, version)
+	logrus.Debugf("Showing targets for %s %s", factory, version)
 
 	var tags []string
 	var apps map[string]client.DockerApp
@@ -181,18 +181,15 @@ func doShowComposeApp(cmd *cobra.Command, args []string) {
 }
 
 func getTargets(factory string, version string) (map[string]string, map[string]client.TufCustom) {
-	targetsJson, err := api.TargetsList(factory)
+	targets, err := api.TargetsList(factory, version)
 	subcommands.DieNotNil(err)
 
 	hashes := make(map[string]string)
 	matches := make(map[string]client.TufCustom)
-	for name, target := range targetsJson.Signed.Targets {
+	for name, target := range targets {
 		custom, err := api.TargetCustom(target)
 		if err != nil {
 			fmt.Printf("ERROR: %s\n", err)
-			continue
-		}
-		if custom.Version != version {
 			continue
 		}
 		if custom.TargetFormat != "OSTREE" {

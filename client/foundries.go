@@ -275,6 +275,34 @@ type TargetTestList struct {
 	Next  *string      `json:"next"`
 }
 
+type WaveRolloutGroupRef struct {
+	GroupId   int    `json:"group-id"`
+	GroupName string `json:"group-name"`
+	CreatedAt string `json:"created-at"`
+}
+
+type Wave struct {
+	Name          string                         `json:"name"`
+	Version       string                         `json:"version"`
+	Tag           string                         `json:"tag"`
+	Targets       *json.RawMessage               `json:"targets"`
+	CreatedAt     string                         `json:"created-at"`
+	FinishedAt    string                         `json:"finished-at"`
+	Status        string                         `json:"status"`
+	RolloutGroups map[string]WaveRolloutGroupRef `json:"rollout-groups"`
+}
+
+type WaveCreate struct {
+	Name    string     `json:"name"`
+	Version string     `json:"version"`
+	Tag     string     `json:"tag"`
+	Targets tuf.Signed `json:"targets"`
+}
+
+type WaveRolloutOptions struct {
+	Group string `json:"group"`
+}
+
 // This is an error returned in case if we've successfully received an HTTP response which contains
 // an unexpected HTTP status code
 type HttpError struct {
@@ -908,18 +936,22 @@ func (a *Api) TargetsListRaw(factory string) (*[]byte, error) {
 	return a.Get(url)
 }
 
-func (a *Api) TargetsList(factory string) (*tuf.SignedTargets, error) {
-	body, err := a.TargetsListRaw(factory)
+func (a *Api) TargetsList(factory string, version ...string) (tuf.Files, error) {
+	url := a.serverUrl + "/ota/factories/" + factory + "/targets/"
+	if len(version) == 1 {
+		url += "?version=" + version[0]
+	}
+	body, err := a.Get(url)
 	if err != nil {
 		return nil, err
 	}
-	targets := tuf.SignedTargets{}
+	targets := make(tuf.Files)
 	err = json.Unmarshal(*body, &targets)
 	if err != nil {
 		return nil, err
 	}
 
-	return &targets, nil
+	return targets, nil
 }
 
 func (a *Api) TargetCustom(target tuf.FileMeta) (*TufCustom, error) {
@@ -1255,4 +1287,103 @@ func (a *Api) FactoryPatchCA(factory string, certs CaCerts) error {
 
 	_, err = a.Patch(url, data)
 	return err
+}
+
+func (a *Api) FactoryCreateWave(factory string, wave *WaveCreate) error {
+	url := a.serverUrl + "/ota/factories/" + factory + "/waves/"
+	logrus.Debugf("Creating factory wave %s", url)
+
+	data, err := json.Marshal(wave)
+	if err != nil {
+		return err
+	}
+
+	_, err = a.Post(url, data)
+	return err
+}
+
+func (a *Api) FactoryListWaves(factory string, limit uint64) ([]Wave, error) {
+	url := a.serverUrl + "/ota/factories/" + factory + "/waves/?limit=" + strconv.FormatUint(limit, 10)
+	logrus.Debugf("Listing factory waves %s", url)
+
+	body, err := a.Get(url)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp []Wave
+	err = json.Unmarshal(*body, &resp)
+	return resp, err
+}
+
+func (a *Api) FactoryGetWave(factory string, wave string, showTargets bool) (*Wave, error) {
+	url := a.serverUrl + "/ota/factories/" + factory + "/waves/" + wave + "/"
+	if showTargets {
+		url += "?show-targets=1"
+	}
+	logrus.Debugf("Fetching factory wave %s", url)
+
+	body, err := a.Get(url)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp Wave
+	err = json.Unmarshal(*body, &resp)
+	return &resp, err
+}
+
+func (a *Api) FactoryRolloutWave(factory string, wave string, options WaveRolloutOptions) error {
+	url := a.serverUrl + "/ota/factories/" + factory + "/waves/" + wave + "/rollout/"
+	logrus.Debugf("Rolling out factory wave %s", url)
+
+	data, err := json.Marshal(options)
+	if err != nil {
+		return err
+	}
+
+	_, err = a.Post(url, data)
+	return err
+}
+
+func (a *Api) FactoryCancelWave(factory string, wave string) error {
+	url := a.serverUrl + "/ota/factories/" + factory + "/waves/" + wave + "/cancel/"
+	logrus.Debugf("Canceling factory wave %s", url)
+	_, err := a.Post(url, nil)
+	return err
+}
+
+func (a *Api) FactoryCompleteWave(factory string, wave string) error {
+	url := a.serverUrl + "/ota/factories/" + factory + "/waves/" + wave + "/complete/"
+	logrus.Debugf("Completing factory wave %s", url)
+	_, err := a.Post(url, nil)
+	return err
+}
+
+func (a *Api) ProdTargetsList(factory string, tags ...string) (map[string]tuf.SignedTargets, error) {
+	url := a.serverUrl + "/ota/factories/" + factory + "/prod-targets/?tag=" + strings.Join(tags, ",")
+	logrus.Debugf("Fetching factory production targets %s", url)
+
+	body, err := a.Get(url)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := make(map[string]tuf.SignedTargets)
+	err = json.Unmarshal(*body, &resp)
+	return resp, err
+}
+
+func (a *Api) ProdTargetsGet(factory string, tag string, failNotExist bool) (*tuf.SignedTargets, error) {
+	targets_map, err := a.ProdTargetsList(factory, tag)
+	if err != nil {
+		if !failNotExist {
+			if herr := AsHttpError(err); herr != nil && herr.Response.StatusCode == 404 {
+				return nil, nil
+			}
+		}
+		return nil, err
+	}
+	targets := targets_map[tag]
+	return &targets, nil
 }

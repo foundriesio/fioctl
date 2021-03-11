@@ -73,7 +73,7 @@ func doList(cmd *cobra.Command, args []string) {
 
 	var keys []string
 	listing := make(map[string]*targetListing)
-	for _, target := range targets.Signed.Targets {
+	for _, target := range targets {
 		custom, err := api.TargetCustom(target)
 		if err != nil {
 			fmt.Printf("ERROR: %s\n", err)

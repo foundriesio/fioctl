@@ -58,10 +58,10 @@ func sortedListsMatch(a, b []string) bool {
 	return true
 }
 
-func findUnusedApps(targets *tuf.SignedTargets, deleted_list []string) []string {
+func findUnusedApps(targets tuf.Files, deleted_list []string) []string {
 	apps := make(map[string]int)
 	referenced := make([]string, 0, 100)
-	for name, target := range targets.Signed.Targets {
+	for name, target := range targets {
 		custom, err := api.TargetCustom(target)
 		if err != nil {
 			fmt.Printf("ERROR: %s\n", err)
@@ -102,7 +102,7 @@ func doPrune(cmd *cobra.Command, args []string) {
 	if pruneByTag {
 		sort.Strings(args)
 		target_names = make([]string, 0, 10)
-		for name, target := range targets.Signed.Targets {
+		for name, target := range targets {
 			custom, err := api.TargetCustom(target)
 			if err != nil {
 				fmt.Printf("ERROR: %s\n", err)
@@ -150,7 +150,7 @@ func doPrune(cmd *cobra.Command, args []string) {
 		}
 	} else {
 		for _, name := range args {
-			if _, ok := targets.Signed.Targets[name]; !ok {
+			if _, ok := targets[name]; !ok {
 				fmt.Printf("Target(%s) not found in targets.json\n", name)
 				os.Exit(1)
 			}

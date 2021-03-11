@@ -36,7 +36,7 @@ func doEdit(cmd *cobra.Command, args []string) {
 	// Get raw json
 	targets, err := api.TargetsList(factory)
 	subcommands.DieNotNil(err)
-	orig, err := json.MarshalIndent(targets.Signed.Targets, "", "  ")
+	orig, err := json.MarshalIndent(targets, "", "  ")
 	subcommands.DieNotNil(err)
 
 	// Create temp file to edit with
