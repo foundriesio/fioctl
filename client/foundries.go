@@ -135,6 +135,8 @@ type Device struct {
 	PublicKey     string           `json:"public-key"`
 	ActiveConfig  *DeviceConfig    `json:"active-config,omitempty"`
 	AktualizrToml string           `json:"aktualizr-toml,omitempty"`
+	IsProd        bool             `json:"is-prod"`
+	IsWave        bool             `json:"is-wave"`
 }
 
 type DeviceList struct {
