@@ -87,8 +87,8 @@ func printTargetStatus(tagPrefix string, tagStatus []client.TagStatus) {
 		}
 		fmt.Printf("\n## %s Tag: %s\n", tagPrefix, name)
 		// Tabby doesn't indent (or at least easily) so:
-		fmt.Println("\tTARGET   DEVICES  DETAILS")
-		fmt.Println("\t-------  -------  -------")
+		fmt.Println("\tTARGET   DEVICES  INSTALLING  DETAILS")
+		fmt.Println("\t-------  -------  ----------  -------")
 		for _, tgt := range tag.Targets {
 			var orphan, details string
 			if tgt.IsOrphan {
@@ -97,7 +97,8 @@ func printTargetStatus(tagPrefix string, tagStatus []client.TagStatus) {
 			if tgt.Version > 0 {
 				details = fmt.Sprintf("`fioctl targets show %d`", tgt.Version)
 			}
-			fmt.Printf("\t%-6d%-1s  %-7d  %s\n", tgt.Version, orphan, tgt.Devices, details)
+			fmt.Printf("\t%-6d%-1s  %-7d  %-10d  %s\n",
+				tgt.Version, orphan, tgt.Devices, tgt.Reinstalling, details)
 		}
 	}
 }
