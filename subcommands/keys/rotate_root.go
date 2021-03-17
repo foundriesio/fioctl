@@ -70,11 +70,15 @@ func doRotateRoot(cmd *cobra.Command, args []string) {
 	}
 	subcommands.DieNotNil(signRoot(root, signers...))
 
+	tufRootPost(factory, credsFile, root, newCreds)
+}
+
+func tufRootPost(factory, credsFile string, root *client.AtsTufRoot, creds OfflineCreds) {
 	bytes, err := json.Marshal(root)
 	subcommands.DieNotNil(err)
 
 	// Create a backup before we try and commit this:
-	tmpCreds := saveTempCreds(credsFile, newCreds)
+	tmpCreds := saveTempCreds(credsFile, creds)
 
 	fmt.Println("= Uploading rotated root")
 	body, err := api.TufRootPost(factory, bytes)

@@ -1,10 +1,8 @@
 package keys
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -52,21 +50,7 @@ func doRotateTargets(cmd *cobra.Command, args []string) {
 	fmt.Println("= New target:", targetid)
 	subcommands.DieNotNil(signRoot(root, TufSigner{rootid, rootPk}))
 
-	tmpCreds := saveTempCreds(credsFile, newCreds)
-
-	bytes, err := json.MarshalIndent(root, "", "  ")
-	subcommands.DieNotNil(err)
-	fmt.Println("= Uploading new root")
-	body, err := api.TufRootPost(factory, bytes)
-	if err != nil {
-		fmt.Println("\nERROR:", err)
-		fmt.Println(body)
-		os.Exit(1)
-	}
-	if err := os.Rename(tmpCreds, credsFile); err != nil {
-		fmt.Println("\nERROR: Unable to update offline creds file.", err)
-		fmt.Println("Temp copy still available at:", tmpCreds)
-	}
+	tufRootPost(factory, credsFile, root, newCreds)
 }
 
 func findOnlineTargetId(factory string, root client.AtsTufRoot, creds OfflineCreds) (string, error) {
