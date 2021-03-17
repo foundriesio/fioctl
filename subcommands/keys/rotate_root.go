@@ -91,8 +91,11 @@ func tufRootPost(factory, credsFile string, root *client.AtsTufRoot, creds Offli
 
 	fmt.Println("= Uploading rotated root")
 	body, err := api.TufRootPost(factory, bytes)
-	if err != nil {
-		fmt.Println("\nERROR:", err)
+	if herr := client.AsHttpError(err); herr != nil && herr.Response.StatusCode == 409 {
+		fmt.Println("ERROR: Your production root role is out of sync. Please run `fioctl rotate root --sync-prod` to fix this.")
+		os.Exit(1)
+	} else if err != nil {
+		fmt.Println("\nERROR: ", err)
 		fmt.Println(body)
 		fmt.Println("A temporary copy of the new root was saved:", tmpCreds)
 		fmt.Println("Before deleting this please ensure your factory isn't configured with this new key")
