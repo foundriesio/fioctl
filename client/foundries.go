@@ -311,6 +311,32 @@ type WaveRolloutOptions struct {
 	Group string `json:"group"`
 }
 
+type RolloutGroupStatus struct {
+	Name           string         `json:"name"`
+	RolloutAt      string         `json:"rollout-at"`
+	DevicesTotal   int            `json:"devices-total"`
+	DevicesOnline  int            `json:"devices-online"`
+	DevicesOnWave  int            `json:"devices-on-wave-version"`
+	DevicesOnNewer int            `json:"devices-on-newer-version"`
+	DevicesOnOlder int            `json:"devices-on-older-version"`
+	Targets        []TargetStatus `json:"targets"`
+}
+
+type WaveStatus struct {
+	Name               string               `json:"name"`
+	Version            int                  `json:"version"`
+	Tag                string               `json:"tag"`
+	Status             string               `json:"status"`
+	CreatedAt          string               `json:"created-at"`
+	FinishedAt         string               `json:"finished-at"`
+	TotalDevices       int                  `json:"total-devices"`
+	UpdatedDevices     int                  `json:"updated-devices"`
+	ScheduledDevices   int                  `json:"scheduled-devices"`
+	UnscheduledDevices int                  `json:"unscheduled-devices"`
+	RolloutGroups      []RolloutGroupStatus `json:"rollout-groups"`
+	OtherGroups        []RolloutGroupStatus `json:"other-groups"`
+}
+
 // This is an error returned in case if we've successfully received an HTTP response which contains
 // an unexpected HTTP status code
 type HttpError struct {
@@ -1392,6 +1418,22 @@ func (a *Api) FactoryCompleteWave(factory string, wave string) error {
 	logrus.Debugf("Completing factory wave %s", url)
 	_, err := a.Post(url, nil)
 	return err
+}
+
+func (a *Api) FactoryWaveStatus(factory string, wave string, inactiveThreshold int) (*WaveStatus, error) {
+	url := fmt.Sprintf("%s/ota/factories/%s/waves/%s/status/?offline-threshold=%d",
+		a.serverUrl, factory, wave, inactiveThreshold)
+	logrus.Debugf("Fetching factory wave status %s", url)
+	body, err := a.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	s := WaveStatus{}
+	err = json.Unmarshal(*body, &s)
+	if err != nil {
+		return nil, err
+	}
+	return &s, nil
 }
 
 func (a *Api) ProdTargetsList(factory string, tags ...string) (map[string]tuf.SignedTargets, error) {
