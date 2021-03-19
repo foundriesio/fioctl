@@ -76,11 +76,13 @@ var Columns = map[string]column{
 	"last-seen":     {func(d *client.Device) string { return d.LastSeen }},
 	"ostree-hash":   {func(d *client.Device) string { return d.OstreeHash }},
 	"curent-update": {func(d *client.Device) string { return d.CurrentUpdate }},
+	"is-prod":       {func(d *client.Device) string { return fmt.Sprintf("%v", d.IsProd) }},
+	"is-wave":       {func(d *client.Device) string { return fmt.Sprintf("%v", d.IsWave) }},
 }
 
 func init() {
 	var defCols = []string{
-		"name", "factory", "target", "status", "apps", "up-to-date",
+		"name", "factory", "target", "status", "apps", "up-to-date", "is-prod",
 	}
 
 	allCols := make([]string, 0, len(Columns))

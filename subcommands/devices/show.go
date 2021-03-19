@@ -40,6 +40,11 @@ func doShow(cmd *cobra.Command, args []string) {
 	if device.Group != nil {
 		fmt.Printf("Group:\t\t%s\n", device.Group.Name)
 	}
+	var waveSuffix string
+	if device.IsWave {
+		waveSuffix = " (in wave)"
+	}
+	fmt.Printf("Production:\t%v%s\n", device.IsProd, waveSuffix)
 	fmt.Printf("Up to date:\t%v\n", device.UpToDate)
 	fmt.Printf("Target:\t\t%s / sha256(%s)\n", device.TargetName, device.OstreeHash)
 	fmt.Printf("Ostree Hash:\t%s\n", device.OstreeHash)

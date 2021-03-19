@@ -135,6 +135,8 @@ type Device struct {
 	PublicKey     string           `json:"public-key"`
 	ActiveConfig  *DeviceConfig    `json:"active-config,omitempty"`
 	AktualizrToml string           `json:"aktualizr-toml,omitempty"`
+	IsProd        bool             `json:"is-prod"`
+	IsWave        bool             `json:"is-wave"`
 }
 
 type DeviceList struct {
@@ -165,14 +167,18 @@ type JobservRun struct {
 }
 
 type TargetStatus struct {
-	Devices int `json:"devices"`
-	Version int `json:"version"`
+	Version      int  `json:"version"`
+	Devices      int  `json:"devices"`
+	Reinstalling int  `json:"(re-)installing"`
+	IsOrphan     bool `json:"is-orphan"`
 }
+
 type TagStatus struct {
 	Name            string         `json:"name"`
 	DevicesTotal    int            `json:"devices-total"`
 	DevicesOnline   int            `json:"devices-online"`
 	DevicesOnLatest int            `json:"devices-on-latest"`
+	DevicesOnOrphan int            `json:"devices-on-orphan"`
 	LatestTarget    int            `json:"latest-target"`
 	Targets         []TargetStatus `json:"targets"`
 }
@@ -180,6 +186,8 @@ type TagStatus struct {
 type FactoryStatus struct {
 	TotalDevices int         `json:"total-devices"`
 	Tags         []TagStatus `json:"tags"`
+	ProdTags     []TagStatus `json:"prod-tags"`
+	ProdWaveTags []TagStatus `json:"wave-tags"`
 }
 
 type ProjectSecret struct {
