@@ -29,7 +29,8 @@ func doRotateTargets(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 	credsFile := args[0]
 	assertWritable(credsFile)
-	creds := getOfflineCreds(credsFile)
+	creds, err := GetOfflineCreds(credsFile)
+	subcommands.DieNotNil(err)
 
 	root, err := api.TufRootGet(factory)
 	subcommands.DieNotNil(err)
