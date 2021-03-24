@@ -93,7 +93,7 @@ func factoryIps(factory string) map[uint32]bool {
 	for {
 		var err error
 		if dl == nil {
-			dl, err = api.DeviceList(true, "", factory, "", "", "")
+			dl, err = api.DeviceList(true, "", factory, "", "", "", 1, 1000)
 		} else {
 			if dl.Next != nil {
 				dl, err = api.DeviceListCont(*dl.Next)
