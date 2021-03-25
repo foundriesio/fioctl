@@ -12,6 +12,7 @@ import (
 
 	"github.com/foundriesio/fioctl/client"
 	"github.com/foundriesio/fioctl/subcommands"
+	"github.com/foundriesio/fioctl/subcommands/keys"
 	tuf "github.com/theupdateframework/notary/tuf/data"
 )
 
@@ -19,7 +20,7 @@ func init() {
 	initCmd := &cobra.Command{
 		Use:   "init <wave> <version> [<tag>]",
 		Short: "Create a new wave from targets of a given version",
-		Long: `Create a new wave from targets of a given version.",
+		Long: `Create a new wave from targets of a given version.
 Optionally, provide the tag to use for these targets ('master' by default).
 In any case, original tags of these targets are ignored.
 
@@ -38,6 +39,8 @@ The same expiration will be used for production targets when a wave is complete.
 When set this value overrides an 'expires-days' argument.
 Example: 2020-01-01T00:00:00Z`)
 	initCmd.Flags().BoolP("dry-run", "d", false, "Don't create a wave, print it to standard output.")
+	initCmd.Flags().StringP("keys", "k", "", "Path to <offline-creds.tgz> used to sign wave targets.")
+	_ = initCmd.MarkFlagRequired("keys")
 }
 
 func doInitWave(cmd *cobra.Command, args []string) {
@@ -50,6 +53,7 @@ func doInitWave(cmd *cobra.Command, args []string) {
 	subcommands.DieNotNil(err, "Version must be an integer")
 	expires := readExpiration(cmd)
 	dryRun, _ := cmd.Flags().GetBool("dry-run")
+	offlineKeys := readOfflineKeys(cmd)
 	logrus.Debugf("Creating a wave %s for factory %s targets version %s and new tag %s expires %s",
 		name, factory, version, tag, expires.Format(time.RFC3339))
 
@@ -94,13 +98,14 @@ func doInitWave(cmd *cobra.Command, args []string) {
 
 	meta, err := json.MarshalCanonical(targets)
 	subcommands.DieNotNil(err, "Failed to serialize new targets")
+	signatures := signTargets(meta, factory, offlineKeys)
+
 	signed := tuf.Signed{
 		// Existing signatures are invalidated by new targets, throw them away.
-		Signatures: make([]tuf.Signature, 0),
+		Signatures: signatures,
 		Signed:     &json.RawMessage{},
 	}
 	_ = signed.Signed.UnmarshalJSON(meta)
-	// TODO: Add offline signing
 
 	wave := client.WaveCreate{
 		Name:    name,
@@ -115,6 +120,35 @@ func doInitWave(cmd *cobra.Command, args []string) {
 	} else {
 		subcommands.DieNotNil(api.FactoryCreateWave(factory, &wave), "Failed to create a wave")
 	}
+}
+
+func signTargets(meta []byte, factory string, offlineKeys keys.OfflineCreds) []tuf.Signature {
+	root, err := api.TufRootGet(factory)
+	subcommands.DieNotNil(err, "Failed to fetch root role")
+	onlinePub, err := api.GetFoundriesTargetsKey(factory)
+	subcommands.DieNotNil(err, "Failed to fetch online targets public key")
+
+	signers := make([]keys.TufSigner, 0)
+	for _, kid := range root.Signed.Roles["targets"].KeyIDs {
+		pub := root.Signed.Keys[kid].KeyValue.Public
+		if pub == onlinePub.KeyValue.Public {
+			continue
+		}
+		pkey, err := keys.FindPrivKey(pub, offlineKeys)
+		if err != nil {
+			subcommands.DieNotNil(err, fmt.Sprintf("Failed to find private key for %s", kid))
+		}
+		signers = append(signers, keys.TufSigner{Id: kid, Key: pkey})
+	}
+
+	if len(signers) == 0 {
+		subcommands.DieNotNil(fmt.Errorf(`Root role is not configured to sign targets offline.
+Please, run "fioctl keys rotate-targets" in order to create offline targets keys.`))
+	}
+
+	signatures, err := keys.SignMeta(meta, signers...)
+	subcommands.DieNotNil(err, "Failed to sign new targets")
+	return signatures
 }
 
 func readExpiration(cmd *cobra.Command) (expires time.Time) {
@@ -133,6 +167,13 @@ func readExpiration(cmd *cobra.Command) (expires time.Time) {
 	// This forces a JSON marshaller to use an RFC3339 instead of the default RFC3339Nano format.
 	// An aktualizr we use on devices to update targets doesn't understand the latter one.
 	return expires.Round(time.Second)
+}
+
+func readOfflineKeys(cmd *cobra.Command) keys.OfflineCreds {
+	offlineKeysFile, _ := cmd.Flags().GetString("keys")
+	offlineKeys, err := keys.GetOfflineCreds(offlineKeysFile)
+	subcommands.DieNotNil(err, "Failed to open offline keys file")
+	return offlineKeys
 }
 
 func replaceTags(target *tuf.FileMeta, tag string) error {

@@ -2,19 +2,14 @@ package keys
 
 import (
 	"archive/tar"
-	"bytes"
 	"compress/gzip"
-	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
-	"crypto/sha256"
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
-	"io"
 	"os"
-	"strings"
 	"time"
 
 	canonical "github.com/docker/go/canonical/json"
@@ -22,14 +17,7 @@ import (
 	"github.com/foundriesio/fioctl/subcommands"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	tuf "github.com/theupdateframework/notary/tuf/data"
 )
-
-type OfflineCreds map[string][]byte
-type TufSigner struct {
-	Id  string
-	Key *rsa.PrivateKey
-}
 
 var doRootSync bool
 
@@ -50,7 +38,8 @@ func doRotateRoot(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 	credsFile := args[0]
 	assertWritable(credsFile)
-	creds := getOfflineCreds(credsFile)
+	creds, err := GetOfflineCreds(credsFile)
+	subcommands.DieNotNil(err)
 
 	root, err := api.TufRootGet(factory)
 	subcommands.DieNotNil(err)
@@ -143,24 +132,11 @@ func signRoot(root *client.AtsTufRoot, signers ...TufSigner) error {
 	if err != nil {
 		return err
 	}
-
-	opts := rsa.PSSOptions{SaltLength: 32, Hash: crypto.SHA256}
-	hashed := sha256.Sum256(bytes)
-
-	root.Signatures = []tuf.Signature{}
-
-	for _, signer := range signers {
-		bytes, err = signer.Key.Sign(rand.Reader, hashed[:], &opts)
-		if err != nil {
-			return err
-		}
-		sig := tuf.Signature{
-			KeyID:     signer.Id,
-			Method:    "rsassa-pss-sha256",
-			Signature: bytes,
-		}
-		root.Signatures = append(root.Signatures, sig)
+	signatures, err := SignMeta(bytes, signers...)
+	if err != nil {
+		return err
 	}
+	root.Signatures = signatures
 	return nil
 }
 
@@ -270,66 +246,11 @@ func saveTempCreds(credsFile string, creds OfflineCreds) string {
 	return path
 }
 
-func findPrivKey(pubkey string, creds OfflineCreds) (*rsa.PrivateKey, error) {
-	pubkey = strings.TrimSpace(pubkey)
-	for k, v := range creds {
-		if strings.HasSuffix(k, ".pub") {
-			tk := client.AtsKey{}
-			subcommands.DieNotNil(json.Unmarshal(v, &tk))
-			if strings.TrimSpace(tk.KeyValue.Public) == pubkey {
-				pkbytes := creds[strings.Replace(k, ".pub", ".sec", 1)]
-				tk = client.AtsKey{}
-				subcommands.DieNotNil(json.Unmarshal(pkbytes, &tk))
-				privPem, _ := pem.Decode([]byte(tk.KeyValue.Private))
-				if privPem == nil {
-					return nil, fmt.Errorf("Unable to parse private key: %s", string(creds[k]))
-				}
-				if privPem.Type != "RSA PRIVATE KEY" {
-					return nil, fmt.Errorf("Invalid private key???: %s", string(k))
-				}
-				pk, err := x509.ParsePKCS1PrivateKey(privPem.Bytes)
-				return pk, err
-			}
-		}
-	}
-	return nil, fmt.Errorf("Can not find private key for: %s", pubkey)
-}
-
 func findRoot(root client.AtsTufRoot, creds OfflineCreds) (string, *rsa.PrivateKey, error) {
 	kid := root.Signed.Roles["root"].KeyIDs[0]
 	pub := root.Signed.Keys[kid].KeyValue.Public
-	key, err := findPrivKey(pub, creds)
+	key, err := FindPrivKey(pub, creds)
 	return kid, key, err
-}
-
-func getOfflineCreds(credsFile string) OfflineCreds {
-	f, err := os.Open(credsFile)
-	subcommands.DieNotNil(err)
-	defer f.Close()
-
-	files := make(OfflineCreds)
-
-	gzf, err := gzip.NewReader(f)
-	subcommands.DieNotNil(err)
-	tr := tar.NewReader(gzf)
-
-	for {
-		hdr, err := tr.Next()
-		if err == io.EOF {
-			break // End of archive
-		}
-		subcommands.DieNotNil(err)
-
-		if hdr.Typeflag == tar.TypeDir {
-			continue
-		}
-
-		var b bytes.Buffer
-		_, err = io.Copy(&b, tr)
-		subcommands.DieNotNil(err)
-		files[hdr.Name] = b.Bytes()
-	}
-	return files
 }
 
 func syncProdRoot(factory string, root client.AtsTufRoot, creds OfflineCreds) error {
@@ -350,7 +271,7 @@ func syncProdRoot(factory string, root client.AtsTufRoot, creds OfflineCreds) er
 			}
 			key = prev.Signed.Keys[sig.KeyID]
 		}
-		pkey, err := findPrivKey(key.KeyValue.Public, creds)
+		pkey, err := FindPrivKey(key.KeyValue.Public, creds)
 		if err != nil {
 			return err
 		}
