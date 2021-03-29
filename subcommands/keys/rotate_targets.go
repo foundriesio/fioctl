@@ -7,6 +7,9 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	canonical "github.com/docker/go/canonical/json"
+	tuf "github.com/theupdateframework/notary/tuf/data"
+
 	"github.com/foundriesio/fioctl/client"
 	"github.com/foundriesio/fioctl/subcommands"
 )
@@ -15,7 +18,11 @@ func init() {
 	rotateTargets := &cobra.Command{
 		Use:   "rotate-targets <offline-creds.tgz>",
 		Short: "Rotate the offline target signing key for the Factory",
-		Run:   doRotateTargets,
+		Long: `Rotate the offline target signing key for the Factory.
+
+If there are any production targets in your factory - they are re-signed using the new key.
+This command is not allowed if there is an active wave in your factory.`,
+		Run: doRotateTargets,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			api = subcommands.Login(cmd)
 		},
@@ -51,6 +58,7 @@ func doRotateTargets(cmd *cobra.Command, args []string) {
 	fmt.Println("= New target:", targetid)
 	removeUnusedKeys(root)
 	subcommands.DieNotNil(signRoot(root, TufSigner{rootid, rootPk}))
+	subcommands.DieNotNil(resignProdTargets(factory, root, onlineTargetId, creds))
 
 	tufRootPost(factory, credsFile, root, newCreds)
 }
@@ -78,4 +86,43 @@ func replaceOfflineTargetKey(root *client.AtsTufRoot, onlineTargetId string, cre
 	creds[base+".pub"] = kp.atsPubBytes
 	creds[base+".sec"] = kp.atsPrivBytes
 	return kp.keyid, creds
+}
+
+func resignProdTargets(
+	factory string, root *client.AtsTufRoot, onlineTargetId string, creds OfflineCreds,
+) error {
+	targetsMap, err := api.ProdTargetsList(factory, false)
+	if err != nil {
+		return fmt.Errorf("Failed to fetch production targets: %w", err)
+	} else if targetsMap == nil {
+		return nil
+	}
+
+	signers := make([]TufSigner, 0)
+	for _, kid := range root.Signed.Roles["targets"].KeyIDs {
+		if kid == onlineTargetId {
+			continue
+		}
+		pub := root.Signed.Keys[kid].KeyValue.Public
+		pkey, err := FindPrivKey(pub, creds)
+		if err != nil {
+			return fmt.Errorf("Failed to find private key for %s: %w", kid, err)
+		}
+		signers = append(signers, TufSigner{Id: kid, Key: pkey})
+	}
+
+	signatureMap := make(map[string][]tuf.Signature)
+	for tag, targets := range targetsMap {
+		bytes, err := canonical.MarshalCanonical(targets.Signed)
+		if err != nil {
+			return fmt.Errorf("Failed to marshal targets for tag %s: %w", tag, err)
+		}
+		signatures, err := SignMeta(bytes, signers...)
+		if err != nil {
+			return fmt.Errorf("Failed to re-sign targets for tag %s: %w", tag, err)
+		}
+		signatureMap[tag] = signatures
+	}
+	root.TargetsSignatures = signatureMap
+	return nil
 }
