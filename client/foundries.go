@@ -240,9 +240,24 @@ type AtsRootMeta struct {
 	Keys       map[string]AtsKey              `json:"keys"`
 	Roles      map[tuf.RoleName]*tuf.RootRole `json:"roles"`
 }
+
 type AtsTufRoot struct {
+	// A non-standard targets-signatures field allows to make an atomic key rotation
+	TargetsSignatures map[string][]tuf.Signature `json:"targets-signatures,omitempty"`
+	Signatures        []tuf.Signature            `json:"signatures"`
+	Signed            AtsRootMeta                `json:"signed"`
+}
+
+type AtsTargetsMeta struct {
+	tuf.SignedCommon
+	Targets tuf.Files `json:"targets"`
+	// omitempty below in tuf package doesn't work, because it's not a reference type
+	// Delegations tuf.Delegations `json:"delegations,omitempty"` // unnecessary
+}
+
+type AtsTufTargets struct {
 	Signatures []tuf.Signature `json:"signatures"`
-	Signed     AtsRootMeta     `json:"signed"`
+	Signed     AtsTargetsMeta  `json:"signed"`
 }
 
 type ComposeAppContent struct {
@@ -1436,22 +1451,11 @@ func (a *Api) FactoryWaveStatus(factory string, wave string, inactiveThreshold i
 	return &s, nil
 }
 
-func (a *Api) ProdTargetsList(factory string, tags ...string) (map[string]tuf.SignedTargets, error) {
+func (a *Api) ProdTargetsList(factory string, failNotExist bool, tags ...string) (map[string]AtsTufTargets, error) {
 	url := a.serverUrl + "/ota/factories/" + factory + "/prod-targets/?tag=" + strings.Join(tags, ",")
 	logrus.Debugf("Fetching factory production targets %s", url)
 
 	body, err := a.Get(url)
-	if err != nil {
-		return nil, err
-	}
-
-	resp := make(map[string]tuf.SignedTargets)
-	err = json.Unmarshal(*body, &resp)
-	return resp, err
-}
-
-func (a *Api) ProdTargetsGet(factory string, tag string, failNotExist bool) (*tuf.SignedTargets, error) {
-	targets_map, err := a.ProdTargetsList(factory, tag)
 	if err != nil {
 		if !failNotExist {
 			if herr := AsHttpError(err); herr != nil && herr.Response.StatusCode == 404 {
@@ -1460,6 +1464,17 @@ func (a *Api) ProdTargetsGet(factory string, tag string, failNotExist bool) (*tu
 		}
 		return nil, err
 	}
-	targets := targets_map[tag]
+
+	resp := make(map[string]AtsTufTargets)
+	err = json.Unmarshal(*body, &resp)
+	return resp, err
+}
+
+func (a *Api) ProdTargetsGet(factory string, tag string, failNotExist bool) (*AtsTufTargets, error) {
+	targetsMap, err := a.ProdTargetsList(factory, failNotExist, tag)
+	if err != nil || targetsMap == nil {
+		return nil, err
+	}
+	targets := targetsMap[tag]
 	return &targets, nil
 }

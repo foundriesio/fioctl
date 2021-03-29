@@ -220,8 +220,11 @@ func assertWritable(path string) {
 func saveTempCreds(credsFile string, creds OfflineCreds) string {
 	path := credsFile + ".tmp"
 	if _, err := os.Stat(path); err == nil {
-		fmt.Println("ERROR: Backup file exists:", path)
-		fmt.Println("This file may be from a previous failed key rotation and include critical data. Please move this file somewhere safe before re-running this command.")
+		subcommands.DieNotNil(fmt.Errorf(`Backup file exists: %s
+This file may be from a previous failed key rotation and include critical data.
+Please move this file somewhere safe before re-running this command.`,
+			path,
+		))
 	}
 
 	file, err := os.Create(path)
@@ -256,6 +259,15 @@ func findRoot(root client.AtsTufRoot, creds OfflineCreds) (string, *rsa.PrivateK
 func syncProdRoot(factory string, root client.AtsTufRoot, creds OfflineCreds) error {
 	fmt.Println("= Populating production root version")
 
+	if root.Signed.Version == 1 {
+		return fmt.Errorf("Unexpected error: production root version 1 can only be generated on server side")
+	}
+
+	prevRoot, err := api.TufRootGetVer(factory, root.Signed.Version-1)
+	if err != nil {
+		return err
+	}
+
 	// Bump the threshold
 	root.Signed.Roles["targets"].Threshold = 2
 
@@ -264,12 +276,7 @@ func syncProdRoot(factory string, root client.AtsTufRoot, creds OfflineCreds) er
 	for _, sig := range root.Signatures {
 		key, ok := root.Signed.Keys[sig.KeyID]
 		if !ok {
-			// Root key was rotated, this pub key is previous version
-			prev, err := api.TufRootGetVer(factory, root.Signed.Version-1)
-			if err != nil {
-				return err
-			}
-			key = prev.Signed.Keys[sig.KeyID]
+			key = prevRoot.Signed.Keys[sig.KeyID]
 		}
 		pkey, err := FindPrivKey(key.KeyValue.Public, creds)
 		if err != nil {
@@ -284,6 +291,19 @@ func syncProdRoot(factory string, root client.AtsTufRoot, creds OfflineCreds) er
 		return err
 	}
 
+	if len(root.Signed.Roles["targets"].KeyIDs) > 1 &&
+		!sliceSetEqual(root.Signed.Roles["targets"].KeyIDs, prevRoot.Signed.Roles["targets"].KeyIDs) {
+		//subcommands.DieNotNil(fmt.Errorf("HERE"))
+		onlineTargetId, err := findOnlineTargetId(factory, root, creds)
+		if err != nil {
+			return err
+		}
+		err = resignProdTargets(factory, &root, onlineTargetId, creds)
+		if err != nil {
+			return err
+		}
+	}
+
 	bytes, err := json.Marshal(root)
 	if err != nil {
 		return err
@@ -293,4 +313,17 @@ func syncProdRoot(factory string, root client.AtsTufRoot, creds OfflineCreds) er
 		return err
 	}
 	return nil
+}
+
+func sliceSetEqual(first, second []string) bool {
+	firstMap := make(map[string]int, len(first))
+	for _, val := range first {
+		firstMap[val] = 1
+	}
+	for _, val := range second {
+		if _, ok := firstMap[val]; !ok {
+			return false
+		}
+	}
+	return true
 }

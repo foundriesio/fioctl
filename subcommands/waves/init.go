@@ -66,15 +66,7 @@ func doInitWave(cmd *cobra.Command, args []string) {
 	current_targets, err := api.ProdTargetsGet(factory, tag, false)
 	subcommands.DieNotNil(err)
 
-	// A standard tuf.Targets sneaks a delegations field into a resulting JSON.  As we don't use (and
-	// don't need) that field, a workaround is to use our own simplified type.  An omitempty in that
-	// field's JSON flags doesn't help as it is not a reference.
-	type TufTargets struct {
-		tuf.SignedCommon
-		Targets tuf.Files `json:"targets"`
-		// Delegations tuf.Delegations `json:"delegations,omitempty"` // unnecessary
-	}
-	targets := TufTargets{}
+	targets := client.AtsTargetsMeta{}
 	targets.Type = tuf.TUFTypes["targets"]
 	targets.Expires = expires
 	targets.Version = int(intVersion)
