@@ -10,8 +10,9 @@ import (
 var api *client.Api
 
 var cmd = &cobra.Command{
-	Use:   "wave",
-	Short: "Manage factory's waves",
+	Use:     "waves",
+	Aliases: []string{"wave"},
+	Short:   "Manage factory's waves",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		api = subcommands.Login(cmd)
 	},
