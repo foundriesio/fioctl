@@ -226,7 +226,11 @@ Please move this file somewhere safe before re-running this command.`,
 			path,
 		))
 	}
+	saveCreds(path, creds)
+	return path
+}
 
+func saveCreds(path string, creds OfflineCreds) {
 	file, err := os.Create(path)
 	subcommands.DieNotNil(err)
 	defer file.Close()
@@ -246,7 +250,6 @@ Please move this file somewhere safe before re-running this command.`,
 		_, err := tarWriter.Write(val)
 		subcommands.DieNotNil(err)
 	}
-	return path
 }
 
 func findRoot(root client.AtsTufRoot, creds OfflineCreds) (string, *rsa.PrivateKey, error) {
