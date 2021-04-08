@@ -173,14 +173,24 @@ type TargetStatus struct {
 	IsOrphan     bool `json:"is-orphan"`
 }
 
+type DeviceGroupStatus struct {
+	Name            string `json:"name"`
+	DevicesTotal    int    `json:"devices-total"`
+	DevicesOnline   int    `json:"devices-online"`
+	DevicesOnLatest int    `json:"devices-on-latest"`
+	DevicesOnOrphan int    `json:"devices-on-orphan"`
+	Reinstalling    int    `json:"(re-)installing"`
+}
+
 type TagStatus struct {
-	Name            string         `json:"name"`
-	DevicesTotal    int            `json:"devices-total"`
-	DevicesOnline   int            `json:"devices-online"`
-	DevicesOnLatest int            `json:"devices-on-latest"`
-	DevicesOnOrphan int            `json:"devices-on-orphan"`
-	LatestTarget    int            `json:"latest-target"`
-	Targets         []TargetStatus `json:"targets"`
+	Name            string              `json:"name"`
+	DevicesTotal    int                 `json:"devices-total"`
+	DevicesOnline   int                 `json:"devices-online"`
+	DevicesOnLatest int                 `json:"devices-on-latest"`
+	DevicesOnOrphan int                 `json:"devices-on-orphan"`
+	LatestTarget    int                 `json:"latest-target"`
+	Targets         []TargetStatus      `json:"targets"`
+	DeviceGroups    []DeviceGroupStatus `json:"device-groups"`
 }
 
 type FactoryStatus struct {
