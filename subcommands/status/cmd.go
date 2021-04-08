@@ -2,6 +2,7 @@ package status
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/cheynewallace/tabby"
 	"github.com/sirupsen/logrus"
@@ -72,13 +73,32 @@ func showStatus(cmd *cobra.Command, args []string) {
 	}
 	t.Print()
 
+	deviceGroups, err := api.FactoryListDeviceGroup(factory)
+	subcommands.DieNotNil(err)
+
 	fmt.Println("\nOrphan target versions below are marked with a star (*)")
-	printTargetStatus("Active Wave", status.ProdWaveTags)
-	printTargetStatus("Production", status.ProdTags)
-	printTargetStatus("CI", status.Tags)
+	printTargetStatus("Active Wave", status.ProdWaveTags, deviceGroups)
+	printTargetStatus("Production", status.ProdTags, deviceGroups)
+	printTargetStatus("CI", status.Tags, deviceGroups)
 }
 
-func printTargetStatus(tagPrefix string, tagStatus []client.TagStatus) {
+func printTargetStatus(tagPrefix string, tagStatus []client.TagStatus, groups *[]client.DeviceGroup) {
+	groupNames := make(map[int]string)
+	dgHeader := "DEVICE GROUP"
+	dgColWidth := len(dgHeader)
+	for _, g := range *groups {
+		groupNames[g.Id] = g.Name
+		if len(g.Name) > dgColWidth {
+			dgColWidth = len(g.Name)
+		}
+	}
+	if dgColWidth > len(dgHeader) {
+		dgHeader += strings.Repeat(" ", dgColWidth-len(dgHeader))
+	}
+	dgHeader = "\t" + dgHeader + "  DEVICES\n"
+	dgHeader += "\t" + strings.Repeat("-", dgColWidth)
+	dgHeader += "  --------"
+
 	for _, tag := range tagStatus {
 		name := tag.Name
 		if len(name) == 0 {
@@ -99,6 +119,17 @@ func printTargetStatus(tagPrefix string, tagStatus []client.TagStatus) {
 			}
 			fmt.Printf("\t%-6d%-1s  %-7d  %-10d  %s\n",
 				tgt.Version, orphan, tgt.Devices, tgt.Reinstalling, details)
+		}
+
+		if len(tag.DeviceGroups) > 0 {
+			fmt.Println()
+			fmt.Println(dgHeader)
+			for _, dg := range tag.DeviceGroups {
+				name := groupNames[dg.GroupId]
+				fmt.Printf("\t%s", name)
+				fmt.Print(strings.Repeat(" ", dgColWidth-len(name)+2))
+				fmt.Printf("%d\n", dg.NumDevices)
+			}
 		}
 	}
 }
