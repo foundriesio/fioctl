@@ -2,6 +2,7 @@ package status
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/cheynewallace/tabby"
 	"github.com/sirupsen/logrus"
@@ -99,6 +100,35 @@ func printTargetStatus(tagPrefix string, tagStatus []client.TagStatus) {
 			}
 			fmt.Printf("\t%-6d%-1s  %-7d  %-10d  %s\n",
 				tgt.Version, orphan, tgt.Devices, tgt.Reinstalling, details)
+		}
+
+		if len(tag.DeviceGroups) > 0 {
+			// Tabby doesn't indent (or at least easily) so calculate name column width here
+			longestNameLen := 0
+			for _, g := range tag.DeviceGroups {
+				if len(g.Name) > longestNameLen {
+					longestNameLen = len(g.Name)
+				}
+			}
+			dgHeader := "DEVICE GROUP"
+			if longestNameLen > len(dgHeader) {
+				dgHeader += strings.Repeat(" ", longestNameLen-len(dgHeader))
+			} else {
+				longestNameLen = len(dgHeader)
+			}
+
+			fmt.Println()
+			fmt.Printf("\t%s  DEVICES  ON LATEST  ONLINE  INSTALLING\n", dgHeader)
+			fmt.Printf("\t%s  -------  ---------  ------  ----------\n",
+				strings.Repeat("-", len(dgHeader)))
+			for _, g := range tag.DeviceGroups {
+				name := g.Name
+				if len(name) < longestNameLen {
+					name += strings.Repeat(" ", longestNameLen-len(name))
+				}
+				fmt.Printf("\t%s  %-7d  %-9d  %-6d  %d\n",
+					name, g.DevicesTotal, g.DevicesOnLatest, g.DevicesOnline, g.Reinstalling)
+			}
 		}
 	}
 }
