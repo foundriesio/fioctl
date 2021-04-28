@@ -1134,6 +1134,19 @@ func (a *Api) TargetComposeApp(factory string, targetName string, app string) (*
 	}
 }
 
+func (a *Api) TargetDeltasCreate(factory string, toVer int, fromVers []int) (string, string, error) {
+	url := a.serverUrl + "/ota/factories/" + factory + "/targets/" + strconv.Itoa(toVer) + "/static-deltas/"
+	type payload struct {
+		FromVersions []int `json:"from_versions"`
+	}
+	buf, err := json.Marshal(payload{fromVers})
+	if err != nil {
+		return "", "", err
+	}
+	resp, err := a.Post(url, buf)
+	return parseJobServResponse(resp, err, "generate")
+}
+
 // Return a list of Targets that have been tested
 func (a *Api) TargetTesting(factory string) ([]int, error) {
 	url := a.serverUrl + "/ota/factories/" + factory + "/testing/"
