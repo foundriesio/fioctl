@@ -11,28 +11,28 @@ import (
 
 func init() {
 	configUpdatesCmd := &cobra.Command{
-		Use:   "updates <device>",
-		Short: "Configure aktualizr-lite settings for how updates are applied to a device",
+		Use:   "updates",
+		Short: "Configure aktualizr-lite settings for how updates are applied factory wide to devices",
 		Run:   doConfigUpdates,
-		Long: `View or change factory wide configuration parameters used by aktualizr-lite for updating a device.
+		Long: `View or change factory wide configuration parameters used by aktualizr-lite for updating devices.
 When run with no options, this command will print out how the factory is
 currently configured. Configuration can be updated with commands
 like:
 
-  # Make a device start taking updates from Targets tagged with "devel"
-  fioctl config updates <device> --tags devel
+  # Make devices start taking updates from Targets tagged with "devel"
+  fioctl config updates --tags devel
 
-  # Make a device start taking updates from 2 different tags:
-  fioctl config updates <device> --tags devel,devel-foo
+  # Make devices start taking updates from 2 different tags:
+  fioctl config updates --tags devel,devel-foo
 
-  # Set the docker apps a device will run:
-  fioctl config updates <device> --apps shellhttpd
+  # Set the docker apps that devices will run:
+  fioctl config updates --apps shellhttpd
 
-  # Set the docker apps and the tag:
-  fioctl config updates <device> --apps shellhttpd --tags master
+  # Set the docker apps and the tag for devices:
+  fioctl config updates --apps shellhttpd --tags master
 
-  # Move device from old docker-apps to compose-apps:
-  fioctl config updates <device> --compose-apps
+  # Migrate devices from old docker-apps to compose-apps:
+  fioctl config updates --compose-apps
 
 Use a -g or --group parameter to view or change a device group wide configuration instead.
 `,
@@ -69,7 +69,7 @@ func doConfigUpdates(cmd *cobra.Command, args []string) {
 	}
 
 	if group == "" {
-		logrus.Debugf("Configuring device updates for %s", factory)
+		logrus.Debugf("Configuring factory wide device updates for %s", factory)
 		opts.ListFunc = func() (*client.DeviceConfigList, error) {
 			return api.FactoryListConfig(factory)
 		}
@@ -77,7 +77,7 @@ func doConfigUpdates(cmd *cobra.Command, args []string) {
 			return api.FactoryPatchConfig(factory, cfg, force)
 		}
 	} else {
-		logrus.Debugf("Configuring device updates for %s group %s", factory, group)
+		logrus.Debugf("Configuring group wide device updates for %s group %s", factory, group)
 		opts.ListFunc = func() (*client.DeviceConfigList, error) {
 			return api.GroupListConfig(factory, group)
 		}
