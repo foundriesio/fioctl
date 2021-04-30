@@ -410,6 +410,11 @@ func NewApiClient(serverUrl string, config Config, caCertPath string) *Api {
 			RootCAs: rootCAs,
 		}
 
+	} else if os.Getenv("TLS_INSECURE") == "1" {
+		logrus.Warn("Disabling TLS verify")
+		http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{
+			InsecureSkipVerify: true,
+		}
 	}
 	api := Api{
 		serverUrl: strings.TrimRight(serverUrl, "/"),
