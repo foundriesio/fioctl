@@ -653,6 +653,16 @@ func (a *Api) DeviceListCont(url string) (*DeviceList, error) {
 	return &devices, nil
 }
 
+func (a *Api) DeviceChown(name, owner string) error {
+	body := map[string]string{"owner": owner}
+	data, err := json.Marshal(body)
+	if err != nil {
+		return err
+	}
+	_, err = a.Patch(a.serverUrl+"/ota/devices/"+name+"/", data)
+	return err
+}
+
 func (a *Api) DeviceRename(curName, newName string) error {
 	body := map[string]string{"name": newName}
 	data, err := json.Marshal(body)
