@@ -10,6 +10,7 @@ import (
 	"github.com/cheynewallace/tabby"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 
 	"github.com/foundriesio/fioctl/client"
 	"github.com/foundriesio/fioctl/subcommands"
@@ -18,7 +19,6 @@ import (
 var (
 	deviceNoShared      bool
 	deviceByTag         string
-	deviceByFactory     string
 	deviceByGroup       string
 	deviceInactiveHours int
 	deviceUuid          string
@@ -69,7 +69,6 @@ func ownerFormatter(d *client.Device) string {
 var Columns = map[string]column{
 	"name":          {func(d *client.Device) string { return d.Name }},
 	"uuid":          {func(d *client.Device) string { return d.Uuid }},
-	"factory":       {func(d *client.Device) string { return d.Factory }},
 	"owner":         {ownerFormatter},
 	"target":        {func(d *client.Device) string { return d.TargetName }},
 	"status":        {statusFormatter},
@@ -86,7 +85,7 @@ var Columns = map[string]column{
 
 func init() {
 	var defCols = []string{
-		"name", "factory", "target", "status", "apps", "up-to-date", "is-prod",
+		"name", "target", "status", "apps", "up-to-date", "is-prod",
 	}
 	paginationLimits = []int{10, 20, 30, 40, 50, 100, 200, 500, 1000}
 	limitsStr := ""
@@ -112,7 +111,6 @@ func init() {
 	cmd.AddCommand(listCmd)
 	listCmd.Flags().BoolVarP(&deviceNoShared, "just-mine", "", false, "Only include devices owned by you")
 	listCmd.Flags().StringVarP(&deviceByTag, "by-tag", "", "", "Only list devices configured with the given tag")
-	listCmd.Flags().StringVarP(&deviceByFactory, "by-factory", "f", "", "Only list devices belonging to this factory")
 	listCmd.Flags().StringVarP(&deviceByGroup, "by-group", "g", "", "Only list devices belonging to this group (factory is mandatory)")
 	listCmd.Flags().IntVarP(&deviceInactiveHours, "offline-threshold", "", 4, "List the device as 'OFFLINE' if not seen in the last X hours")
 	listCmd.Flags().StringVarP(&deviceUuid, "uuid", "", "", "Find device with the given UUID")
@@ -148,7 +146,8 @@ func assertPagination() {
 }
 
 func doList(cmd *cobra.Command, args []string) {
-	logrus.Debug("Listing registered devices")
+	factory := viper.GetString("factory")
+	logrus.Debugf("Listing registered devices to: %s", factory)
 	assertPagination()
 
 	t := tabby.New()
@@ -166,12 +165,7 @@ func doList(cmd *cobra.Command, args []string) {
 	if len(args) == 1 {
 		name_ilike = sqlLikeIfy(args[0])
 	}
-	if len(deviceByFactory) > 0 {
-		deviceNoShared = true
-	} else if len(deviceByGroup) > 0 {
-		subcommands.DieNotNil(fmt.Errorf("A factory is mandatory to filter by group"))
-	}
-	dl, err := api.DeviceList(!deviceNoShared, deviceByTag, deviceByFactory, deviceByGroup, name_ilike, deviceUuid, showPage, paginationLimit)
+	dl, err := api.DeviceList(!deviceNoShared, deviceByTag, factory, deviceByGroup, name_ilike, deviceUuid, showPage, paginationLimit)
 	subcommands.DieNotNil(err)
 	row := make([]interface{}, len(showColumns))
 	for _, device := range dl.Devices {
