@@ -88,36 +88,16 @@ func ipToUint32(ipaddr string) (uint32, error) {
 // Create a dictionary of device VPN addresses in the factory
 func factoryIps(factory string) map[uint32]bool {
 	ips := make(map[uint32]bool)
-
-	var dl *client.DeviceList
-	for {
-		var err error
-		if dl == nil {
-			dl, err = api.DeviceList(true, "", factory, "", "", "", 1, 1000)
+	ipList, err := api.GetWireGuardIps(factory)
+	subcommands.DieNotNil(err)
+	for _, item := range ipList {
+		ip, err := ipToUint32(item.Ip)
+		if err != nil {
+			logrus.Errorf("Unable to compute VPN Address for %s - %s", item.Name, item.Ip)
 		} else {
-			if dl.Next != nil {
-				dl, err = api.DeviceListCont(*dl.Next)
-			} else {
-				break
-			}
-		}
-		subcommands.DieNotNil(err)
-		for _, device := range dl.Devices {
-			// TODO - we need to come up with a backend API that
-			// won't require an API call per device. Maybe:
-			// api.foundries.io/ota/device-configs/?file=wireguard-client
-			wcc := loadWireguardClientConfig(device.Name)
-			if len(wcc.Address) > 0 {
-				ip, err := ipToUint32(wcc.Address)
-				if err != nil {
-					logrus.Errorf("Unable to compute VPN Address for %s - %s", device.Name, wcc.Address)
-				} else {
-					ips[ip] = true
-				}
-			}
+			ips[ip] = true
 		}
 	}
-
 	return ips
 }
 

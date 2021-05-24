@@ -362,6 +362,12 @@ type WaveStatus struct {
 	OtherGroups        []RolloutGroupStatus `json:"other-groups"`
 }
 
+type WireGuardIp struct {
+	Name    string `json:"name"`
+	Ip      string `json:"ip"`
+	Enabled bool   `json:"enabled"`
+}
+
 // This is an error returned in case if we've successfully received an HTTP response which contains
 // an unexpected HTTP status code
 type HttpError struct {
@@ -979,6 +985,17 @@ func (a *Api) GetFoundriesTargetsKey(factory string) (*AtsKey, error) {
 	key := AtsKey{}
 	err = json.Unmarshal(*body, &key)
 	return &key, err
+}
+
+func (a *Api) GetWireGuardIps(factory string) ([]WireGuardIp, error) {
+	url := a.serverUrl + "/ota/factories/" + factory + "/wireguard-ips/"
+	body, err := a.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	var ips []WireGuardIp
+	err = json.Unmarshal(*body, &ips)
+	return ips, err
 }
 
 func (a *Api) tufRootGet(factory string, prod bool, version int) (*AtsTufRoot, error) {
