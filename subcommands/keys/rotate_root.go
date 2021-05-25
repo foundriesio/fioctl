@@ -152,7 +152,7 @@ type keypair struct {
 }
 
 func genKeyPair() keypair {
-	pk, err := rsa.GenerateKey(rand.Reader, 2048)
+	pk, err := rsa.GenerateKey(rand.Reader, 4096)
 	subcommands.DieNotNil(err)
 
 	var privBytes []byte = x509.MarshalPKCS1PrivateKey(pk)
