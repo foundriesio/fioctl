@@ -107,7 +107,7 @@ func init() {
 		Short: "List devices registered to factories. Optionally include filepath style patterns to limit to device names. eg device-*",
 		Run:   doList,
 		Args:  cobra.MaximumNArgs(1),
-		Long:  "Available columns for display:\n  * " + strings.Join(allCols, "\n  * "),
+		Long:  "Available columns for display:\n\n  * " + strings.Join(allCols, "\n  * "),
 	}
 	cmd.AddCommand(listCmd)
 	listCmd.Flags().BoolVarP(&deviceNoShared, "just-mine", "", false, "Only include devices owned by you")
