@@ -17,9 +17,11 @@ func init() {
 	cmd.AddCommand(&cobra.Command{
 		Use:   "update secret_name=secret_val...",
 		Short: "Update secret(s) in a factory",
-		Long: `Update secrets in a factory.
-Secrets can be deleted by setting them to an empty value. eg:
+		Example: `
+  # Create or update a secret
+  fioctl secrets set githubtok=foo
 
+  # Delete a secret by setting it to an empty value. eg:
   fioctl secrets update secret_name=`,
 		Run:  doUpdate,
 		Args: cobra.MinimumNArgs(1),
