@@ -27,17 +27,16 @@ func init() {
 can be downloaded significantly faster by generating OSTree static
 deltas. Static deltas are generated with a "from(sha) -> to(sha)" type
 logic. This command takes the given Target version and will produce a
-number of static deltas to ensure devices will be updated efficiently.
+number of static deltas to ensure devices will be updated efficiently.`,
+		Example: `
+  # There are two ways to run this command:
 
-There are two ways to run this command:
+  # Generate static deltas for 30->42 and 31->42
+  fioctl targets static-deltas 42 30 31
 
- # Generate static deltas for 30->42 and 31->42
- fioctl targets static-deltas 42 30 31
-
- # Find the target versions of all devices configured to the "prod" tag.
- # Generate a static delta from those versions to version 42.
- fioctl targets static-deltas --by-tag prod 42
-`,
+  # Find the target versions of all devices configured to the "prod" tag.
+  # Generate a static delta from those versions to version 42.
+  fioctl targets static-deltas --by-tag prod 42`,
 	}
 	cmd.AddCommand(deltas)
 	deltas.Flags().StringVarP(&byTag, "by-tag", "", "", "Find from-versions devices on the given tag")
