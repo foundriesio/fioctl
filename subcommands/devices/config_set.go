@@ -23,16 +23,14 @@ func init() {
 		Long: `Creates a secure configuration for device encrypting the contents each
 file using the device's public key. The fioconfig daemon running
 on each device will then be able to grab the latest version of the
-device's configuration and apply it.
-
-Basic use can be done with command line arguments. eg:
-
+device's configuration and apply it.`,
+		Example: `  
+  # Basic use can be done with command line arguments:
   fioctl device config set my-device npmtok="root"  githubtok="1234"
 
-The device configuration format also allows specifying what command
-to run after a configuration file is updated on the device. To take
-advantage of this, the "--raw" flag must be used. eg::
-
+  # The device configuration format also allows specifying what command
+  # to run after a configuration file is updated on the device. To take
+  # advantage of this, the "--raw" flag must be used.
   cat >tmp.json <<EOF
   {
     "reason": "I want to use the on-changed attribute",
@@ -56,9 +54,9 @@ advantage of this, the "--raw" flag must be used. eg::
   > EOF
   fioctl devices config set my-device --raw ./tmp.json
 
-fioctl will read in tmp.json, encrypt its contents, and upload it
-to the OTA server. Instead of using ./tmp.json, the command can take
-a "-" and will read the content from STDIN instead of a file.
+  # fioctl will read in tmp.json, encrypt its contents, and upload it
+  # to the OTA server. Instead of using ./tmp.json, the command can take
+  # a "-" and will read the content from STDIN instead of a file.
 `,
 		Run:  doConfigSet,
 		Args: cobra.MinimumNArgs(2),

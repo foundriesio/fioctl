@@ -59,7 +59,8 @@ func init() {
 	rootCmd.AddCommand(waves.NewCommand())
 	rootCmd.AddCommand(subcommands.GetCommand)
 
-	rootCmd.AddCommand(docsCmd)
+	rootCmd.AddCommand(docsRstCmd)
+	rootCmd.AddCommand(docsMdCmd)
 }
 
 func getConfigDir() string {

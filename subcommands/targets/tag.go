@@ -21,8 +21,14 @@ func init() {
 	var tagCmd = &cobra.Command{
 		Use:   "tag <target> [<target>...]",
 		Short: "Apply a comma separated list of tags to one or more targets.",
-		Run:   doTag,
-		Args:  cobra.MinimumNArgs(1),
+		Example: `
+  # Promote Target #42 currently tagged as master
+  fioctl targets tag --tags master,promoted --by-version 42
+
+  # Tag a specific Target by name
+  fioctl targets tag --tags master,testing intel-corei7-64-lmp-42`,
+		Run:  doTag,
+		Args: cobra.MinimumNArgs(1),
 	}
 	cmd.AddCommand(tagCmd)
 	tagCmd.Flags().StringVarP(&tagTags, "tags", "T", "", "comma,separate,list")
