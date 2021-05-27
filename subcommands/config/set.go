@@ -15,16 +15,15 @@ func init() {
 		Short: "Create a new factory-wide configuration",
 		Long: `Creates a factory wide configuration. The fioconfig daemon running on
 each device will then be able to grab the latest version of the configuration
-and the device's configuration and apply it.
-
-Basic use can be done with command line arguments. eg:
-
+and the device's configuration and apply it. Use the --group parameter to 
+create a device group wide configuration instead.`,
+		Example: `
+  # Basic use
   fioctl config set npmtok="root" githubtok="1234"
 
-The configuration format also allows specifying what command to
-run after a configuration file is updated on the device. To take
-advantage of this, the "--raw" flag must be used. eg::
-
+  # The configuration format also allows specifying what command to
+  # run after a configuration file is updated on the device. To take
+  # advantage of this, the "--raw" flag must be used.
   cat >tmp.json <<EOF
   {
     "reason": "I want to use the on-changed attribute",
@@ -48,12 +47,9 @@ advantage of this, the "--raw" flag must be used. eg::
   > EOF
   fioctl config set --raw ./tmp.json
 
-fioctl will read in tmp.json and upload it to the OTA server.
-Instead of using ./tmp.json, the command can take a "-" and will read the
-content from STDIN instead of a file.
-
-Use a -g or --group parameter to create a device group wide configuration instead.
-`,
+  # fioctl will read in tmp.json and upload it to the OTA server.
+  # Instead of using ./tmp.json, the command can take a "-" and will read the
+  # content from STDIN instead of a file.`,
 		Run:  doConfigSet,
 		Args: cobra.MinimumNArgs(1),
 	}
