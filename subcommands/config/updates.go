@@ -16,10 +16,10 @@ func init() {
 		Run:   doConfigUpdates,
 		Long: `View or change factory wide configuration parameters used by aktualizr-lite for updating devices.
 When run with no options, this command will print out how the factory is
-currently configured. Configuration can be updated with commands
-like:
-
-  # Make devices start taking updates from Targets tagged with "devel"
+currently configured. Use the --group parameter to view or change a device 
+group wide configuration instead.`,
+		Example: `
+  # Make devices start taking updates from Targets tagged with "devel":
   fioctl config updates --tags devel
 
   # Make devices start taking updates from 2 different tags:
@@ -32,10 +32,7 @@ like:
   fioctl config updates --apps shellhttpd --tags master
 
   # Migrate devices from old docker-apps to compose-apps:
-  fioctl config updates --compose-apps
-
-Use a -g or --group parameter to view or change a device group wide configuration instead.
-`,
+  fioctl config updates --compose-apps`,
 	}
 	cmd.AddCommand(configUpdatesCmd)
 	configUpdatesCmd.Flags().StringP("group", "g", "", "Device group to use")
