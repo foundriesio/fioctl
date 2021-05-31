@@ -19,23 +19,21 @@ When run with no options, this command will print out how the device is
 currently configured and reporting.`,
 		Example: `
   # Make a device start taking updates from Targets tagged with "devel"
-  fioctl devices config updates <device> --tags devel
-
-  # Make a device start taking updates from 2 different tags:
-  fioctl devices config updates <device> --tags devel,devel-foo
+  fioctl devices config updates <device> --tag devel
 
   # Set the docker apps a device will run:
   fioctl devices config updates <device> --apps shellhttpd
 
   # Set the docker apps and the tag:
-  fioctl devices config updates <device> --apps shellhttpd --tags master
+  fioctl devices config updates <device> --apps shellhttpd --tag master
 
   # Move device from old docker-apps to compose-apps:
   fioctl devices config updates <device> --compose-apps
 `,
 	}
 	configCmd.AddCommand(configUpdatesCmd)
-	configUpdatesCmd.Flags().StringP("tags", "", "", "comma,separate,list")
+	configUpdatesCmd.Flags().StringP("tag", "", "", "Target tag for device to follow")
+	configUpdatesCmd.Flags().StringP("tags", "", "", "Target tag for device to follow")
 	configUpdatesCmd.Flags().StringP("apps", "", "", "comma,separate,list")
 	configUpdatesCmd.Flags().BoolP("compose-apps", "", false, "Migrate device from docker-apps to compose-apps")
 	configUpdatesCmd.Flags().StringP("compose-dir", "", "", "The directory to install compose apps in")
@@ -43,12 +41,17 @@ currently configured and reporting.`,
 	configUpdatesCmd.Flags().BoolP("force", "", false, "DANGER: For a config on a device that might result in corruption")
 
 	_ = configUpdatesCmd.Flags().MarkHidden("compose-dir") // assign for go linter
+	_ = configUpdatesCmd.Flags().MarkHidden("tags") // assign for go linter
 }
 
 func doConfigUpdates(cmd *cobra.Command, args []string) {
 	name := args[0]
 	updateApps, _ := cmd.Flags().GetString("apps")
-	updateTags, _ := cmd.Flags().GetString("tags")
+	updateTag, _ := cmd.Flags().GetString("tag")
+	if len(updateTag) == 0 {
+		// check the old, deprecated "tags" option
+		updateTag, _ = cmd.Flags().GetString("tags")
+	}
 	setComposeApps, _ := cmd.Flags().GetBool("compose-apps")
 	composeAppsDir, _ := cmd.Flags().GetString("compose-dir")
 	isDryRun, _ := cmd.Flags().GetBool("dryrun")
@@ -61,7 +64,7 @@ func doConfigUpdates(cmd *cobra.Command, args []string) {
 
 	subcommands.SetUpdatesConfig(&subcommands.SetUpdatesConfigOptions{
 		UpdateApps:     updateApps,
-		UpdateTags:     updateTags,
+		UpdateTag:      updateTag,
 		SetComposeApps: setComposeApps,
 		ComposeAppsDir: composeAppsDir,
 		IsDryRun:       isDryRun,

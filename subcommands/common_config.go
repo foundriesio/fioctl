@@ -139,7 +139,7 @@ func PrintConfig(cfg *client.DeviceConfig, showAppliedAt, highlightFirstLine boo
 }
 
 type SetUpdatesConfigOptions struct {
-	UpdateTags     string
+	UpdateTag      string
 	UpdateApps     string
 	SetComposeApps bool
 	ComposeAppsDir string
@@ -162,10 +162,10 @@ func SetUpdatesConfig(opts *SetUpdatesConfigOptions) {
 		DieNotNil(err, "Invalid FIO toml file (override with --force):")
 	}
 
-	if opts.UpdateApps == "" && opts.UpdateTags == "" && !opts.SetComposeApps {
+	if opts.UpdateApps == "" && opts.UpdateTag == "" && !opts.SetComposeApps {
 		if opts.Device != nil {
 			fmt.Println("= Reporting to server with")
-			fmt.Println(" Tags: ", strings.Join(opts.Device.Tags, ","))
+			fmt.Println(" Tag: ", opts.Device.Tags[0])
 			fmt.Println(" Apps: ", strings.Join(opts.Device.DockerApps, ","))
 			fmt.Println("")
 		}
@@ -175,7 +175,7 @@ func SetUpdatesConfig(opts *SetUpdatesConfigOptions) {
 	}
 
 	configuredApps := sota.GetDefault("pacman.docker_apps", "").(string)
-	configuredTags := sota.GetDefault("pacman.tags", "").(string)
+	configuredTag := sota.GetDefault("pacman.tags", "").(string)
 	configuredMgr := sota.GetDefault("pacman.packagemanager", "").(string)
 
 	changed := false
@@ -188,12 +188,12 @@ func SetUpdatesConfig(opts *SetUpdatesConfigOptions) {
 		sota.Set("pacman.compose_apps", opts.UpdateApps)
 		changed = true
 	}
-	if opts.UpdateTags != "" && configuredTags != opts.UpdateTags {
-		if strings.TrimSpace(opts.UpdateTags) == "," {
-			opts.UpdateTags = ""
+	if opts.UpdateTag != "" && configuredTag != opts.UpdateTag {
+		if strings.TrimSpace(opts.UpdateTag) == "," {
+			opts.UpdateTag = ""
 		}
-		fmt.Printf("Changing tags from: [%s] -> [%s]\n", configuredTags, opts.UpdateTags)
-		sota.Set("pacman.tags", opts.UpdateTags)
+		fmt.Printf("Changing tag from: %s -> %s\n", configuredTag, opts.UpdateTag)
+		sota.Set("pacman.tags", opts.UpdateTag)
 		changed = true
 	}
 	if opts.SetComposeApps && configuredMgr != "ostree+compose_apps" {
@@ -275,8 +275,8 @@ func validateUpdateArgs(opts *SetUpdatesConfigOptions) error {
 	if len(opts.UpdateApps) > 0 && !re.MatchString(opts.UpdateApps) {
 		return fmt.Errorf("Invalid value for apps: %s\nMust be %s", opts.UpdateApps, pattern)
 	}
-	if len(opts.UpdateTags) > 0 && !re.MatchString(opts.UpdateTags) {
-		return fmt.Errorf("Invalid value for tags: %s\nMust be %s", opts.UpdateTags, pattern)
+	if len(opts.UpdateTag) > 0 && !re.MatchString(opts.UpdateTag) {
+		return fmt.Errorf("Invalid value for tag: %s\nMust be %s", opts.UpdateTag, pattern)
 	}
 	return nil
 }

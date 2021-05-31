@@ -75,7 +75,7 @@ var Columns = map[string]column{
 	"status":        {statusFormatter},
 	"apps":          {func(d *client.Device) string { return strings.Join(d.DockerApps, ",") }},
 	"up-to-date":    {func(d *client.Device) string { return fmt.Sprintf("%v", d.UpToDate) }},
-	"tags":          {func(d *client.Device) string { return strings.Join(d.Tags, ",") }},
+	"tag":           {func(d *client.Device) string { return d.Tags[0] }},
 	"created-at":    {func(d *client.Device) string { return d.CreatedAt }},
 	"last-seen":     {func(d *client.Device) string { return d.LastSeen }},
 	"ostree-hash":   {func(d *client.Device) string { return d.OstreeHash }},
