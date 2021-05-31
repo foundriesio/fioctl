@@ -85,5 +85,5 @@ func doConfigUpdates(cmd *cobra.Command, args []string) {
 			return api.GroupPatchConfig(factory, group, cfg, force)
 		}
 	}
-	subcommands.SetUpdatesConfig(&opts)
+	subcommands.SetUpdatesConfig(&opts, "", nil)
 }

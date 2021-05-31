@@ -150,7 +150,7 @@ type SetUpdatesConfigOptions struct {
 	SetFunc        func(client.ConfigCreateRequest, bool) error
 }
 
-func SetUpdatesConfig(opts *SetUpdatesConfigOptions) {
+func SetUpdatesConfig(opts *SetUpdatesConfigOptions, reportedTag string, reportedApps []string) {
 	DieNotNil(validateUpdateArgs(opts))
 
 	dcl, err := opts.ListFunc()
@@ -177,6 +177,13 @@ func SetUpdatesConfig(opts *SetUpdatesConfigOptions) {
 	configuredApps := sota.GetDefault("pacman.docker_apps", "").(string)
 	configuredTag := sota.GetDefault("pacman.tags", "").(string)
 	configuredMgr := sota.GetDefault("pacman.packagemanager", "").(string)
+
+	if len(configuredTag) == 0 && len(reportedTag) > 0 {
+		configuredTag = reportedTag
+	}
+	if len(configuredApps) == 0 && reportedApps != nil {
+		configuredApps = strings.Join(reportedApps, ",")
+	}
 
 	changed := false
 	if opts.UpdateApps != "" && configuredApps != opts.UpdateApps {

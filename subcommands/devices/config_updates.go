@@ -76,5 +76,6 @@ func doConfigUpdates(cmd *cobra.Command, args []string) {
 		SetFunc: func(cfg client.ConfigCreateRequest, force bool) error {
 			return api.DevicePatchConfig(name, cfg, force)
 		},
-	})
+	},
+		device.Tag, device.DockerApps)
 }
