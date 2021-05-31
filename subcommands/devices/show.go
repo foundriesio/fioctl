@@ -50,8 +50,8 @@ func doShow(cmd *cobra.Command, args []string) {
 	fmt.Printf("Ostree Hash:\t%s\n", device.OstreeHash)
 	fmt.Printf("Created:\t%s\n", device.CreatedAt)
 	fmt.Printf("Last Seen:\t%s\n", device.LastSeen)
-	if len(device.Tags) > 0 {
-		fmt.Printf("Tag:\t\t%s\n", device.Tags[0])
+	if len(device.Tag) > 0 {
+		fmt.Printf("Tag:\t\t%s\n", device.Tag)
 	}
 	if len(device.DockerApps) > 0 {
 		fmt.Printf("Docker Apps:\t%s\n", strings.Join(device.DockerApps, ","))

@@ -165,7 +165,7 @@ func SetUpdatesConfig(opts *SetUpdatesConfigOptions) {
 	if opts.UpdateApps == "" && opts.UpdateTag == "" && !opts.SetComposeApps {
 		if opts.Device != nil {
 			fmt.Println("= Reporting to server with")
-			fmt.Println(" Tag: ", opts.Device.Tags[0])
+			fmt.Println(" Tag: ", opts.Device.Tag)
 			fmt.Println(" Apps: ", strings.Join(opts.Device.DockerApps, ","))
 			fmt.Println("")
 		}

@@ -125,7 +125,7 @@ type Device struct {
 	LastSeen      string           `json:"last-seen"`
 	OstreeHash    string           `json:"ostree-hash"`
 	DockerApps    []string         `json:"docker-apps,omitempty"`
-	Tags          []string         `json:"device-tags,omitempty"`
+	Tag           string           `json:"tag,omitempty"`
 	Network       *NetInfo         `json:"network-info,omitempty"`
 	Hardware      *json.RawMessage `json:"hardware-info,omitempty"`
 	TargetName    string           `json:"target-name"`
