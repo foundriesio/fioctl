@@ -139,15 +139,13 @@ func PrintConfig(cfg *client.DeviceConfig, showAppliedAt, highlightFirstLine boo
 }
 
 type SetUpdatesConfigOptions struct {
-	UpdateTag      string
-	UpdateApps     string
-	SetComposeApps bool
-	ComposeAppsDir string
-	IsDryRun       bool
-	IsForced       bool
-	Device         *client.Device
-	ListFunc       func() (*client.DeviceConfigList, error)
-	SetFunc        func(client.ConfigCreateRequest, bool) error
+	UpdateTag  string
+	UpdateApps string
+	IsDryRun   bool
+	IsForced   bool
+	Device     *client.Device
+	ListFunc   func() (*client.DeviceConfigList, error)
+	SetFunc    func(client.ConfigCreateRequest, bool) error
 }
 
 func SetUpdatesConfig(opts *SetUpdatesConfigOptions, reportedTag string, reportedApps []string) {
@@ -162,7 +160,7 @@ func SetUpdatesConfig(opts *SetUpdatesConfigOptions, reportedTag string, reporte
 		DieNotNil(err, "Invalid FIO toml file (override with --force):")
 	}
 
-	if opts.UpdateApps == "" && opts.UpdateTag == "" && !opts.SetComposeApps {
+	if opts.UpdateApps == "" && opts.UpdateTag == "" {
 		if opts.Device != nil {
 			fmt.Println("= Reporting to server with")
 			fmt.Println(" Tag: ", opts.Device.Tag)
@@ -176,7 +174,6 @@ func SetUpdatesConfig(opts *SetUpdatesConfigOptions, reportedTag string, reporte
 
 	configuredApps := sota.GetDefault("pacman.docker_apps", "").(string)
 	configuredTag := sota.GetDefault("pacman.tags", "").(string)
-	configuredMgr := sota.GetDefault("pacman.packagemanager", "").(string)
 
 	if len(configuredTag) == 0 && len(reportedTag) > 0 {
 		configuredTag = reportedTag
@@ -202,25 +199,6 @@ func SetUpdatesConfig(opts *SetUpdatesConfigOptions, reportedTag string, reporte
 		fmt.Printf("Changing tag from: %s -> %s\n", configuredTag, opts.UpdateTag)
 		sota.Set("pacman.tags", opts.UpdateTag)
 		changed = true
-	}
-	if opts.SetComposeApps && configuredMgr != "ostree+compose_apps" {
-		fmt.Printf("Changing packagemanager to %s\n", "ostree+compose_apps")
-		sota.Set("pacman.type", "ostree+compose_apps")
-		if opts.ComposeAppsDir == "" {
-			opts.ComposeAppsDir = FIO_COMPOSE_APPS_DIR
-		}
-		sota.Set("pacman.compose_apps_root", opts.ComposeAppsDir)
-		// the device might be running DockerApps that were set in /var/sota/sota.toml
-		// by lmp-device-register, so fallback to what its reporting if we don't find
-		// override values set:
-		defaultApps := ""
-		if opts.Device != nil {
-			defaultApps = strings.Join(opts.Device.DockerApps, ",")
-		}
-		sota.Set("pacman.compose_apps", sota.GetDefault("pacman.docker_apps", defaultApps))
-		changed = true
-	} else if opts.ComposeAppsDir != "" {
-		fmt.Println("Can only change compose apps dir when migrating to compose apps.")
 	}
 
 	if !changed {
