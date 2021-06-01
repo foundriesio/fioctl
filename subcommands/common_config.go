@@ -139,18 +139,16 @@ func PrintConfig(cfg *client.DeviceConfig, showAppliedAt, highlightFirstLine boo
 }
 
 type SetUpdatesConfigOptions struct {
-	UpdateTags     string
-	UpdateApps     string
-	SetComposeApps bool
-	ComposeAppsDir string
-	IsDryRun       bool
-	IsForced       bool
-	Device         *client.Device
-	ListFunc       func() (*client.DeviceConfigList, error)
-	SetFunc        func(client.ConfigCreateRequest, bool) error
+	UpdateTag  string
+	UpdateApps string
+	IsDryRun   bool
+	IsForced   bool
+	Device     *client.Device
+	ListFunc   func() (*client.DeviceConfigList, error)
+	SetFunc    func(client.ConfigCreateRequest, bool) error
 }
 
-func SetUpdatesConfig(opts *SetUpdatesConfigOptions) {
+func SetUpdatesConfig(opts *SetUpdatesConfigOptions, reportedTag string, reportedApps []string) {
 	DieNotNil(validateUpdateArgs(opts))
 
 	dcl, err := opts.ListFunc()
@@ -162,10 +160,10 @@ func SetUpdatesConfig(opts *SetUpdatesConfigOptions) {
 		DieNotNil(err, "Invalid FIO toml file (override with --force):")
 	}
 
-	if opts.UpdateApps == "" && opts.UpdateTags == "" && !opts.SetComposeApps {
+	if opts.UpdateApps == "" && opts.UpdateTag == "" {
 		if opts.Device != nil {
 			fmt.Println("= Reporting to server with")
-			fmt.Println(" Tags: ", strings.Join(opts.Device.Tags, ","))
+			fmt.Println(" Tag: ", opts.Device.Tag)
 			fmt.Println(" Apps: ", strings.Join(opts.Device.DockerApps, ","))
 			fmt.Println("")
 		}
@@ -175,8 +173,14 @@ func SetUpdatesConfig(opts *SetUpdatesConfigOptions) {
 	}
 
 	configuredApps := sota.GetDefault("pacman.docker_apps", "").(string)
-	configuredTags := sota.GetDefault("pacman.tags", "").(string)
-	configuredMgr := sota.GetDefault("pacman.packagemanager", "").(string)
+	configuredTag := sota.GetDefault("pacman.tags", "").(string)
+
+	if len(configuredTag) == 0 && len(reportedTag) > 0 {
+		configuredTag = reportedTag
+	}
+	if len(configuredApps) == 0 && reportedApps != nil {
+		configuredApps = strings.Join(reportedApps, ",")
+	}
 
 	changed := false
 	if opts.UpdateApps != "" && configuredApps != opts.UpdateApps {
@@ -188,32 +192,13 @@ func SetUpdatesConfig(opts *SetUpdatesConfigOptions) {
 		sota.Set("pacman.compose_apps", opts.UpdateApps)
 		changed = true
 	}
-	if opts.UpdateTags != "" && configuredTags != opts.UpdateTags {
-		if strings.TrimSpace(opts.UpdateTags) == "," {
-			opts.UpdateTags = ""
+	if opts.UpdateTag != "" && configuredTag != opts.UpdateTag {
+		if strings.TrimSpace(opts.UpdateTag) == "," {
+			opts.UpdateTag = ""
 		}
-		fmt.Printf("Changing tags from: [%s] -> [%s]\n", configuredTags, opts.UpdateTags)
-		sota.Set("pacman.tags", opts.UpdateTags)
+		fmt.Printf("Changing tag from: %s -> %s\n", configuredTag, opts.UpdateTag)
+		sota.Set("pacman.tags", opts.UpdateTag)
 		changed = true
-	}
-	if opts.SetComposeApps && configuredMgr != "ostree+compose_apps" {
-		fmt.Printf("Changing packagemanager to %s\n", "ostree+compose_apps")
-		sota.Set("pacman.type", "ostree+compose_apps")
-		if opts.ComposeAppsDir == "" {
-			opts.ComposeAppsDir = FIO_COMPOSE_APPS_DIR
-		}
-		sota.Set("pacman.compose_apps_root", opts.ComposeAppsDir)
-		// the device might be running DockerApps that were set in /var/sota/sota.toml
-		// by lmp-device-register, so fallback to what its reporting if we don't find
-		// override values set:
-		defaultApps := ""
-		if opts.Device != nil {
-			defaultApps = strings.Join(opts.Device.DockerApps, ",")
-		}
-		sota.Set("pacman.compose_apps", sota.GetDefault("pacman.docker_apps", defaultApps))
-		changed = true
-	} else if opts.ComposeAppsDir != "" {
-		fmt.Println("Can only change compose apps dir when migrating to compose apps.")
 	}
 
 	if !changed {
@@ -275,8 +260,8 @@ func validateUpdateArgs(opts *SetUpdatesConfigOptions) error {
 	if len(opts.UpdateApps) > 0 && !re.MatchString(opts.UpdateApps) {
 		return fmt.Errorf("Invalid value for apps: %s\nMust be %s", opts.UpdateApps, pattern)
 	}
-	if len(opts.UpdateTags) > 0 && !re.MatchString(opts.UpdateTags) {
-		return fmt.Errorf("Invalid value for tags: %s\nMust be %s", opts.UpdateTags, pattern)
+	if len(opts.UpdateTag) > 0 && !re.MatchString(opts.UpdateTag) {
+		return fmt.Errorf("Invalid value for tag: %s\nMust be %s", opts.UpdateTag, pattern)
 	}
 	return nil
 }

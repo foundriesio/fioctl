@@ -20,49 +20,42 @@ currently configured. Use the --group parameter to view or change a device
 group wide configuration instead.`,
 		Example: `
   # Make devices start taking updates from Targets tagged with "devel":
-  fioctl config updates --tags devel
-
-  # Make devices start taking updates from 2 different tags:
-  fioctl config updates --tags devel,devel-foo
+  fioctl config updates --tag devel
 
   # Set the docker apps that devices will run:
   fioctl config updates --apps shellhttpd
 
   # Set the docker apps and the tag for devices:
-  fioctl config updates --apps shellhttpd --tags master
-
-  # Migrate devices from old docker-apps to compose-apps:
-  fioctl config updates --compose-apps`,
+  fioctl config updates --apps shellhttpd --tag master`,
 	}
 	cmd.AddCommand(configUpdatesCmd)
 	configUpdatesCmd.Flags().StringP("group", "g", "", "Device group to use")
-	configUpdatesCmd.Flags().StringP("tags", "", "", "comma,separate,list")
+	configUpdatesCmd.Flags().StringP("tag", "", "", "Tag for devices to follow")
+	configUpdatesCmd.Flags().StringP("tags", "", "", "Tag for devices to follow")
 	configUpdatesCmd.Flags().StringP("apps", "", "", "comma,separate,list")
-	configUpdatesCmd.Flags().BoolP("compose-apps", "", false, "Migrate device from docker-apps to compose-apps")
-	configUpdatesCmd.Flags().StringP("compose-dir", "", "", "The directory to install compose apps in")
 	configUpdatesCmd.Flags().BoolP("dryrun", "", false, "Only show what would be changed")
 	configUpdatesCmd.Flags().BoolP("force", "", false, "DANGER: For a config on a device that might result in corruption")
 
-	_ = configUpdatesCmd.Flags().MarkHidden("compose-dir") // assign for go linter
+	_ = configUpdatesCmd.Flags().MarkHidden("tags")        // assign for go linter
 }
 
 func doConfigUpdates(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 	group, _ := cmd.Flags().GetString("group")
 	updateApps, _ := cmd.Flags().GetString("apps")
-	updateTags, _ := cmd.Flags().GetString("tags")
-	setComposeApps, _ := cmd.Flags().GetBool("compose-apps")
-	composeAppsDir, _ := cmd.Flags().GetString("compose-dir")
+	updateTag, _ := cmd.Flags().GetString("tag")
+	if len(updateTag) == 0 {
+		// check the old, deprecated "tags" option
+		updateTag, _ = cmd.Flags().GetString("tags")
+	}
 	isDryRun, _ := cmd.Flags().GetBool("dryrun")
 	isForced, _ := cmd.Flags().GetBool("force")
 
 	opts := subcommands.SetUpdatesConfigOptions{
-		UpdateApps:     updateApps,
-		UpdateTags:     updateTags,
-		SetComposeApps: setComposeApps,
-		ComposeAppsDir: composeAppsDir,
-		IsDryRun:       isDryRun,
-		IsForced:       isForced,
+		UpdateApps: updateApps,
+		UpdateTag:  updateTag,
+		IsDryRun:   isDryRun,
+		IsForced:   isForced,
 	}
 
 	if group == "" {
@@ -82,5 +75,5 @@ func doConfigUpdates(cmd *cobra.Command, args []string) {
 			return api.GroupPatchConfig(factory, group, cfg, force)
 		}
 	}
-	subcommands.SetUpdatesConfig(&opts)
+	subcommands.SetUpdatesConfig(&opts, "", nil)
 }
