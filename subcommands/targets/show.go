@@ -4,12 +4,14 @@ import (
 	"encoding/base64"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/cheynewallace/tabby"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	tuf "github.com/theupdateframework/notary/tuf/data"
 	"gopkg.in/yaml.v2"
 
 	"github.com/foundriesio/fioctl/client"
@@ -22,6 +24,12 @@ func init() {
 		Short: "Show details of a specific target.",
 		Run:   doShow,
 		Args:  cobra.ExactArgs(1),
+		Example: `
+  # Show details of all Targets with version 42:
+  fioctl targets show 42
+
+  # Show a specific Target by name:
+  fioctl targets show intel-corei7-64-lmp-42`,
 	}
 	cmd.AddCommand(showCmd)
 
@@ -163,8 +171,18 @@ func doShowComposeApp(cmd *cobra.Command, args []string) {
 }
 
 func getTargets(factory string, version string) (map[string]string, map[string]client.TufCustom) {
-	targets, err := api.TargetsList(factory, version)
-	subcommands.DieNotNil(err)
+	var targets tuf.Files
+	if _, err := strconv.Atoi(version); err == nil {
+		logrus.Debug("Looking up targets by version")
+		targets, err = api.TargetsList(factory, version)
+		subcommands.DieNotNil(err)
+	} else {
+		logrus.Debug("Looking up target by name")
+		target, err := api.TargetGet(factory, version)
+		subcommands.DieNotNil(err)
+		targets = make(tuf.Files)
+		targets[version] = *target
+	}
 
 	hashes := make(map[string]string)
 	matches := make(map[string]client.TufCustom)

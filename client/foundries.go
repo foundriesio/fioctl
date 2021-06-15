@@ -1047,6 +1047,21 @@ func (a *Api) TargetsListRaw(factory string) (*[]byte, error) {
 	return a.Get(url)
 }
 
+func (a *Api) TargetGet(factory string, targetName string) (*tuf.FileMeta, error) {
+	url := a.serverUrl + "/ota/factories/" + factory + "/targets/" + targetName
+	body, err := a.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	var target tuf.FileMeta
+	err = json.Unmarshal(*body, &target)
+	if err != nil {
+		return nil, err
+	}
+
+	return &target, nil
+}
+
 func (a *Api) TargetsList(factory string, version ...string) (tuf.Files, error) {
 	url := a.serverUrl + "/ota/factories/" + factory + "/targets/"
 	if len(version) == 1 {
