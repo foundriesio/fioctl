@@ -154,6 +154,11 @@ type ComposeApp struct {
 	Uri string `json:"uri"`
 }
 
+func (a ComposeApp) Hash() string {
+	parts := strings.SplitN(a.Uri, "@sha256:", 2)
+	return parts[len(parts)-1]
+}
+
 type FactoryUser struct {
 	PolisId string `json:"polis-id"`
 	Name    string `json:"name"`

@@ -4,10 +4,10 @@ import (
 	"encoding/base64"
 	"fmt"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 
-	"github.com/cheynewallace/tabby"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -43,75 +43,65 @@ func init() {
 	showAppCmd.Flags().Bool("manifest", false, "Show an app docker manifest")
 }
 
+func sortedAppsNames(target client.TufCustom) (int, []string) {
+	longest := 0
+	keys := make([]string, 0, len(target.ComposeApps))
+	for app := range target.ComposeApps {
+		if len(app) > longest {
+			longest = len(app)
+		}
+		keys = append(keys, app)
+	}
+	sort.Strings(keys)
+	return longest, keys
+}
+
 func doShow(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 	version := args[0]
 	logrus.Debugf("Showing targets for %s %s", factory, version)
 
-	var tags []string
-	var composeApps map[string]client.ComposeApp
-	containersSha := ""
-	manifestSha := ""
-	overridesSha := ""
+	shownCiUrl := false
 	hashes, targets := getTargets(factory, version)
-	for _, custom := range targets {
-		if len(custom.ContainersSha) > 0 {
-			if len(containersSha) > 0 && containersSha != custom.ContainersSha {
-				fmt.Println("ERROR: Git hashes for containers.git does not match across platforms")
-				os.Exit(1)
+	for targetName, hash := range hashes {
+		target := targets[targetName]
+		if !shownCiUrl {
+			shownCiUrl = true
+			fmt.Printf("CI:\thttps://app.foundries.io/factories/%s/targets/%s/\n\n", factory, target.Version)
+		}
+		fmt.Println("## Target:", targetName)
+		fmt.Printf("\tTags:        %s\n", strings.Join(target.Tags, ","))
+		fmt.Printf("\tOSTree Hash: %s\n", hash)
+		fmt.Println()
+		fmt.Println("\tSource:")
+		if len(target.LmpManifestSha) > 0 {
+			fmt.Printf("\t\thttps://source.foundries.io/factories/%s/lmp-manifest.git/commit/?id=%s\n", factory, target.LmpManifestSha)
+		}
+		if len(target.OverridesSha) > 0 {
+			fmt.Printf("\t\thttps://source.foundries.io/factories/%s/meta-subscriber-overrides.git/commit/?id=%s\n", factory, target.OverridesSha)
+		}
+		if len(target.ContainersSha) > 0 {
+			fmt.Printf("\t\thttps://source.foundries.io/factories/%s/containers.git/commit/?id=%s\n", factory, target.ContainersSha)
+		}
+		fmt.Println()
+		// Tabby can't do indented tables, so...
+		longestNameLen, sortedApps := sortedAppsNames(target)
+		appHeader := "App"
+		if longestNameLen > len(appHeader) {
+			appHeader += strings.Repeat(" ", longestNameLen-len(appHeader))
+		} else {
+			longestNameLen = len(appHeader)
+		}
+		fmt.Printf("\t%s  HASH\n", appHeader)
+		fmt.Printf("\t%s  ----\n", strings.Repeat("-", len(appHeader)))
+		for _, name := range sortedApps {
+			app := target.ComposeApps[name]
+			if len(name) < longestNameLen {
+				name += strings.Repeat(" ", longestNameLen-len(name))
 			}
-			containersSha = custom.ContainersSha
+			fmt.Printf("\t%s  %s\n", name, app.Hash())
 		}
-		if len(custom.LmpManifestSha) > 0 {
-			if len(manifestSha) > 0 && manifestSha != custom.LmpManifestSha {
-				fmt.Println("ERROR: Git hashes for lmp-manifest.git does not match across platforms")
-				os.Exit(1)
-			}
-			manifestSha = custom.LmpManifestSha
-		}
-		if len(custom.OverridesSha) > 0 {
-			if len(overridesSha) > 0 && overridesSha != custom.OverridesSha {
-				fmt.Println("ERROR: Git hashes for meta-subscriber-overrides.git does not match across platforms")
-				os.Exit(1)
-			}
-			overridesSha = custom.OverridesSha
-		}
-		composeApps = custom.ComposeApps
-		tags = custom.Tags
-	}
-
-	fmt.Printf("Tags:\t%s\n", strings.Join(tags, ","))
-
-	fmt.Printf("CI:\thttps://ci.foundries.io/projects/%s/lmp/builds/%s/\n", factory, version)
-
-	fmt.Println("Source:")
-	if len(manifestSha) > 0 {
-		fmt.Printf("\thttps://source.foundries.io/factories/%s/lmp-manifest.git/commit/?id=%s\n", factory, manifestSha)
-	}
-	if len(overridesSha) > 0 {
-		fmt.Printf("\thttps://source.foundries.io/factories/%s/meta-subscriber-overrides.git/commit/?id=%s\n", factory, overridesSha)
-	}
-	if len(containersSha) > 0 {
-		fmt.Printf("\thttps://source.foundries.io/factories/%s/containers.git/commit/?id=%s\n", factory, containersSha)
-	}
-	fmt.Println("")
-
-	t := tabby.New()
-	t.AddHeader("TARGET NAME", "OSTREE HASH - SHA256")
-	for name, val := range hashes {
-		t.AddLine(name, val)
-	}
-	t.Print()
-
-	fmt.Println()
-
-	if len(composeApps) > 0 {
-		t = tabby.New()
-		t.AddHeader("COMPOSE APP", "VERSION")
-		for name, app := range composeApps {
-			t.AddLine(name, app.Uri)
-		}
-		t.Print()
+		fmt.Println()
 	}
 }
 
