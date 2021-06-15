@@ -36,7 +36,7 @@ group wide configuration instead.`,
 	configUpdatesCmd.Flags().BoolP("dryrun", "", false, "Only show what would be changed")
 	configUpdatesCmd.Flags().BoolP("force", "", false, "DANGER: For a config on a device that might result in corruption")
 
-	_ = configUpdatesCmd.Flags().MarkHidden("tags")        // assign for go linter
+	_ = configUpdatesCmd.Flags().MarkHidden("tags") // assign for go linter
 }
 
 func doConfigUpdates(cmd *cobra.Command, args []string) {
