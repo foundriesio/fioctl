@@ -216,7 +216,6 @@ type TufCustom struct {
 	Tags           []string              `json:"tags,omitempty"`
 	TargetFormat   string                `json:"targetFormat,omitempty"`
 	Version        string                `json:"version,omitempty"`
-	DockerApps     map[string]DockerApp  `json:"docker_apps,omitempty"`
 	ComposeApps    map[string]ComposeApp `json:"docker_compose_apps,omitempty"`
 	Name           string                `json:"name,omitempty"`
 	ContainersSha  string                `json:"containers-sha,omitempty"`

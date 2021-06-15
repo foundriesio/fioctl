@@ -41,7 +41,6 @@ func doShow(cmd *cobra.Command, args []string) {
 	logrus.Debugf("Showing targets for %s %s", factory, version)
 
 	var tags []string
-	var apps map[string]client.DockerApp
 	var composeApps map[string]client.ComposeApp
 	containersSha := ""
 	manifestSha := ""
@@ -69,7 +68,6 @@ func doShow(cmd *cobra.Command, args []string) {
 			}
 			overridesSha = custom.OverridesSha
 		}
-		apps = custom.DockerApps
 		composeApps = custom.ComposeApps
 		tags = custom.Tags
 	}
@@ -99,23 +97,7 @@ func doShow(cmd *cobra.Command, args []string) {
 
 	fmt.Println()
 
-	if len(apps) > 0 {
-		t = tabby.New()
-		t.AddHeader("DOCKER APP", "VERSION")
-		for name, app := range apps {
-			if len(app.FileName) > 0 {
-				t.AddLine(name, app.FileName)
-			}
-			if len(app.Uri) > 0 {
-				t.AddLine(name, app.Uri)
-			}
-		}
-		t.Print()
-	}
 	if len(composeApps) > 0 {
-		if len(apps) > 0 {
-			fmt.Println()
-		}
 		t = tabby.New()
 		t.AddHeader("COMPOSE APP", "VERSION")
 		for name, app := range composeApps {

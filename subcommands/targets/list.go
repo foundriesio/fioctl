@@ -108,10 +108,6 @@ func doList(cmd *cobra.Command, args []string) {
 		} else {
 			set := make(map[string]bool)
 			var apps []string
-			for app := range custom.DockerApps {
-				apps = append(apps, app)
-				set[app] = true
-			}
 			for app := range custom.ComposeApps {
 				if _, ok := set[app]; !ok {
 					apps = append(apps, app)
