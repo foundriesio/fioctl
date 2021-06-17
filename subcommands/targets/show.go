@@ -62,9 +62,10 @@ func doShow(cmd *cobra.Command, args []string) {
 	logrus.Debugf("Showing targets for %s %s", factory, version)
 
 	shownCiUrl := false
-	hashes, targets := getTargets(factory, version)
-	for targetName, hash := range hashes {
+	sortedTargetNames, hashes, targets := getTargets(factory, version)
+	for _, targetName := range sortedTargetNames {
 		target := targets[targetName]
+		hash := hashes[targetName]
 		if !shownCiUrl {
 			shownCiUrl = true
 			fmt.Printf("CI:\thttps://app.foundries.io/factories/%s/targets/%s/\n\n", factory, target.Version)
@@ -111,7 +112,7 @@ func doShowComposeApp(cmd *cobra.Command, args []string) {
 	appName := args[1]
 	logrus.Debugf("Showing target for %s %s %s", factory, version, appName)
 
-	_, targets := getTargets(factory, version)
+	_, _, targets := getTargets(factory, version)
 	for name, custom := range targets {
 		_, ok := custom.ComposeApps[appName]
 		if !ok {
@@ -160,7 +161,7 @@ func doShowComposeApp(cmd *cobra.Command, args []string) {
 	}
 }
 
-func getTargets(factory string, version string) (map[string]string, map[string]client.TufCustom) {
+func getTargets(factory string, version string) ([]string, map[string]string, map[string]client.TufCustom) {
 	var targets tuf.Files
 	if _, err := strconv.Atoi(version); err == nil {
 		logrus.Debug("Looking up targets by version")
@@ -174,6 +175,7 @@ func getTargets(factory string, version string) (map[string]string, map[string]c
 		targets[version] = *target
 	}
 
+	var names []string
 	hashes := make(map[string]string)
 	matches := make(map[string]client.TufCustom)
 	for name, target := range targets {
@@ -188,12 +190,14 @@ func getTargets(factory string, version string) (map[string]string, map[string]c
 		}
 		matches[name] = *custom
 		hashes[name] = base64.StdEncoding.EncodeToString(target.Hashes["sha256"])
+		names = append(names, name)
 	}
 	if len(matches) == 0 {
 		fmt.Println("ERROR: no OSTREE target found for this version")
 		os.Exit(1)
 	}
-	return hashes, matches
+	sort.Strings(names)
+	return names, hashes, matches
 }
 
 func indent(input string, prefix string) string {
