@@ -113,6 +113,7 @@ func doList(cmd *cobra.Command, args []string) {
 					apps = append(apps, app)
 				}
 			}
+			sort.Strings(apps)
 			keys = append(keys, key)
 			listing[key] = &targetListing{
 				version:     ver,
@@ -129,6 +130,9 @@ func doList(cmd *cobra.Command, args []string) {
 	sort.Sort(byTargetKey(keys))
 	for _, key := range keys {
 		l := listing[key]
+		sort.Strings(l.tags)
+		sort.Strings(l.apps)
+		sort.Strings(l.hardwareIds)
 		tags := strings.Join(l.tags, ",")
 		apps := strings.Join(l.apps, ",")
 		hwids := strings.Join(l.hardwareIds, ",")
