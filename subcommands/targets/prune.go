@@ -9,7 +9,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	tuf "github.com/theupdateframework/notary/tuf/data"
 
 	"github.com/foundriesio/fioctl/subcommands"
 )
@@ -56,40 +55,6 @@ func sortedListsMatch(a, b []string) bool {
 		}
 	}
 	return true
-}
-
-func findUnusedApps(targets tuf.Files, deleted_list []string) []string {
-	apps := make(map[string]int)
-	referenced := make([]string, 0, 100)
-	for name, target := range targets {
-		custom, err := api.TargetCustom(target)
-		if err != nil {
-			fmt.Printf("ERROR: %s\n", err)
-		} else {
-			if custom.TargetFormat == "BINARY" && strings.HasSuffix(custom.Name, ".dockerapp") {
-				apps[name] = 0
-			}
-			if !intersectionInSlices([]string{name}, deleted_list) {
-				for _, app := range custom.DockerApps {
-					if len(app.FileName) > 0 {
-						referenced = append(referenced, app.FileName)
-					}
-				}
-			}
-		}
-	}
-
-	for _, app := range referenced {
-		delete(apps, app)
-	}
-
-	unused := make([]string, len(apps))
-	i := 0
-	for app := range apps {
-		unused[i] = app
-		i++
-	}
-	return unused
 }
 
 func doPrune(cmd *cobra.Command, args []string) {
@@ -157,9 +122,6 @@ func doPrune(cmd *cobra.Command, args []string) {
 		}
 		target_names = args
 	}
-
-	unused := findUnusedApps(targets, target_names)
-	target_names = append(target_names, unused...)
 
 	fmt.Printf("Deleting targets:\n %s\n", strings.Join(target_names, "\n "))
 	if pruneDryRun {

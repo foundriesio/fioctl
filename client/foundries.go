@@ -154,6 +154,11 @@ type ComposeApp struct {
 	Uri string `json:"uri"`
 }
 
+func (a ComposeApp) Hash() string {
+	parts := strings.SplitN(a.Uri, "@sha256:", 2)
+	return parts[len(parts)-1]
+}
+
 type FactoryUser struct {
 	PolisId string `json:"polis-id"`
 	Name    string `json:"name"`
@@ -216,7 +221,6 @@ type TufCustom struct {
 	Tags           []string              `json:"tags,omitempty"`
 	TargetFormat   string                `json:"targetFormat,omitempty"`
 	Version        string                `json:"version,omitempty"`
-	DockerApps     map[string]DockerApp  `json:"docker_apps,omitempty"`
 	ComposeApps    map[string]ComposeApp `json:"docker_compose_apps,omitempty"`
 	Name           string                `json:"name,omitempty"`
 	ContainersSha  string                `json:"containers-sha,omitempty"`
@@ -1046,6 +1050,21 @@ func (a *Api) TufProdRootPost(factory string, root []byte) (string, error) {
 func (a *Api) TargetsListRaw(factory string) (*[]byte, error) {
 	url := a.serverUrl + "/ota/repo/" + factory + "/api/v1/user_repo/targets.json"
 	return a.Get(url)
+}
+
+func (a *Api) TargetGet(factory string, targetName string) (*tuf.FileMeta, error) {
+	url := a.serverUrl + "/ota/factories/" + factory + "/targets/" + targetName
+	body, err := a.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	var target tuf.FileMeta
+	err = json.Unmarshal(*body, &target)
+	if err != nil {
+		return nil, err
+	}
+
+	return &target, nil
 }
 
 func (a *Api) TargetsList(factory string, version ...string) (tuf.Files, error) {

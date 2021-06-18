@@ -4,12 +4,14 @@ import (
 	"encoding/base64"
 	"fmt"
 	"os"
+	"sort"
+	"strconv"
 	"strings"
 
-	"github.com/cheynewallace/tabby"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	tuf "github.com/theupdateframework/notary/tuf/data"
 	"gopkg.in/yaml.v2"
 
 	"github.com/foundriesio/fioctl/client"
@@ -22,6 +24,12 @@ func init() {
 		Short: "Show details of a specific target.",
 		Run:   doShow,
 		Args:  cobra.ExactArgs(1),
+		Example: `
+  # Show details of all Targets with version 42:
+  fioctl targets show 42
+
+  # Show a specific Target by name:
+  fioctl targets show intel-corei7-64-lmp-42`,
 	}
 	cmd.AddCommand(showCmd)
 
@@ -35,93 +43,66 @@ func init() {
 	showAppCmd.Flags().Bool("manifest", false, "Show an app docker manifest")
 }
 
+func sortedAppsNames(target client.TufCustom) (int, []string) {
+	longest := 0
+	keys := make([]string, 0, len(target.ComposeApps))
+	for app := range target.ComposeApps {
+		if len(app) > longest {
+			longest = len(app)
+		}
+		keys = append(keys, app)
+	}
+	sort.Strings(keys)
+	return longest, keys
+}
+
 func doShow(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 	version := args[0]
 	logrus.Debugf("Showing targets for %s %s", factory, version)
 
-	var tags []string
-	var apps map[string]client.DockerApp
-	var composeApps map[string]client.ComposeApp
-	containersSha := ""
-	manifestSha := ""
-	overridesSha := ""
-	hashes, targets := getTargets(factory, version)
-	for _, custom := range targets {
-		if len(custom.ContainersSha) > 0 {
-			if len(containersSha) > 0 && containersSha != custom.ContainersSha {
-				fmt.Println("ERROR: Git hashes for containers.git does not match across platforms")
-				os.Exit(1)
+	shownCiUrl := false
+	sortedTargetNames, hashes, targets := getTargets(factory, version)
+	for _, targetName := range sortedTargetNames {
+		target := targets[targetName]
+		hash := hashes[targetName]
+		if !shownCiUrl {
+			shownCiUrl = true
+			fmt.Printf("CI:\thttps://app.foundries.io/factories/%s/targets/%s/\n\n", factory, target.Version)
+		}
+		fmt.Println("## Target:", targetName)
+		fmt.Printf("\tTags:        %s\n", strings.Join(target.Tags, ","))
+		fmt.Printf("\tOSTree Hash: %s\n", hash)
+		fmt.Println()
+		fmt.Println("\tSource:")
+		if len(target.LmpManifestSha) > 0 {
+			fmt.Printf("\t\thttps://source.foundries.io/factories/%s/lmp-manifest.git/commit/?id=%s\n", factory, target.LmpManifestSha)
+		}
+		if len(target.OverridesSha) > 0 {
+			fmt.Printf("\t\thttps://source.foundries.io/factories/%s/meta-subscriber-overrides.git/commit/?id=%s\n", factory, target.OverridesSha)
+		}
+		if len(target.ContainersSha) > 0 {
+			fmt.Printf("\t\thttps://source.foundries.io/factories/%s/containers.git/commit/?id=%s\n", factory, target.ContainersSha)
+		}
+		fmt.Println()
+		// Tabby can't do indented tables, so...
+		longestNameLen, sortedApps := sortedAppsNames(target)
+		appHeader := "App"
+		if longestNameLen > len(appHeader) {
+			appHeader += strings.Repeat(" ", longestNameLen-len(appHeader))
+		} else {
+			longestNameLen = len(appHeader)
+		}
+		fmt.Printf("\t%s  HASH\n", appHeader)
+		fmt.Printf("\t%s  ----\n", strings.Repeat("-", len(appHeader)))
+		for _, name := range sortedApps {
+			app := target.ComposeApps[name]
+			if len(name) < longestNameLen {
+				name += strings.Repeat(" ", longestNameLen-len(name))
 			}
-			containersSha = custom.ContainersSha
+			fmt.Printf("\t%s  %s\n", name, app.Hash())
 		}
-		if len(custom.LmpManifestSha) > 0 {
-			if len(manifestSha) > 0 && manifestSha != custom.LmpManifestSha {
-				fmt.Println("ERROR: Git hashes for lmp-manifest.git does not match across platforms")
-				os.Exit(1)
-			}
-			manifestSha = custom.LmpManifestSha
-		}
-		if len(custom.OverridesSha) > 0 {
-			if len(overridesSha) > 0 && overridesSha != custom.OverridesSha {
-				fmt.Println("ERROR: Git hashes for meta-subscriber-overrides.git does not match across platforms")
-				os.Exit(1)
-			}
-			overridesSha = custom.OverridesSha
-		}
-		apps = custom.DockerApps
-		composeApps = custom.ComposeApps
-		tags = custom.Tags
-	}
-
-	fmt.Printf("Tags:\t%s\n", strings.Join(tags, ","))
-
-	fmt.Printf("CI:\thttps://ci.foundries.io/projects/%s/lmp/builds/%s/\n", factory, version)
-
-	fmt.Println("Source:")
-	if len(manifestSha) > 0 {
-		fmt.Printf("\thttps://source.foundries.io/factories/%s/lmp-manifest.git/commit/?id=%s\n", factory, manifestSha)
-	}
-	if len(overridesSha) > 0 {
-		fmt.Printf("\thttps://source.foundries.io/factories/%s/meta-subscriber-overrides.git/commit/?id=%s\n", factory, overridesSha)
-	}
-	if len(containersSha) > 0 {
-		fmt.Printf("\thttps://source.foundries.io/factories/%s/containers.git/commit/?id=%s\n", factory, containersSha)
-	}
-	fmt.Println("")
-
-	t := tabby.New()
-	t.AddHeader("TARGET NAME", "OSTREE HASH - SHA256")
-	for name, val := range hashes {
-		t.AddLine(name, val)
-	}
-	t.Print()
-
-	fmt.Println()
-
-	if len(apps) > 0 {
-		t = tabby.New()
-		t.AddHeader("DOCKER APP", "VERSION")
-		for name, app := range apps {
-			if len(app.FileName) > 0 {
-				t.AddLine(name, app.FileName)
-			}
-			if len(app.Uri) > 0 {
-				t.AddLine(name, app.Uri)
-			}
-		}
-		t.Print()
-	}
-	if len(composeApps) > 0 {
-		if len(apps) > 0 {
-			fmt.Println()
-		}
-		t = tabby.New()
-		t.AddHeader("COMPOSE APP", "VERSION")
-		for name, app := range composeApps {
-			t.AddLine(name, app.Uri)
-		}
-		t.Print()
+		fmt.Println()
 	}
 }
 
@@ -131,7 +112,7 @@ func doShowComposeApp(cmd *cobra.Command, args []string) {
 	appName := args[1]
 	logrus.Debugf("Showing target for %s %s %s", factory, version, appName)
 
-	_, targets := getTargets(factory, version)
+	_, _, targets := getTargets(factory, version)
 	for name, custom := range targets {
 		_, ok := custom.ComposeApps[appName]
 		if !ok {
@@ -180,10 +161,21 @@ func doShowComposeApp(cmd *cobra.Command, args []string) {
 	}
 }
 
-func getTargets(factory string, version string) (map[string]string, map[string]client.TufCustom) {
-	targets, err := api.TargetsList(factory, version)
-	subcommands.DieNotNil(err)
+func getTargets(factory string, version string) ([]string, map[string]string, map[string]client.TufCustom) {
+	var targets tuf.Files
+	if _, err := strconv.Atoi(version); err == nil {
+		logrus.Debug("Looking up targets by version")
+		targets, err = api.TargetsList(factory, version)
+		subcommands.DieNotNil(err)
+	} else {
+		logrus.Debug("Looking up target by name")
+		target, err := api.TargetGet(factory, version)
+		subcommands.DieNotNil(err)
+		targets = make(tuf.Files)
+		targets[version] = *target
+	}
 
+	var names []string
 	hashes := make(map[string]string)
 	matches := make(map[string]client.TufCustom)
 	for name, target := range targets {
@@ -198,12 +190,14 @@ func getTargets(factory string, version string) (map[string]string, map[string]c
 		}
 		matches[name] = *custom
 		hashes[name] = base64.StdEncoding.EncodeToString(target.Hashes["sha256"])
+		names = append(names, name)
 	}
 	if len(matches) == 0 {
 		fmt.Println("ERROR: no OSTREE target found for this version")
 		os.Exit(1)
 	}
-	return hashes, matches
+	sort.Strings(names)
+	return names, hashes, matches
 }
 
 func indent(input string, prefix string) string {
