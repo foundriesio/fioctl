@@ -10,6 +10,7 @@ require (
 	github.com/fatih/color v1.9.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/pelletier/go-toml v1.2.0
+	github.com/shurcooL/go v0.0.0-20200502201357-93f07166e636
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/viper v1.3.2

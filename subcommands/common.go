@@ -2,13 +2,16 @@ package subcommands
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"text/tabwriter"
 
+	"github.com/cheynewallace/tabby"
 	homedir "github.com/mitchellh/go-homedir"
+	"github.com/shurcooL/go/indentwriter"
 	"github.com/sirupsen/logrus"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v2"
@@ -116,4 +119,16 @@ func DieNotNil(err error, message ...string) {
 		fmt.Println(parts...)
 		os.Exit(1)
 	}
+}
+
+func Tabby(indent int, columns ...interface{}) *tabby.Tabby {
+	var out io.Writer = os.Stdout
+	if indent > 0 {
+		out = indentwriter.New(out, indent)
+	}
+	tab := tabby.NewCustom(tabwriter.NewWriter(out, 0, 0, 2, ' ', 0))
+	if len(columns) > 0 {
+		tab.AddHeader(columns...)
+	}
+	return tab
 }

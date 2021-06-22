@@ -43,17 +43,13 @@ func init() {
 	showAppCmd.Flags().Bool("manifest", false, "Show an app docker manifest")
 }
 
-func sortedAppsNames(target client.TufCustom) (int, []string) {
-	longest := 0
+func sortedAppsNames(target client.TufCustom) []string {
 	keys := make([]string, 0, len(target.ComposeApps))
 	for app := range target.ComposeApps {
-		if len(app) > longest {
-			longest = len(app)
-		}
 		keys = append(keys, app)
 	}
 	sort.Strings(keys)
-	return longest, keys
+	return keys
 }
 
 func doShow(cmd *cobra.Command, args []string) {
@@ -68,9 +64,9 @@ func doShow(cmd *cobra.Command, args []string) {
 		hash := hashes[targetName]
 		if !shownCiUrl {
 			shownCiUrl = true
-			fmt.Printf("CI:\thttps://app.foundries.io/factories/%s/targets/%s/\n\n", factory, target.Version)
+			fmt.Printf("CI:\thttps://app.foundries.io/factories/%s/targets/%s/\n", factory, target.Version)
 		}
-		fmt.Println("## Target:", targetName)
+		fmt.Println("\n## Target:", targetName)
 		fmt.Printf("\tTags:        %s\n", strings.Join(target.Tags, ","))
 		fmt.Printf("\tOSTree Hash: %s\n", hash)
 		fmt.Println()
@@ -85,24 +81,13 @@ func doShow(cmd *cobra.Command, args []string) {
 			fmt.Printf("\t\thttps://source.foundries.io/factories/%s/containers.git/commit/?id=%s\n", factory, target.ContainersSha)
 		}
 		fmt.Println()
-		// Tabby can't do indented tables, so...
-		longestNameLen, sortedApps := sortedAppsNames(target)
-		appHeader := "App"
-		if longestNameLen > len(appHeader) {
-			appHeader += strings.Repeat(" ", longestNameLen-len(appHeader))
-		} else {
-			longestNameLen = len(appHeader)
-		}
-		fmt.Printf("\t%s  HASH\n", appHeader)
-		fmt.Printf("\t%s  ----\n", strings.Repeat("-", len(appHeader)))
+		t := subcommands.Tabby(1, "APP", "HASH")
+		sortedApps := sortedAppsNames(target)
 		for _, name := range sortedApps {
 			app := target.ComposeApps[name]
-			if len(name) < longestNameLen {
-				name += strings.Repeat(" ", longestNameLen-len(name))
-			}
-			fmt.Printf("\t%s  %s\n", name, app.Hash())
+			t.AddLine(name, app.Hash())
 		}
-		fmt.Println()
+		t.Print()
 	}
 }
 
