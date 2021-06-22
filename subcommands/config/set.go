@@ -19,7 +19,11 @@ and the device's configuration and apply it. Use the --group parameter to
 create a device group wide configuration instead.`,
 		Example: `
   # Basic use
-  fioctl config set npmtok="root" githubtok="1234"
+  fioctl config set npmtok="root" githubtok="1234" readme.md==./readme.md
+
+  There are several ways how to pass a file content into this command:
+  - with filename="filecontent" format, a file content is passed directly.
+  - with filename==/path/to/file format, a file content is read from a specified file path.
 
   # The configuration format also allows specifying what command to
   # run after a configuration file is updated on the device. To take

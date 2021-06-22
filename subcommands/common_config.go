@@ -44,7 +44,15 @@ func SetConfig(opts *SetConfigOptions) {
 			if len(parts) != 2 {
 				DieNotNil(fmt.Errorf("Invalid file=content argument: %s", keyval))
 			}
-			cfg.Files = append(cfg.Files, client.ConfigFile{Name: parts[0], Value: parts[1]})
+			// support for filename=filecontent format
+			content := parts[1]
+			if len(content) > 0 && content[0] == '=' {
+				// support for filename==/file/path.ext format
+				data, err := ioutil.ReadFile(content[1:])
+				DieNotNil(err, "Unable to read config file:")
+				content = string(data)
+			}
+			cfg.Files = append(cfg.Files, client.ConfigFile{Name: parts[0], Value: content})
 		}
 	}
 

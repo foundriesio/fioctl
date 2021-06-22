@@ -26,7 +26,11 @@ on each device will then be able to grab the latest version of the
 device's configuration and apply it.`,
 		Example: `  
   # Basic use can be done with command line arguments:
-  fioctl device config set my-device npmtok="root"  githubtok="1234"
+  fioctl device config set my-device npmtok="root" githubtok="1234" readme.md==./readme.md
+
+  There are several ways how to pass a file content into this command:
+  - with filename="filecontent" format, a file content is passed directly.
+  - with filename==/path/to/file format, a file content is read from a specified file path.
 
   # The device configuration format also allows specifying what command
   # to run after a configuration file is updated on the device. To take
