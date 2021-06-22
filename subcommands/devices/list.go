@@ -10,6 +10,7 @@ import (
 	"github.com/cheynewallace/tabby"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 
 	"github.com/foundriesio/fioctl/client"
 	"github.com/foundriesio/fioctl/subcommands"
@@ -170,7 +171,10 @@ func doList(cmd *cobra.Command, args []string) {
 	if len(deviceByFactory) > 0 {
 		deviceNoShared = true
 	} else if len(deviceByGroup) > 0 {
-		subcommands.DieNotNil(fmt.Errorf("A factory is mandatory to filter by group"))
+		deviceByFactory = viper.GetString("factory")
+		if len(deviceByFactory) == 0 {
+			subcommands.DieNotNil(fmt.Errorf("A factory is mandatory to filter by group"))
+		}
 	}
 	dl, err := api.DeviceList(!deviceNoShared, deviceByTag, deviceByFactory, deviceByGroup, name_ilike, deviceUuid, showPage, paginationLimit)
 	subcommands.DieNotNil(err)
