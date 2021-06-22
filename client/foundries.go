@@ -1143,8 +1143,9 @@ func (a *Api) TargetDeleteTargets(factory string, target_names []string) (string
 	return parseJobServResponse(resp, err, "UpdateTargets")
 }
 
-func (a *Api) TargetImageCreate(factory string, targetName string, appShortlist string) (string, string, error) {
+func (a *Api) TargetImageCreate(factory, targetName, appShortlist, ciScriptsRepo, ciScriptsRef string) (string, string, error) {
 	url := a.serverUrl + "/ota/factories/" + factory + "/targets/" + targetName + "/images/"
+	url += "?script_repo=" + ciScriptsRepo + "&script_repo_ref=" + ciScriptsRef
 	if len(appShortlist) > 0 {
 		url += "?app_shortlist=" + appShortlist
 	}
