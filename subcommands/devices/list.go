@@ -71,6 +71,7 @@ var Columns = map[string]column{
 	"uuid":          {func(d *client.Device) string { return d.Uuid }},
 	"factory":       {func(d *client.Device) string { return d.Factory }},
 	"owner":         {ownerFormatter},
+	"device-group":  {func(d *client.Device) string { return d.GroupName }},
 	"target":        {func(d *client.Device) string { return d.TargetName }},
 	"status":        {statusFormatter},
 	"apps":          {func(d *client.Device) string { return strings.Join(d.DockerApps, ",") }},
