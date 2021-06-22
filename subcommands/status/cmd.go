@@ -2,9 +2,7 @@ package status
 
 import (
 	"fmt"
-	"strings"
 
-	"github.com/cheynewallace/tabby"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -42,8 +40,7 @@ func showStatus(cmd *cobra.Command, args []string) {
 
 	if len(status.ProdTags) > 0 || len(status.ProdWaveTags) > 0 {
 		fmt.Println("\nProduction devices:")
-		t := tabby.New()
-		t.AddHeader("TAG", "LATEST TARGET", "DEVICES", "ON LATEST", "ON ORPHAN", "ONLINE")
+		t := subcommands.Tabby(0, "TAG", "LATEST TARGET", "DEVICES", "ON LATEST", "ON ORPHAN", "ONLINE")
 		for idx, tag := range append(status.ProdWaveTags, status.ProdTags...) {
 			name := tag.Name
 			if idx < len(status.ProdWaveTags) {
@@ -61,8 +58,7 @@ func showStatus(cmd *cobra.Command, args []string) {
 		fmt.Println("\nTest devices:")
 	}
 
-	t := tabby.New()
-	t.AddHeader("TAG", "LATEST TARGET", "DEVICES", "ON LATEST", "ONLINE")
+	t := subcommands.Tabby(0, "TAG", "LATEST TARGET", "DEVICES", "ON LATEST", "ONLINE")
 	for _, tag := range status.Tags {
 		name := tag.Name
 		if len(name) == 0 {
@@ -87,9 +83,7 @@ func printTargetStatus(tagPrefix string, tagStatus []client.TagStatus) {
 			name = "(Untagged)"
 		}
 		fmt.Printf("\n## %s Tag: %s\n", tagPrefix, name)
-		// Tabby doesn't indent (or at least easily) so:
-		fmt.Println("\tTARGET   DEVICES  INSTALLING  DETAILS")
-		fmt.Println("\t-------  -------  ----------  -------")
+		t := subcommands.Tabby(1, "TARGET", "DEVICES", "INSTALLING", "DETAILS")
 		for _, tgt := range tag.Targets {
 			var orphan, details string
 			if tgt.IsOrphan {
@@ -98,37 +92,17 @@ func printTargetStatus(tagPrefix string, tagStatus []client.TagStatus) {
 			if tgt.Version > 0 {
 				details = fmt.Sprintf("`fioctl targets show %d`", tgt.Version)
 			}
-			fmt.Printf("\t%-6d%-1s  %-7d  %-10d  %s\n",
-				tgt.Version, orphan, tgt.Devices, tgt.Reinstalling, details)
+			t.AddLine(fmt.Sprintf("%-6d%-1s", tgt.Version, orphan), tgt.Devices, tgt.Reinstalling, details)
 		}
+		t.Print()
+		fmt.Println()
 
+		t = subcommands.Tabby(1, "DEVICE GROUP", "DEVICES", "ON LATEST", "ONLINE", "INSTALLING")
 		if len(tag.DeviceGroups) > 0 {
-			// Tabby doesn't indent (or at least easily) so calculate name column width here
-			longestNameLen := 0
 			for _, g := range tag.DeviceGroups {
-				if len(g.Name) > longestNameLen {
-					longestNameLen = len(g.Name)
-				}
-			}
-			dgHeader := "DEVICE GROUP"
-			if longestNameLen > len(dgHeader) {
-				dgHeader += strings.Repeat(" ", longestNameLen-len(dgHeader))
-			} else {
-				longestNameLen = len(dgHeader)
-			}
-
-			fmt.Println()
-			fmt.Printf("\t%s  DEVICES  ON LATEST  ONLINE  INSTALLING\n", dgHeader)
-			fmt.Printf("\t%s  -------  ---------  ------  ----------\n",
-				strings.Repeat("-", len(dgHeader)))
-			for _, g := range tag.DeviceGroups {
-				name := g.Name
-				if len(name) < longestNameLen {
-					name += strings.Repeat(" ", longestNameLen-len(name))
-				}
-				fmt.Printf("\t%s  %-7d  %-9d  %-6d  %d\n",
-					name, g.DevicesTotal, g.DevicesOnLatest, g.DevicesOnline, g.Reinstalling)
+				t.AddLine(g.Name, g.DevicesTotal, g.DevicesOnLatest, g.DevicesOnline, g.Reinstalling)
 			}
 		}
+		t.Print()
 	}
 }

@@ -3,7 +3,6 @@ package waves
 import (
 	"fmt"
 
-	"github.com/cheynewallace/tabby"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -82,7 +81,7 @@ func doShowWaveStatus(cmd *cobra.Command, args []string) {
 		fmt.Printf("Finished At: \t%s\n", status.FinishedAt)
 	}
 
-	t := tabby.New()
+	t := subcommands.Tabby(0)
 	t.AddLine(fmt.Sprintf("Device Groups on Tag '%s':", status.Tag),
 		len(status.RolloutGroups)+len(status.OtherGroups))
 	t.AddLine("Device Groups Rollout:", len(status.RolloutGroups))
@@ -101,8 +100,7 @@ func doShowWaveStatus(cmd *cobra.Command, args []string) {
 			unscheduledMessage += " (Done)"
 		}
 
-		t = tabby.New()
-		t.AddHeader("GROUP", "TOTAL", "UPDATED", "NEED UPDATE", "ONLINE", "ROLLOUT AT")
+		t = subcommands.Tabby(0, "GROUP", "TOTAL", "UPDATED", "NEED UPDATE", "ONLINE", "ROLLOUT AT")
 		for _, group := range status.RolloutGroups {
 			t.AddLine(
 				group.Name, group.DevicesTotal, group.DevicesOnWave+group.DevicesOnNewer,
@@ -124,9 +122,7 @@ func doShowWaveStatus(cmd *cobra.Command, args []string) {
 		fmt.Println("Wave target version below is marked with an arrow (<-)")
 		for _, group := range status.RolloutGroups {
 			fmt.Printf("\n## Device Group: %s\n", group.Name)
-			// Tabby doesn't indent (or at least easily) so:
-			fmt.Println("\tTARGET    DEVICES  INSTALLING  DETAILS")
-			fmt.Println("\t--------  -------  ----------  -------")
+			t = subcommands.Tabby(1, "TARGET", "DEVICES", "INSTALLING", "DETAILS")
 			for _, tgt := range group.Targets {
 				var mark, details string
 				if tgt.Version == status.Version {
@@ -137,9 +133,9 @@ func doShowWaveStatus(cmd *cobra.Command, args []string) {
 				if tgt.Version > 0 {
 					details = fmt.Sprintf("`fioctl targets show %d`", tgt.Version)
 				}
-				fmt.Printf("\t%-6d%2s  %-7d  %-10d  %s\n",
-					tgt.Version, mark, tgt.Devices, tgt.Reinstalling, details)
+				t.AddLine(fmt.Sprintf("%-6d%2s", tgt.Version, mark), tgt.Devices, tgt.Reinstalling, details)
 			}
+			t.Print()
 		}
 	}
 }
