@@ -120,7 +120,8 @@ type Device struct {
 	Name          string           `json:"name"`
 	Owner         string           `json:"owner"`
 	Factory       string           `json:"factory"`
-	Group         *DeviceGroup     `json:"group"`
+	GroupName     string           `json:"device-group"` // Returned in List API
+	Group         *DeviceGroup     `json:"group"`        // Returned in Get API
 	CreatedAt     string           `json:"created-at"`
 	LastSeen      string           `json:"last-seen"`
 	OstreeHash    string           `json:"ostree-hash"`
