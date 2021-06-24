@@ -86,7 +86,8 @@ func doPrune(cmd *cobra.Command, args []string) {
 					fmt.Printf("Unable to decode target name: %s\n", name)
 					os.Exit(1)
 				}
-				verI, err := strconv.Atoi(parts[1])
+				custom, _ := api.TargetCustom(targets[name])
+				verI, err := strconv.Atoi(custom.Version)
 				subcommands.DieNotNil(err)
 				vals, ok := versions[verI]
 				if ok {
