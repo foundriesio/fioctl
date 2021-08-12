@@ -48,6 +48,8 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file (default is $HOME/.config/fioctl.yaml)")
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Print verbose logging")
 
+	rootCmd.AddCommand(completionCmd)
+
 	rootCmd.AddCommand(cfgcmd.NewCommand())
 	rootCmd.AddCommand(devices.NewCommand())
 	rootCmd.AddCommand(keys.NewCommand())
@@ -110,4 +112,46 @@ func initConfig() {
 		panic(fmt.Sprintf("Unexpected failure parsing configuration: %s", err))
 	}
 	subcommands.Config = config
+}
+
+var completionCmd = &cobra.Command{
+	Use:   "completion [bash|zsh|powershell]",
+	Short: "Generate completion script",
+	Long: `To load completions:
+
+Bash:
+
+$ source <(fioctl completion bash)
+
+# To load completions for each session, execute once:
+Linux:
+  $ fioctl completion bash > /etc/bash_completion.d/fioctl
+MacOS:
+  $ fioctl completion bash > /usr/local/etc/bash_completion.d/fioctl
+
+Zsh:
+
+# If shell completion is not already enabled in your environment you will need
+# to enable it.  You can execute the following once:
+
+$ echo "autoload -U compinit; compinit" >> ~/.zshrc
+
+# To load completions for each session, execute once:
+$ fioctl completion zsh > "${fpath[1]}/_fioctl"
+
+# You will need to start a new shell for this setup to take effect.
+`,
+	DisableFlagsInUseLine: true,
+	ValidArgs:             []string{"bash", "zsh", "fish", "powershell"},
+	Args:                  cobra.ExactValidArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		switch args[0] {
+		case "bash":
+			cmd.Root().GenBashCompletion(os.Stdout)
+		case "zsh":
+			cmd.Root().GenZshCompletion(os.Stdout)
+		case "powershell":
+			cmd.Root().GenPowerShellCompletion(os.Stdout)
+		}
+	},
 }
