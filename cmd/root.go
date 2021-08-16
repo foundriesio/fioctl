@@ -117,10 +117,8 @@ func initConfig() {
 var completionCmd = &cobra.Command{
 	Use:   "completion [bash|zsh|powershell]",
 	Short: "Generate completion script",
-	Long: `To load completions:
-
-Bash:
-
+	Example: `
+# Bash:
 $ source <(fioctl completion bash)
 
 # To load completions for each session, execute once:
@@ -129,8 +127,7 @@ Linux:
 MacOS:
   $ fioctl completion bash > /usr/local/etc/bash_completion.d/fioctl
 
-Zsh:
-
+# Zsh:
 # If shell completion is not already enabled in your environment you will need
 # to enable it.  You can execute the following once:
 
