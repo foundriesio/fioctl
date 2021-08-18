@@ -61,7 +61,7 @@ func init() {
 	rootCmd.AddCommand(targets.NewCommand())
 	rootCmd.AddCommand(version.NewCommand())
 	rootCmd.AddCommand(waves.NewCommand())
-	rootCmd.AddCommand(subcommands.GetCommand)
+	rootCmd.AddCommand(subcommands.NewGetCommand())
 
 	rootCmd.AddCommand(docsRstCmd)
 	rootCmd.AddCommand(docsMdCmd)

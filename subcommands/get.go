@@ -15,15 +15,19 @@ var (
 	api *client.Api
 )
 
-var GetCommand = &cobra.Command{
-	Use:    "get https://api.foundries.io/ota.... [header=val..]",
-	Short:  "Do an authenticated HTTP GET",
-	Hidden: true,
-	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		api = Login(cmd)
-	},
-	Run:  doGet,
-	Args: cobra.MinimumNArgs(1),
+func NewGetCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:    "get https://api.foundries.io/ota.... [header=val..]",
+		Short:  "Do an authenticated HTTP GET",
+		Hidden: true,
+		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			api = Login(cmd)
+		},
+		Run:  doGet,
+		Args: cobra.MinimumNArgs(1),
+	}
+	cmd.PersistentFlags().StringP("token", "t", "", "API token from https://app.foundries.io/settings/tokens/")
+	return cmd
 }
 
 func doGet(cmd *cobra.Command, args []string) {
