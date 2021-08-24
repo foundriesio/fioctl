@@ -144,11 +144,17 @@ $ fioctl completion zsh > "${fpath[1]}/_fioctl"
 	Run: func(cmd *cobra.Command, args []string) {
 		switch args[0] {
 		case "bash":
-			cmd.Root().GenBashCompletion(os.Stdout)
+			if err := cmd.Root().GenBashCompletion(os.Stdout); err != nil {
+				logrus.Fatal(err)
+			}
 		case "zsh":
-			cmd.Root().GenZshCompletion(os.Stdout)
+			if err := cmd.Root().GenZshCompletion(os.Stdout); err != nil {
+				logrus.Fatal(err)
+			}
 		case "powershell":
-			cmd.Root().GenPowerShellCompletion(os.Stdout)
+			if err := cmd.Root().GenPowerShellCompletion(os.Stdout); err != nil {
+				logrus.Fatal(err)
+			}
 		}
 	},
 }
