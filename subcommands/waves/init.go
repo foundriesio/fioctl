@@ -18,18 +18,16 @@ import (
 
 func init() {
 	initCmd := &cobra.Command{
-		Use:   "init <wave> <version> [<tag>]",
+		Use:   "init <wave> <version> <tag>",
 		Short: "Create a new wave from targets of a given version",
 		Long: `Create a new wave from targets of a given version.
-Optionally, provide the tag to use for these targets ('master' by default).
-In any case, original tags of these targets are ignored.
 
 This command only initializes a wave, but does not provision its updates to devices.
 Use a "fioctl wave rollout <wave> <group>" to trigger updates of this wave to a device group.
 Use a "fioctl wave complete <wave>" to update all devices (make it globally available).
 Use a "fioctl wave cancel <wave> to cancel a wave (make it no longer available).`,
 		Run:  doInitWave,
-		Args: cobra.RangeArgs(2, 3),
+		Args: cobra.ExactArgs(3),
 	}
 	cmd.AddCommand(initCmd)
 	initCmd.Flags().IntP("expires-days", "e", 0, `Role expiration in days; default 365.
