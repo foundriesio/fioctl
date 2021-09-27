@@ -32,6 +32,7 @@ func init() {
   fioctl targets show intel-corei7-64-lmp-42`,
 	}
 	cmd.AddCommand(showCmd)
+	showCmd.PersistentFlags().String("production-tag", "", "Look up target from the production tag")
 
 	showAppCmd := &cobra.Command{
 		Use:   "compose-app <version> <app>",
@@ -57,8 +58,10 @@ func doShow(cmd *cobra.Command, args []string) {
 	version := args[0]
 	logrus.Debugf("Showing targets for %s %s", factory, version)
 
+	prodTag, _ := cmd.Flags().GetString("production-tag")
+
 	shownCiUrl := false
-	sortedTargetNames, hashes, targets := getTargets(factory, version)
+	sortedTargetNames, hashes, targets := getTargets(factory, prodTag, version)
 	for _, targetName := range sortedTargetNames {
 		target := targets[targetName]
 		hash := hashes[targetName]
@@ -97,7 +100,9 @@ func doShowComposeApp(cmd *cobra.Command, args []string) {
 	appName := args[1]
 	logrus.Debugf("Showing target for %s %s %s", factory, version, appName)
 
-	_, _, targets := getTargets(factory, version)
+	prodTag, _ := cmd.Flags().GetString("production-tag")
+
+	_, _, targets := getTargets(factory, prodTag, version)
 	for name, custom := range targets {
 		_, ok := custom.ComposeApps[appName]
 		if !ok {
@@ -146,9 +151,33 @@ func doShowComposeApp(cmd *cobra.Command, args []string) {
 	}
 }
 
-func getTargets(factory string, version string) ([]string, map[string]string, map[string]client.TufCustom) {
+func getTargets(factory string, prodTag string, version string) ([]string, map[string]string, map[string]client.TufCustom) {
 	var targets tuf.Files
+	var prodMeta *client.AtsTufTargets
+
+	byName := true
 	if _, err := strconv.Atoi(version); err == nil {
+		byName = false
+	}
+
+	if len(prodTag) > 0 {
+		var err error
+		prodMeta, err = api.ProdTargetsGet(factory, prodTag, true)
+		subcommands.DieNotNil(err)
+		targets = make(tuf.Files)
+		if !byName {
+			for name, target := range prodMeta.Signed.Targets {
+				custom, err := api.TargetCustom(target)
+				subcommands.DieNotNil(err)
+				if custom.Version == version {
+					targets[name] = target
+				}
+			}
+		} else {
+			targets[version] = prodMeta.Signed.Targets[version]
+		}
+	} else if !byName {
+		var err error
 		logrus.Debug("Looking up targets by version")
 		targets, err = api.TargetsList(factory, version)
 		subcommands.DieNotNil(err)
@@ -178,7 +207,7 @@ func getTargets(factory string, version string) ([]string, map[string]string, ma
 		names = append(names, name)
 	}
 	if len(matches) == 0 {
-		fmt.Println("ERROR: no OSTREE target found for this version")
+		fmt.Println("ERROR: no target found for this version")
 		os.Exit(1)
 	}
 	sort.Strings(names)
