@@ -68,6 +68,16 @@ func doShow(cmd *cobra.Command, args []string) {
 		fmt.Printf("\tIP:\t\t%s\n", device.Network.Ipv4)
 		fmt.Printf("\tMAC:\t\t%s\n", device.Network.MAC)
 	}
+	if len(device.Secondaries) > 0 {
+		fmt.Println("Secondary ECUs:")
+		for _, ecu := range device.Secondaries {
+			fmt.Printf("\t%s / Target(%s)", ecu.Serial, ecu.TargetName)
+			if len(ecu.HardwareId) > 0 {
+				fmt.Printf(" Hardware ID(%s)", ecu.HardwareId)
+			}
+			fmt.Println()
+		}
+	}
 	if device.Hardware != nil {
 		b, err := json.MarshalIndent(device.Hardware, "\t", "  ")
 		if err != nil {

@@ -138,6 +138,11 @@ type Device struct {
 	AktualizrToml string           `json:"aktualizr-toml,omitempty"`
 	IsProd        bool             `json:"is-prod"`
 	IsWave        bool             `json:"is-wave"`
+	Secondaries   []struct {
+		Serial     string `json:"serial"`
+		TargetName string `json:"target-name"`
+		HardwareId string `json:"hardware-id"`
+	} `json:"secondary-ecus"`
 }
 
 type DeviceList struct {
