@@ -1,6 +1,8 @@
 package targets
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"sort"
@@ -11,11 +13,13 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/theupdateframework/notary/tuf/data"
 
 	"github.com/foundriesio/fioctl/subcommands"
 )
 
 var (
+	listProd  bool
 	listRaw   bool
 	listByTag string
 )
@@ -55,6 +59,7 @@ func init() {
 	}
 	cmd.AddCommand(listCmd)
 	listCmd.Flags().BoolVarP(&listRaw, "raw", "r", false, "Print raw targets.json")
+	listCmd.Flags().BoolVarP(&listProd, "production", "", false, "Show the production version targets.json")
 	listCmd.Flags().StringVarP(&listByTag, "by-tag", "", "", "Only list targets that match the given tag")
 }
 
@@ -62,14 +67,35 @@ func doList(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 	logrus.Debugf("Listing targets for %s tag(%s)", factory, listByTag)
 
+	if listProd && len(listByTag) == 0 {
+		subcommands.DieNotNil(errors.New("--production flag requires --by-tag flag"))
+	}
+
 	if listRaw {
-		body, err := api.TargetsListRaw(factory)
-		subcommands.DieNotNil(err)
-		os.Stdout.Write(*body)
+		if listProd {
+			meta, err := api.ProdTargetsGet(factory, listByTag, true)
+			subcommands.DieNotNil(err)
+			bytes, err := json.Marshal(meta)
+			subcommands.DieNotNil(err)
+			os.Stdout.Write(bytes)
+		} else {
+			body, err := api.TargetsListRaw(factory)
+			subcommands.DieNotNil(err)
+			os.Stdout.Write(*body)
+		}
 		return
 	}
-	targets, err := api.TargetsList(factory)
-	subcommands.DieNotNil(err)
+
+	var targets data.Files
+	if listProd {
+		meta, err := api.ProdTargetsGet(factory, listByTag, true)
+		subcommands.DieNotNil(err)
+		targets = meta.Signed.Targets
+	} else {
+		var err error
+		targets, err = api.TargetsList(factory)
+		subcommands.DieNotNil(err)
+	}
 
 	var keys []string
 	listing := make(map[string]*targetListing)

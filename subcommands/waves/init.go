@@ -18,18 +18,16 @@ import (
 
 func init() {
 	initCmd := &cobra.Command{
-		Use:   "init <wave> <version> [<tag>]",
+		Use:   "init <wave> <version> <tag>",
 		Short: "Create a new wave from targets of a given version",
 		Long: `Create a new wave from targets of a given version.
-Optionally, provide the tag to use for these targets ('master' by default).
-In any case, original tags of these targets are ignored.
 
 This command only initializes a wave, but does not provision its updates to devices.
 Use a "fioctl wave rollout <wave> <group>" to trigger updates of this wave to a device group.
 Use a "fioctl wave complete <wave>" to update all devices (make it globally available).
 Use a "fioctl wave cancel <wave> to cancel a wave (make it no longer available).`,
 		Run:  doInitWave,
-		Args: cobra.RangeArgs(2, 3),
+		Args: cobra.ExactArgs(3),
 	}
 	cmd.AddCommand(initCmd)
 	initCmd.Flags().IntP("expires-days", "e", 0, `Role expiration in days; default 365.
@@ -40,6 +38,7 @@ When set this value overrides an 'expires-days' argument.
 Example: 2020-01-01T00:00:00Z`)
 	initCmd.Flags().BoolP("dry-run", "d", false, "Don't create a wave, print it to standard output.")
 	initCmd.Flags().StringP("keys", "k", "", "Path to <offline-creds.tgz> used to sign wave targets.")
+	initCmd.Flags().StringP("source-tag", "", "", "Match this tag when looking for target versions. Certain advanced tagging configurations may require this argument.")
 	_ = initCmd.MarkFlagRequired("keys")
 }
 
@@ -53,6 +52,7 @@ func doInitWave(cmd *cobra.Command, args []string) {
 	subcommands.DieNotNil(err, "Version must be an integer")
 	expires := readExpiration(cmd)
 	dryRun, _ := cmd.Flags().GetBool("dry-run")
+	sourceTag, _ := cmd.Flags().GetString("source-tag")
 	offlineKeys := readOfflineKeys(cmd)
 	logrus.Debugf("Creating a wave %s for factory %s targets version %s and new tag %s expires %s",
 		name, factory, version, tag, expires.Format(time.RFC3339))
@@ -83,6 +83,21 @@ func doInitWave(cmd *cobra.Command, args []string) {
 	for name, file := range new_targets {
 		if _, exists := targets.Targets[name]; exists {
 			subcommands.DieNotNil(fmt.Errorf("Target %s already exists in production targets for tag %s", name, tag))
+		}
+
+		if len(sourceTag) > 0 {
+			custom, err := api.TargetCustom(file)
+			subcommands.DieNotNil(err)
+			found := false
+			for _, tag := range custom.Tags {
+				if tag == sourceTag {
+					found = true
+					break
+				}
+			}
+			if !found {
+				continue
+			}
 		}
 		subcommands.DieNotNil(replaceTags(&file, tag), fmt.Sprintf("Malformed CI target custom field %s", name))
 		targets.Targets[name] = file
