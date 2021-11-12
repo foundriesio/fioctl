@@ -1444,7 +1444,25 @@ func (a *Api) FactoryCreateWave(factory string, wave *WaveCreate) error {
 		return err
 	}
 
-	_, err = a.Post(url, data)
+	type WaveErr struct {
+		Message string   `json:"message"`
+		Errors  []string `json:"errors"`
+	}
+	body, err := a.Post(url, data)
+	if err != nil && body != nil {
+		if herr := AsHttpError(err); herr != nil {
+			var werr WaveErr
+			if json.Unmarshal(*body, &werr) == nil {
+				herr.Message = werr.Message
+				if werr.Errors != nil {
+					for _, err := range werr.Errors {
+						herr.Message += "\n * " + err
+					}
+				}
+				herr.Message += "\n"
+			}
+		}
+	}
 	return err
 }
 
