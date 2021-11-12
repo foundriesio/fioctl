@@ -44,10 +44,7 @@ Example: 2020-01-01T00:00:00Z`)
 
 func doInitWave(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
-	name, version, tag := args[0], args[1], "master"
-	if len(args) > 2 {
-		tag = args[2]
-	}
+	name, version, tag := args[0], args[1], args[2]
 	intVersion, err := strconv.ParseInt(version, 10, 32)
 	subcommands.DieNotNil(err, "Version must be an integer")
 	expires := readExpiration(cmd)
