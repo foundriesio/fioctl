@@ -53,7 +53,7 @@ fioctl devices updates <device> $(fioctl devices updates <device> -n1 | tail -n1
 }
 
 func NewCommand() *cobra.Command {
-	cmd.PersistentFlags().StringP("token", "t", "", "API token from https://app.foundries.io/settings/tokens/")
+	subcommands.RequireFactory(cmd)
 
 	updatesCmd.Flags().IntVarP(&listLimit, "limit", "n", 0, "Limit the number of updates displayed.")
 
