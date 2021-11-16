@@ -5,7 +5,7 @@ LDFLAGS=-ldflags "-X=github.com/foundriesio/fioctl/subcommands/version.Commit=$(
 
 linter:=$(shell which golangci-lint 2>/dev/null || echo $(HOME)/go/bin/golangci-lint)
 
-build: fioctl-linux-amd64 fioctl-windows-amd64 fioctl-darwin-amd64
+build: fioctl-linux-amd64 fioctl-windows-amd64 fioctl-darwin-amd64 fioctl-darwin-arm64
 	@true
 
 fioctl-linux-amd64:
