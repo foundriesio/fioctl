@@ -13,16 +13,29 @@ import (
 	"github.com/foundriesio/fioctl/subcommands"
 )
 
+var refreshToken bool
+
 func NewCommand() *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "login",
 		Short: "Access Foundries.io services with your client credentials",
 		Run:   doLogin,
 	}
+	cmd.Flags().BoolVarP(&refreshToken, "refresh-access-token", "", false, "Refresh your current oauth2 access token. This is used when a token's scopes have been updated in app.foundries.io")
+	return cmd
 }
 
 func doLogin(cmd *cobra.Command, args []string) {
 	logrus.Debug("Executing login command")
+
+	if refreshToken {
+		creds := client.NewClientCredentials(subcommands.Config.ClientCredentials)
+		// Change ExpiresIn to basically "now". This will cause fioctl to
+		// get a new token with fresh scopes
+		creds.Config.ExpiresIn = 1
+		subcommands.SaveOauthConfig(creds.Config)
+		return
+	}
 
 	creds := client.NewClientCredentials(subcommands.Config.ClientCredentials)
 	if creds.Config.ClientId == "" || creds.Config.ClientSecret == "" {
