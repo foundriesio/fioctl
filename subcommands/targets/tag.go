@@ -40,7 +40,6 @@ func init() {
 func doTag(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 	tags := strings.Split(tagTags, ",")
-	fmt.Println(tags)
 
 	targets, err := api.TargetsList(factory)
 	subcommands.DieNotNil(err)
