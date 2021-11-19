@@ -19,17 +19,22 @@ import (
 )
 
 var (
-	listProd  bool
-	listRaw   bool
-	listByTag string
+	listProd    bool
+	listRaw     bool
+	listByTag   string
+	showColumns []string
 )
 
 // Represents the details we use for displaying a single OTA "build"
 type targetListing struct {
-	version     int
-	hardwareIds []string
-	tags        []string
-	apps        []string
+	version      int
+	hardwareIds  []string
+	tags         []string
+	apps         []string
+	origin       string
+	manifestSha  string
+	overridesSha string
+	containerSha string
 }
 
 type byTargetKey []string
@@ -51,16 +56,39 @@ func (t byTargetKey) Less(i, j int) bool {
 	return verI < verJ
 }
 
+type column struct {
+	Formatter func(tl *targetListing) string
+}
+
+var Columns = map[string]column{
+	"version":        {func(tl *targetListing) string { return strconv.Itoa(tl.version) }},
+	"tags":           {func(tl *targetListing) string { return strings.Join(tl.tags, ",") }},
+	"apps":           {func(tl *targetListing) string { return strings.Join(tl.apps, ",") }},
+	"hardware-ids":   {func(tl *targetListing) string { return strings.Join(tl.hardwareIds, ",") }},
+	"origin":         {func(tl *targetListing) string { return tl.origin }},
+	"manifest-sha":   {func(tl *targetListing) string { return tl.manifestSha }},
+	"overrides-sha":  {func(tl *targetListing) string { return tl.overridesSha }},
+	"containers-sha": {func(tl *targetListing) string { return tl.containerSha }},
+}
+
 func init() {
+	var defCols = []string{"version", "tags", "apps", "origin"}
+	allCols := make([]string, 0, len(Columns))
+	for k := range Columns {
+		allCols = append(allCols, k)
+	}
+	sort.Strings(allCols)
 	listCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List targets.",
 		Run:   doList,
+		Long:  "Available columns for display:\n\n  * " + strings.Join(allCols, "\n  * "),
 	}
 	cmd.AddCommand(listCmd)
 	listCmd.Flags().BoolVarP(&listRaw, "raw", "r", false, "Print raw targets.json")
 	listCmd.Flags().BoolVarP(&listProd, "production", "", false, "Show the production version targets.json")
 	listCmd.Flags().StringVarP(&listByTag, "by-tag", "", "", "Only list targets that match the given tag")
+	listCmd.Flags().StringSliceVarP(&showColumns, "columns", "", defCols, "Specify which columns to display")
 }
 
 func doList(cmd *cobra.Command, args []string) {
@@ -141,28 +169,44 @@ func doList(cmd *cobra.Command, args []string) {
 			}
 			sort.Strings(apps)
 			keys = append(keys, key)
+			origin := ""
+			if len(custom.OrigUri) > 0 {
+				parts := strings.Split(custom.OrigUri, "/")
+				origin = parts[len(parts)-1]
+			}
 			listing[key] = &targetListing{
-				version:     ver,
-				hardwareIds: custom.HardwareIds,
-				tags:        custom.Tags,
-				apps:        apps,
+				version:      ver,
+				hardwareIds:  custom.HardwareIds,
+				tags:         custom.Tags,
+				apps:         apps,
+				origin:       origin,
+				manifestSha:  custom.LmpManifestSha,
+				overridesSha: custom.OverridesSha,
+				containerSha: custom.ContainersSha,
 			}
 		}
 	}
 
 	t := tabby.New()
-	t.AddHeader("VERSION", "TAGS", "APPS", "HARDWARE IDs")
+	var cols = make([]interface{}, len(showColumns))
+	for idx, c := range showColumns {
+		if _, ok := Columns[c]; !ok {
+			fmt.Println("ERROR: Invalid column name:", c)
+			os.Exit(1)
+		}
+		cols[idx] = strings.ToUpper(c)
+	}
+	t.AddHeader(cols...)
+	row := make([]interface{}, len(showColumns))
 
 	sort.Sort(byTargetKey(keys))
 	for _, key := range keys {
 		l := listing[key]
-		sort.Strings(l.tags)
-		sort.Strings(l.apps)
-		sort.Strings(l.hardwareIds)
-		tags := strings.Join(l.tags, ",")
-		apps := strings.Join(l.apps, ",")
-		hwids := strings.Join(l.hardwareIds, ",")
-		t.AddLine(l.version, tags, apps, hwids)
+		for idx, col := range showColumns {
+			col := Columns[col]
+			row[idx] = col.Formatter(l)
+		}
+		t.AddLine(row...)
 	}
 	t.Print()
 }

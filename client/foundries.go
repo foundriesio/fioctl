@@ -232,6 +232,7 @@ type TufCustom struct {
 	ContainersSha  string                `json:"containers-sha,omitempty"`
 	LmpManifestSha string                `json:"lmp-manifest-sha,omitempty"`
 	OverridesSha   string                `json:"meta-subscriber-overrides-sha,omitempty"`
+	OrigUri        string                `json:"origUri,omitempty"`
 }
 
 // ota-tuf serializes root.json differently from Notary. The key representation
