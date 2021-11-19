@@ -30,6 +30,7 @@ type targetListing struct {
 	hardwareIds []string
 	tags        []string
 	apps        []string
+	origin      string
 }
 
 type byTargetKey []string
@@ -141,17 +142,23 @@ func doList(cmd *cobra.Command, args []string) {
 			}
 			sort.Strings(apps)
 			keys = append(keys, key)
+			origin := ""
+			if len(custom.OrigUri) > 0 {
+				parts := strings.Split(custom.OrigUri, "/")
+				origin = parts[len(parts)-1]
+			}
 			listing[key] = &targetListing{
 				version:     ver,
 				hardwareIds: custom.HardwareIds,
 				tags:        custom.Tags,
 				apps:        apps,
+				origin:      origin,
 			}
 		}
 	}
 
 	t := tabby.New()
-	t.AddHeader("VERSION", "TAGS", "APPS", "HARDWARE IDs")
+	t.AddHeader("VERSION", "TAGS", "APPS", "HARDWARE IDs", "ORIGIN")
 
 	sort.Sort(byTargetKey(keys))
 	for _, key := range keys {
@@ -162,7 +169,7 @@ func doList(cmd *cobra.Command, args []string) {
 		tags := strings.Join(l.tags, ",")
 		apps := strings.Join(l.apps, ",")
 		hwids := strings.Join(l.hardwareIds, ",")
-		t.AddLine(l.version, tags, apps, hwids)
+		t.AddLine(l.version, tags, apps, hwids, l.origin)
 	}
 	t.Print()
 }
