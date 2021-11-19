@@ -1110,21 +1110,16 @@ func (a *Api) TargetsPut(factory string, data []byte) (string, string, error) {
 	return parseJobServResponse(resp, err, "UpdateTargets")
 }
 
-func (a *Api) TargetUpdateTags(factory string, target_names []string, tag_names []string) (string, string, error) {
-	type EmptyTarget struct {
-		Custom TufCustom `json:"custom"`
-	}
-	tags := EmptyTarget{TufCustom{Tags: tag_names}}
+type UpdateTarget struct {
+	Custom TufCustom `json:"custom"`
+}
+type UpdateTargets map[string]UpdateTarget
 
+func (a *Api) TargetUpdateTags(factory string, updates UpdateTargets) (string, string, error) {
 	type Update struct {
-		Targets map[string]EmptyTarget `json:"targets"`
+		Targets UpdateTargets `json:"targets"`
 	}
-	update := Update{map[string]EmptyTarget{}}
-	for idx := range target_names {
-		update.Targets[target_names[idx]] = tags
-	}
-
-	data, err := json.Marshal(update)
+	data, err := json.Marshal(Update{updates})
 	if err != nil {
 		return "", "", err
 	}
