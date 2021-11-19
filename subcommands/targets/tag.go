@@ -15,6 +15,7 @@ import (
 
 var (
 	tagTags      string
+	tagAppend    bool
 	tagNoTail    bool
 	tagByVersion bool
 )
@@ -34,9 +35,25 @@ func init() {
 	}
 	cmd.AddCommand(tagCmd)
 	tagCmd.Flags().StringVarP(&tagTags, "tags", "T", "", "comma,separate,list")
+	tagCmd.Flags().BoolVarP(&tagAppend, "append", "", false, "Append the given tags rather than set them")
 	tagCmd.Flags().BoolVarP(&tagNoTail, "no-tail", "", false, "Don't tail output of CI Job")
 	tagCmd.Flags().BoolVarP(&tagByVersion, "by-version", "", false, "Apply tags to all targets matching the given version(s)")
 	tagCmd.Flags().BoolVarP(&dryRun, "dryrun", "", false, "Just show the changes that would be applied")
+}
+
+func Set(a, b []string) []string {
+	unique := make([]string, len(a), len(a)+len(b))
+	items := make(map[string]bool, len(a))
+	for i, item := range a {
+		unique[i] = item
+		items[item] = true
+	}
+	for _, item := range b {
+		if ok := items[item]; !ok {
+			unique = append(unique, item)
+		}
+	}
+	return unique
 }
 
 func doTag(cmd *cobra.Command, args []string) {
@@ -55,10 +72,14 @@ func doTag(cmd *cobra.Command, args []string) {
 				fmt.Printf("ERROR: %s\n", err)
 			} else {
 				if intersectionInSlices([]string{custom.Version}, args) {
-					updates[name] = client.UpdateTarget{
-						Custom: client.TufCustom{Tags: tags},
+					targetTags := tags
+					if tagAppend {
+						targetTags = Set(custom.Tags, tags)
 					}
-					fmt.Printf("Changing tags of %s from %s -> %s\n", name, custom.Tags, tags)
+					updates[name] = client.UpdateTarget{
+						Custom: client.TufCustom{Tags: targetTags},
+					}
+					fmt.Printf("Changing tags of %s from %s -> %s\n", name, custom.Tags, targetTags)
 				}
 			}
 		}
@@ -71,10 +92,14 @@ func doTag(cmd *cobra.Command, args []string) {
 			if target, ok := targets[name]; ok {
 				custom, err := api.TargetCustom(target)
 				subcommands.DieNotNil(err)
-				updates[name] = client.UpdateTarget{
-					Custom: client.TufCustom{Tags: tags},
+				targetTags := tags
+				if tagAppend {
+					targetTags = Set(custom.Tags, tags)
 				}
-				fmt.Printf("Changing tags of %s from %s -> %s\n", name, custom.Tags, tags)
+				updates[name] = client.UpdateTarget{
+					Custom: client.TufCustom{Tags: targetTags},
+				}
+				fmt.Printf("Changing tags of %s from %s -> %s\n", name, custom.Tags, targetTags)
 			} else {
 				fmt.Printf("Target(%s) not found in targets.json\n", name)
 				os.Exit(1)
