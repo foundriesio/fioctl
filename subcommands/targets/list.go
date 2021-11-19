@@ -27,11 +27,14 @@ var (
 
 // Represents the details we use for displaying a single OTA "build"
 type targetListing struct {
-	version     int
-	hardwareIds []string
-	tags        []string
-	apps        []string
-	origin      string
+	version      int
+	hardwareIds  []string
+	tags         []string
+	apps         []string
+	origin       string
+	manifestSha  string
+	overridesSha string
+	containerSha string
 }
 
 type byTargetKey []string
@@ -58,11 +61,14 @@ type column struct {
 }
 
 var Columns = map[string]column{
-	"version":      {func(tl *targetListing) string { return strconv.Itoa(tl.version) }},
-	"tags":         {func(tl *targetListing) string { return strings.Join(tl.tags, ",") }},
-	"apps":         {func(tl *targetListing) string { return strings.Join(tl.apps, ",") }},
-	"hardware-ids": {func(tl *targetListing) string { return strings.Join(tl.hardwareIds, ",") }},
-	"origin":       {func(tl *targetListing) string { return tl.origin }},
+	"version":        {func(tl *targetListing) string { return strconv.Itoa(tl.version) }},
+	"tags":           {func(tl *targetListing) string { return strings.Join(tl.tags, ",") }},
+	"apps":           {func(tl *targetListing) string { return strings.Join(tl.apps, ",") }},
+	"hardware-ids":   {func(tl *targetListing) string { return strings.Join(tl.hardwareIds, ",") }},
+	"origin":         {func(tl *targetListing) string { return tl.origin }},
+	"manifest-sha":   {func(tl *targetListing) string { return tl.manifestSha }},
+	"overrides-sha":  {func(tl *targetListing) string { return tl.overridesSha }},
+	"containers-sha": {func(tl *targetListing) string { return tl.containerSha }},
 }
 
 func init() {
@@ -169,11 +175,14 @@ func doList(cmd *cobra.Command, args []string) {
 				origin = parts[len(parts)-1]
 			}
 			listing[key] = &targetListing{
-				version:     ver,
-				hardwareIds: custom.HardwareIds,
-				tags:        custom.Tags,
-				apps:        apps,
-				origin:      origin,
+				version:      ver,
+				hardwareIds:  custom.HardwareIds,
+				tags:         custom.Tags,
+				apps:         apps,
+				origin:       origin,
+				manifestSha:  custom.LmpManifestSha,
+				overridesSha: custom.OverridesSha,
+				containerSha: custom.ContainersSha,
 			}
 		}
 	}
