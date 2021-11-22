@@ -8,6 +8,9 @@ linter:=$(shell which golangci-lint 2>/dev/null || echo $(HOME)/go/bin/golangci-
 build: fioctl-linux-amd64 fioctl-windows-amd64 fioctl-darwin-amd64 fioctl-darwin-arm64
 	@true
 
+fioctl-static:
+	CGO_ENABLED=0 go build -a -ldflags '-w -extldflags "-static"' -o ./bin/fioctl-static ./main.go
+
 fioctl-darwin-arm64:
 	CGO_ENABLED=1 \
 	GOOS=$(shell echo $* | cut -f1 -d\- ) \
@@ -23,7 +26,6 @@ fioctl-%:
 	GOARCH=$(shell echo $* | cut -f2 -d\-) \
 		go build $(LDFLAGS) -o bin/$@ main.go
 	@if [ "$@" = "fioctl-windows-amd64" ]; then mv bin/$@ bin/$@.exe; fi
-
 
 format:
 	@gofmt -l  -w ./
