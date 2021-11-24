@@ -1,6 +1,7 @@
 package targets
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -8,11 +9,13 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	"github.com/foundriesio/fioctl/client"
 	"github.com/foundriesio/fioctl/subcommands"
 )
 
 var (
 	tagTags      string
+	tagAppend    bool
 	tagNoTail    bool
 	tagByVersion bool
 )
@@ -32,33 +35,55 @@ func init() {
 	}
 	cmd.AddCommand(tagCmd)
 	tagCmd.Flags().StringVarP(&tagTags, "tags", "T", "", "comma,separate,list")
+	tagCmd.Flags().BoolVarP(&tagAppend, "append", "", false, "Append the given tags rather than set them")
 	tagCmd.Flags().BoolVarP(&tagNoTail, "no-tail", "", false, "Don't tail output of CI Job")
 	tagCmd.Flags().BoolVarP(&tagByVersion, "by-version", "", false, "Apply tags to all targets matching the given version(s)")
+	tagCmd.Flags().BoolVarP(&dryRun, "dryrun", "", false, "Just show the changes that would be applied")
+}
+
+func Set(a, b []string) []string {
+	unique := make([]string, len(a), len(a)+len(b))
+	items := make(map[string]bool, len(a))
+	for i, item := range a {
+		unique[i] = item
+		items[item] = true
+	}
+	for _, item := range b {
+		if ok := items[item]; !ok {
+			unique = append(unique, item)
+		}
+	}
+	return unique
 }
 
 func doTag(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 	tags := strings.Split(tagTags, ",")
-	fmt.Println(tags)
 
 	targets, err := api.TargetsList(factory)
 	subcommands.DieNotNil(err)
 
-	var target_names []string
+	updates := make(client.UpdateTargets)
+
 	if tagByVersion {
-		target_names = make([]string, 0, 10)
 		for name, target := range targets {
 			custom, err := api.TargetCustom(target)
 			if err != nil {
 				fmt.Printf("ERROR: %s\n", err)
 			} else {
 				if intersectionInSlices([]string{custom.Version}, args) {
-					target_names = append(target_names, name)
-					fmt.Printf("Changing tags of %s from %s -> %s\n", name, custom.Tags, tags)
+					targetTags := tags
+					if tagAppend {
+						targetTags = Set(custom.Tags, tags)
+					}
+					updates[name] = client.UpdateTarget{
+						Custom: client.TufCustom{Tags: targetTags},
+					}
+					fmt.Printf("Changing tags of %s from %s -> %s\n", name, custom.Tags, targetTags)
 				}
 			}
 		}
-		if len(target_names) == 0 {
+		if len(updates) == 0 {
 			fmt.Println("ERROR: no targets found matching the given versions")
 			os.Exit(1)
 		}
@@ -67,16 +92,29 @@ func doTag(cmd *cobra.Command, args []string) {
 			if target, ok := targets[name]; ok {
 				custom, err := api.TargetCustom(target)
 				subcommands.DieNotNil(err)
-				fmt.Printf("Changing tags of %s from %s -> %s\n", name, custom.Tags, tags)
+				targetTags := tags
+				if tagAppend {
+					targetTags = Set(custom.Tags, tags)
+				}
+				updates[name] = client.UpdateTarget{
+					Custom: client.TufCustom{Tags: targetTags},
+				}
+				fmt.Printf("Changing tags of %s from %s -> %s\n", name, custom.Tags, targetTags)
 			} else {
 				fmt.Printf("Target(%s) not found in targets.json\n", name)
 				os.Exit(1)
 			}
 		}
-		target_names = args
 	}
 
-	jobServUrl, webUrl, err := api.TargetUpdateTags(factory, target_names, tags)
+	if dryRun {
+		data, err := json.MarshalIndent(updates, "  ", "  ")
+		subcommands.DieNotNil(err)
+		fmt.Println(string(data))
+		return
+	}
+
+	jobServUrl, webUrl, err := api.TargetUpdateTags(factory, updates)
 	subcommands.DieNotNil(err)
 	fmt.Printf("CI URL: %s\n", webUrl)
 	if !tagNoTail {
