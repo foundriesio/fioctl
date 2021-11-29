@@ -2,6 +2,7 @@ package secrets
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"strings"
 
@@ -20,6 +21,9 @@ func init() {
 		Example: `
   # Create or update a secret
   fioctl secrets set githubtok=foo
+
+  # Create or update a secret with value from a file
+  fioctl secrets set ssh-github.key==/tmp/ssh-github.key
 
   # Delete a secret by setting it to an empty value. eg:
   fioctl secrets update secret_name=`,
@@ -46,6 +50,11 @@ func doUpdate(cmd *cobra.Command, args []string) {
 		value := parts[1]
 		if value == "" {
 			secrets[i].Value = nil
+		} else if value[0] == '=' {
+			bytes, err := ioutil.ReadFile(value[1:])
+			subcommands.DieNotNil(err, "Unable to read secret:")
+			content := string(bytes)
+			secrets[i].Value = &content
 		} else {
 			secrets[i].Value = &value
 		}
