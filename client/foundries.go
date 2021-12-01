@@ -640,8 +640,9 @@ func (a *Api) Delete(url string, data []byte) (*[]byte, error) {
 	return readResponse(res, log)
 }
 
-func (a *Api) DeviceGet(device string) (*Device, error) {
-	body, err := a.Get(a.serverUrl + "/ota/devices/" + device + "/")
+func (a *Api) DeviceGet(factory, device string) (*Device, error) {
+	url := a.serverUrl + "/ota/devices/" + device + "/?factory=" + factory
+	body, err := a.Get(url)
 	if err != nil {
 		return nil, err
 	}
@@ -680,44 +681,49 @@ func (a *Api) DeviceListCont(url string) (*DeviceList, error) {
 	return &devices, nil
 }
 
-func (a *Api) DeviceChown(name, owner string) error {
+func (a *Api) DeviceChown(factory, name, owner string) error {
 	body := map[string]string{"owner": owner}
 	data, err := json.Marshal(body)
 	if err != nil {
 		return err
 	}
-	_, err = a.Patch(a.serverUrl+"/ota/devices/"+name+"/", data)
+	url := a.serverUrl + "/ota/devices/" + name + "/?factory=" + factory
+	_, err = a.Patch(url, data)
 	return err
 }
 
-func (a *Api) DeviceRename(curName, newName string) error {
+func (a *Api) DeviceRename(factory, curName, newName string) error {
 	body := map[string]string{"name": newName}
 	data, err := json.Marshal(body)
 	if err != nil {
 		return err
 	}
-	_, err = a.Patch(a.serverUrl+"/ota/devices/"+curName+"/", data)
+	url := a.serverUrl + "/ota/devices/" + curName + "/?factory=" + factory
+	_, err = a.Patch(url, data)
 	return err
 }
 
-func (a *Api) DeviceSetGroup(device string, group string) error {
+func (a *Api) DeviceSetGroup(factory, device, group string) error {
 	body := map[string]string{"group": group}
 	data, err := json.Marshal(body)
 	if err != nil {
 		return err
 	}
-	_, err = a.Patch(a.serverUrl+"/ota/devices/"+device+"/", data)
+	url := a.serverUrl + "/ota/devices/" + device + "/?factory=" + factory
+	_, err = a.Patch(url, data)
 	return err
 }
 
-func (a *Api) DeviceDelete(device string) error {
+func (a *Api) DeviceDelete(factory, device string) error {
 	bytes := []byte{}
-	_, err := a.Delete(a.serverUrl+"/ota/devices/"+device+"/", bytes)
+	url := a.serverUrl + "/ota/devices/" + device + "/?factory=" + factory
+	_, err := a.Delete(url, bytes)
 	return err
 }
 
-func (a *Api) DeviceListUpdates(device string) (*UpdateList, error) {
-	return a.DeviceListUpdatesCont(a.serverUrl + "/ota/devices/" + device + "/updates/")
+func (a *Api) DeviceListUpdates(factory, device string) (*UpdateList, error) {
+	url := a.serverUrl + "/ota/devices/" + device + "/updates/?factory=" + factory
+	return a.DeviceListUpdatesCont(url)
 }
 
 func (a *Api) DeviceListUpdatesCont(url string) (*UpdateList, error) {
@@ -734,9 +740,10 @@ func (a *Api) DeviceListUpdatesCont(url string) (*UpdateList, error) {
 	return &updates, nil
 }
 
-func (a *Api) DeviceUpdateEvents(device, correlationId string) ([]UpdateEvent, error) {
+func (a *Api) DeviceUpdateEvents(factory, device, correlationId string) ([]UpdateEvent, error) {
 	var events []UpdateEvent
-	body, err := a.Get(a.serverUrl + "/ota/devices/" + device + "/updates/" + correlationId + "/")
+	url := a.serverUrl + "/ota/devices/" + device + "/updates/" + correlationId + "/?factory=" + factory
+	body, err := a.Get(url)
 	if err != nil {
 		return nil, err
 	}
@@ -747,35 +754,35 @@ func (a *Api) DeviceUpdateEvents(device, correlationId string) ([]UpdateEvent, e
 	return events, nil
 }
 
-func (a *Api) DeviceCreateConfig(device string, cfg ConfigCreateRequest) error {
+func (a *Api) DeviceCreateConfig(factory, device string, cfg ConfigCreateRequest) error {
 	data, err := json.Marshal(cfg)
 	if err != nil {
 		return err
 	}
 
-	url := a.serverUrl + "/ota/devices/" + device + "/config/"
+	url := a.serverUrl + "/ota/devices/" + device + "/config/?factory=" + factory
 	logrus.Debug("Creating new device config")
 	_, err = a.Post(url, data)
 	return err
 }
 
-func (a *Api) DevicePatchConfig(device string, cfg ConfigCreateRequest, force bool) error {
+func (a *Api) DevicePatchConfig(factory, device string, cfg ConfigCreateRequest, force bool) error {
 	data, err := json.Marshal(cfg)
 	if err != nil {
 		return err
 	}
 
-	url := a.serverUrl + "/ota/devices/" + device + "/config/"
+	url := a.serverUrl + "/ota/devices/" + device + "/config/?factory=" + factory
 	if force {
-		url += "?force=1"
+		url += "&force=1"
 	}
 	logrus.Debug("Patching device config")
 	_, err = a.Patch(url, data)
 	return err
 }
 
-func (a *Api) DeviceListConfig(device string) (*DeviceConfigList, error) {
-	url := a.serverUrl + "/ota/devices/" + device + "/config/"
+func (a *Api) DeviceListConfig(factory, device string) (*DeviceConfigList, error) {
+	url := a.serverUrl + "/ota/devices/" + device + "/config/?factory=" + factory
 	logrus.Debugf("DeviceListConfig with url: %s", url)
 	return a.DeviceListConfigCont(url)
 }
@@ -794,8 +801,8 @@ func (a *Api) DeviceListConfigCont(url string) (*DeviceConfigList, error) {
 	return &config, nil
 }
 
-func (a *Api) DeviceDeleteConfig(device, filename string) error {
-	url := a.serverUrl + "/ota/devices/" + device + "/config/" + filename + "/"
+func (a *Api) DeviceDeleteConfig(factory, device, filename string) error {
+	url := a.serverUrl + "/ota/devices/" + device + "/config/" + filename + "/?factory=" + factory
 	logrus.Debugf("Deleting config file: %s", url)
 	_, err := a.Delete(url, nil)
 	return err

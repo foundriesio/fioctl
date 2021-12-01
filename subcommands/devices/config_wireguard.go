@@ -9,6 +9,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 
 	"github.com/foundriesio/fioctl/client"
 	"github.com/foundriesio/fioctl/subcommands"
@@ -59,8 +60,8 @@ func (w *WireguardClientConfig) Unmarshall(configVal string) {
 	}
 }
 
-func loadWireguardClientConfig(device string) WireguardClientConfig {
-	dcl, err := api.DeviceListConfig(device)
+func loadWireguardClientConfig(factory, device string) WireguardClientConfig {
+	dcl, err := api.DeviceListConfig(factory, device)
 	wcc := WireguardClientConfig{}
 	if err != nil {
 		return wcc
@@ -128,13 +129,11 @@ func findVpnAddress(factory string) string {
 }
 
 func doConfigWireguard(cmd *cobra.Command, args []string) {
+	factory := viper.GetString("factory")
 	logrus.Debug("Configuring wireguard")
 
 	// Ensure the device has a public key we can encrypt with
-	device, err := api.DeviceGet(args[0])
-	subcommands.DieNotNil(err)
-
-	wcc := loadWireguardClientConfig(args[0])
+	wcc := loadWireguardClientConfig(factory, args[0])
 	if len(args) == 1 {
 		fmt.Println("Enabled:", wcc.Enabled)
 		if len(wcc.Address) > 0 {
@@ -168,11 +167,11 @@ func doConfigWireguard(cmd *cobra.Command, args []string) {
 		wcc.Enabled = true
 		if len(wcc.Address) == 0 {
 			fmt.Println("Finding a unique VPN address ...")
-			wcc.Address = findVpnAddress(device.Factory)
+			wcc.Address = findVpnAddress(factory)
 		}
 	} else {
 		wcc.Enabled = false
 	}
 	cfg.Files[0].Value = wcc.Marshall()
-	subcommands.DieNotNil(api.DevicePatchConfig(args[0], cfg, false))
+	subcommands.DieNotNil(api.DevicePatchConfig(factory, args[0], cfg, false))
 }

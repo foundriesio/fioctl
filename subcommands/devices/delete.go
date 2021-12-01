@@ -6,6 +6,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 func init() {
@@ -18,11 +19,12 @@ func init() {
 }
 
 func doDelete(cmd *cobra.Command, args []string) {
+	factory := viper.GetString("factory")
 	logrus.Debug("Deleting %r", args)
 
 	for _, name := range args {
 		fmt.Printf("Deleting %s .. ", name)
-		if err := api.DeviceDelete(name); err != nil {
+		if err := api.DeviceDelete(factory, name); err != nil {
 			fmt.Printf("failed\n%s", err)
 			os.Exit(1)
 		} else {

@@ -4,6 +4,7 @@ import (
 	"github.com/cheynewallace/tabby"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 
 	"github.com/foundriesio/fioctl/client"
 	"github.com/foundriesio/fioctl/subcommands"
@@ -22,6 +23,7 @@ func init() {
 }
 
 func doListUpdates(cmd *cobra.Command, args []string) {
+	factory := viper.GetString("factory")
 	logrus.Debug("Showing device updates")
 	t := tabby.New()
 	t.AddHeader("ID", "TIME", "VERSION", "TARGET")
@@ -29,7 +31,7 @@ func doListUpdates(cmd *cobra.Command, args []string) {
 	for {
 		var err error
 		if ul == nil {
-			ul, err = api.DeviceListUpdates(args[0])
+			ul, err = api.DeviceListUpdates(factory, args[0])
 		} else {
 			if ul.Next != nil {
 				ul, err = api.DeviceListUpdatesCont(*ul.Next)

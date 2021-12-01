@@ -4,6 +4,7 @@ import (
 	"github.com/foundriesio/fioctl/subcommands"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 func init() {
@@ -18,9 +19,10 @@ and owners. The new owner-id can be found by running 'fioctl users'`,
 }
 
 func doChown(cmd *cobra.Command, args []string) {
+	factory := viper.GetString("factory")
 	logrus.Debug("Chown %r", args)
 	device := args[0]
 	owner := args[1]
 
-	subcommands.DieNotNil(api.DeviceChown(device, owner))
+	subcommands.DieNotNil(api.DeviceChown(factory, device, owner))
 }

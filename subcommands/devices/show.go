@@ -8,6 +8,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 
 	"github.com/foundriesio/fioctl/subcommands"
 )
@@ -30,8 +31,9 @@ func init() {
 }
 
 func doShow(cmd *cobra.Command, args []string) {
+	factory := viper.GetString("factory")
 	logrus.Debug("Showing device")
-	device, err := api.DeviceGet(args[0])
+	device, err := api.DeviceGet(factory, args[0])
 	subcommands.DieNotNil(err)
 
 	fmt.Printf("UUID:\t\t%s\n", device.Uuid)
