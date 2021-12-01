@@ -3,6 +3,7 @@ package devices
 import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 
 	"github.com/foundriesio/fioctl/client"
 	"github.com/foundriesio/fioctl/subcommands"
@@ -20,6 +21,7 @@ func init() {
 }
 
 func doConfigLog(cmd *cobra.Command, args []string) {
+	factory := viper.GetString("factory")
 	device := args[0]
 	listLimit, _ := cmd.Flags().GetInt("limit")
 	logrus.Debugf("Showing device config log for %s", device)
@@ -28,7 +30,7 @@ func doConfigLog(cmd *cobra.Command, args []string) {
 		Limit:         listLimit,
 		ShowAppliedAt: true,
 		ListFunc: func() (*client.DeviceConfigList, error) {
-			return api.DeviceListConfig(device)
+			return api.DeviceListConfig(factory, device)
 		},
 		ListContFunc: api.DeviceListConfigCont,
 	})

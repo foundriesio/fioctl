@@ -6,6 +6,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 func init() {
@@ -18,9 +19,10 @@ func init() {
 }
 
 func doRename(cmd *cobra.Command, args []string) {
+	factory := viper.GetString("factory")
 	logrus.Debugf("Renaming %s -> %s", args[0], args[1])
 
-	if err := api.DeviceRename(args[0], args[1]); err != nil {
+	if err := api.DeviceRename(factory, args[0], args[1]); err != nil {
 		fmt.Printf("failed\n%s", err)
 		os.Exit(1)
 	}
