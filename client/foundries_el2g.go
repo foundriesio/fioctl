@@ -69,3 +69,23 @@ func (a *Api) El2gConfigAws(factory string, awsRegistrationCode string) (El2gAWS
 	err = json.Unmarshal(*resp, &cert)
 	return cert, err
 }
+
+type El2gDevice struct {
+	DeviceGroup    string      `json:"device-group"`
+	Id             json.Number `json:"id"`
+	LastConnection string      `json:"last-connection"`
+}
+
+// TODO paginate
+func (a *Api) El2gDevices(factory string) ([]El2gDevice, error) {
+	url := a.serverUrl + "/ota/factories/" + factory + "/el2g/devices/"
+	body, err := a.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	var devices []El2gDevice
+	if err = json.Unmarshal(*body, &devices); err != nil {
+		return nil, err
+	}
+	return devices, nil
+}
