@@ -45,3 +45,27 @@ func (a *Api) El2gDeleteDg(factory string) error {
 	_, err := a.Delete(url, []byte(""))
 	return err
 }
+
+type El2gAWSCert struct {
+	CA   string `json:"ca"`
+	Cert string `json:"cert"`
+}
+
+func (a *Api) El2gConfigAws(factory string, awsRegistrationCode string) (El2gAWSCert, error) {
+	url := a.serverUrl + "/ota/factories/" + factory + "/el2g/aws-iot/"
+	type Req struct {
+		RegistrationCode string `json:"registration-code"`
+	}
+
+	body, err := json.Marshal(Req{awsRegistrationCode})
+	if err != nil {
+		return El2gAWSCert{}, err
+	}
+	resp, err := a.Post(url, body)
+	if err != nil {
+		return El2gAWSCert{}, err
+	}
+	var cert El2gAWSCert
+	err = json.Unmarshal(*resp, &cert)
+	return cert, err
+}
