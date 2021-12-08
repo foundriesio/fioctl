@@ -89,3 +89,44 @@ func (a *Api) El2gDevices(factory string) ([]El2gDevice, error) {
 	}
 	return devices, nil
 }
+
+type El2gProduct struct {
+	Type string `json:"commercialName"`
+	Nc12 string `json:"nc12"`
+}
+
+func (a *Api) El2gProductInfo(factory, deviceId string) (El2gProduct, error) {
+	url := a.serverUrl + "/ota/factories/" + factory + "/el2g-proxy/devices/" + deviceId + "/product"
+	body, err := a.Get(url)
+
+	var prod El2gProduct
+	if err != nil {
+		return prod, err
+	}
+	if err = json.Unmarshal(*body, &prod); err != nil {
+		return prod, err
+	}
+	return prod, nil
+}
+
+type El2gSecureObjectProvisioning struct {
+	Name  string `json:"secureObjectName"`
+	Type  string `json:"secureObjectType"`
+	State string `json:"provisioningState"`
+}
+
+func (a *Api) El2gSecureObjectProvisionings(factory, deviceId string) ([]El2gSecureObjectProvisioning, error) {
+	url := a.serverUrl + "/ota/factories/" + factory + "/el2g-proxy/rtp/devices/" + deviceId + "/secure-object-provisionings"
+	body, err := a.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	type resp struct {
+		Content []El2gSecureObjectProvisioning `json:"content"`
+	}
+	var devices resp
+	if err = json.Unmarshal(*body, &devices); err != nil {
+		return nil, err
+	}
+	return devices.Content, nil
+}
