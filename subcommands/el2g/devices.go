@@ -9,6 +9,8 @@ import (
 	"github.com/spf13/viper"
 )
 
+var add string
+
 func init() {
 	devicesCmd := &cobra.Command{
 		Use:   "devices [<device-id>]",
@@ -26,9 +28,13 @@ func init() {
 fioctl el2g devices 
 
 # Show details of a device
-fioctl el2g devices  <device-id>
+fioctl el2g devices <device-id>
+
+# Add a device with an se050
+fioctl el2g devices --add 935389312472 <device-id>
 `,
 	}
+	devicesCmd.Flags().StringVarP(&add, "add", "", "", "Whitelist the device for the given nc12 product id")
 	cmd.AddCommand(devicesCmd)
 }
 
@@ -37,7 +43,6 @@ func doDevices(cmd *cobra.Command, args []string) {
 
 	devices, err := api.El2gDevices(factory)
 	subcommands.DieNotNil(err)
-	fmt.Println("Devices")
 	t := tabby.New()
 	t.AddHeader("GROUP", "ID", "LAST CONNECTION")
 	for _, device := range devices {
@@ -49,6 +54,11 @@ func doDevices(cmd *cobra.Command, args []string) {
 func doDevice(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 	deviceId := args[0]
+
+	if len(add) > 0 {
+		subcommands.DieNotNil(api.El2gAddDevice(factory, add, deviceId))
+		return
+	}
 
 	info, err := api.El2gProductInfo(factory, deviceId)
 	subcommands.DieNotNil(err)
