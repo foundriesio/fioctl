@@ -19,7 +19,10 @@ import (
 	"github.com/spf13/viper"
 )
 
-var doRootSync bool
+var (
+	doRootSync      bool
+	initialRotation bool
+)
 
 func init() {
 	rotate := &cobra.Command{
@@ -31,18 +34,42 @@ func init() {
 	}
 	subcommands.RequireFactory(rotate)
 	rotate.Flags().BoolVarP(&doRootSync, "sync-prod", "", false, "Make sure production root.json is up-to-date and exit")
+	rotate.Flags().BoolVarP(&initialRotation, "initial", "", false, "Used for the first customer rotation. The command will download the initial root key")
 	cmd.AddCommand(rotate)
 }
 
 func doRotateRoot(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 	credsFile := args[0]
-	assertWritable(credsFile)
-	creds, err := GetOfflineCreds(credsFile)
-	subcommands.DieNotNil(err)
+
+	var creds OfflineCreds
 
 	root, err := api.TufRootGet(factory)
 	subcommands.DieNotNil(err)
+
+	if initialRotation {
+		key, err := api.TufRootFirstKey(factory)
+		subcommands.DieNotNil(err)
+
+		pkid := root.Signed.Roles["root"].KeyIDs[0]
+		pub := root.Signed.Keys[pkid]
+
+		creds = make(OfflineCreds)
+		bytes, err := json.Marshal(key)
+		subcommands.DieNotNil(err)
+		creds["tufrepo/keys/first-root.sec"] = bytes
+
+		bytes, err = json.Marshal(pub)
+		subcommands.DieNotNil(err)
+		creds["tufrepo/keys/first-root.pub"] = bytes
+
+		saveCreds(credsFile, creds)
+	} else {
+		assertWritable(credsFile)
+		var err error
+		creds, err = GetOfflineCreds(credsFile)
+		subcommands.DieNotNil(err)
+	}
 
 	if doRootSync {
 		subcommands.DieNotNil(syncProdRoot(factory, *root, creds))
