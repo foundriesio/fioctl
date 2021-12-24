@@ -37,7 +37,7 @@ func statusFormatter(d *client.Device) string {
 	if len(d.Status) > 0 {
 		status = d.Status
 	}
-	if len(d.LastSeen) > 0 && !d.Online(deviceInactiveHours) {
+	if !d.Online(deviceInactiveHours) {
 		status = "OFFLINE"
 	}
 	return status
