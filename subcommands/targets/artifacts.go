@@ -98,6 +98,10 @@ func downloadArtifact(factory string, target int, artifact string) {
 		fmt.Fprintf(os.Stderr, "ERROR: read %d bytes, expected %d bytes\n", written, resp.ContentLength)
 		os.Exit(1)
 	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		fmt.Fprintf(os.Stderr, "ERROR: HTTP response code %d\n", resp.StatusCode)
+		os.Exit(1)
+	}
 }
 
 func doArtifacts(cmd *cobra.Command, args []string) {
