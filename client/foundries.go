@@ -1016,6 +1016,17 @@ func (a *Api) GetWireGuardIps(factory string) ([]WireGuardIp, error) {
 	return ips, err
 }
 
+func (a *Api) TufRootFirstKey(factory string) (*AtsKey, error) {
+	url := a.serverUrl + "/ota/factories/" + factory + "/first_root.sec"
+	body, err := a.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	root := AtsKey{}
+	err = json.Unmarshal(*body, &root)
+	return &root, err
+}
+
 func (a *Api) tufRootGet(factory string, prod bool, version int) (*AtsTufRoot, error) {
 	url := a.serverUrl + "/ota/repo/" + factory + "/api/v1/user_repo/"
 	if version > 0 {
