@@ -404,7 +404,7 @@ func (d Device) Online(inactiveHoursThreshold int) bool {
 	if len(d.LastSeen) == 0 {
 		return false
 	}
-	t, err := time.Parse("2006-01-02T15:04:05+00:00", d.LastSeen)
+	t, err := time.Parse(time.RFC3339, d.LastSeen)
 	if err == nil {
 		duration := time.Since(t)
 		if duration.Hours() > float64(inactiveHoursThreshold) {
