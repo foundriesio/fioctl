@@ -1341,6 +1341,7 @@ func (a *Api) JobservTail(url string) {
 		}
 		if resp.StatusCode != 200 {
 			fmt.Printf("Unable to get '%s': HTTP_%d\n=%s", url, resp.StatusCode, body)
+			return
 		}
 
 		newstatus := resp.Header.Get("X-RUN-STATUS")
