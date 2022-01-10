@@ -1326,6 +1326,11 @@ func (a *Api) JobservRunArtifact(factory string, build int, run string, artifact
 	return a.RawGet(url, nil)
 }
 
+func (a *Api) JobservTailRun(factory string, build int, run string, artifact string) {
+	url := a.serverUrl + "/projects/" + factory + "/lmp/builds/" + strconv.Itoa(build) + "/runs/" + run + "/" + artifact
+	a.JobservTail(url)
+}
+
 func (a *Api) JobservTail(url string) {
 	offset := 0
 	status := ""
