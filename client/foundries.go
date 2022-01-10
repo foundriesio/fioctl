@@ -17,6 +17,7 @@ import (
 	"time"
 
 	canonical "github.com/docker/go/canonical/json"
+	"github.com/fatih/color"
 	"github.com/sirupsen/logrus"
 	tuf "github.com/theupdateframework/notary/tuf/data"
 )
@@ -1355,7 +1356,7 @@ func (a *Api) JobservTail(url string) {
 			return
 		} else {
 			if newstatus != status {
-				fmt.Printf("\n--- Status change: %s -> %s\n", status, newstatus)
+				color.New(color.FgGreen).Printf("\n--- Status change: %s -> %s\n", status, newstatus)
 			}
 			os.Stdout.Write(body)
 			offset += len(body)
