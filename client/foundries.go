@@ -17,6 +17,7 @@ import (
 	"time"
 
 	canonical "github.com/docker/go/canonical/json"
+	"github.com/fatih/color"
 	"github.com/sirupsen/logrus"
 	tuf "github.com/theupdateframework/notary/tuf/data"
 )
@@ -1325,6 +1326,11 @@ func (a *Api) JobservRunArtifact(factory string, build int, run string, artifact
 	return a.RawGet(url, nil)
 }
 
+func (a *Api) JobservTailRun(factory string, build int, run string, artifact string) {
+	url := a.serverUrl + "/projects/" + factory + "/lmp/builds/" + strconv.Itoa(build) + "/runs/" + run + "/" + artifact
+	a.JobservTail(url)
+}
+
 func (a *Api) JobservTail(url string) {
 	offset := 0
 	status := ""
@@ -1340,6 +1346,7 @@ func (a *Api) JobservTail(url string) {
 		}
 		if resp.StatusCode != 200 {
 			fmt.Printf("Unable to get '%s': HTTP_%d\n=%s", url, resp.StatusCode, body)
+			return
 		}
 
 		newstatus := resp.Header.Get("X-RUN-STATUS")
@@ -1355,7 +1362,7 @@ func (a *Api) JobservTail(url string) {
 			return
 		} else {
 			if newstatus != status {
-				fmt.Printf("\n--- Status change: %s -> %s\n", status, newstatus)
+				color.New(color.FgGreen).Printf("\n--- Status change: %s -> %s\n", status, newstatus)
 			}
 			os.Stdout.Write(body)
 			offset += len(body)

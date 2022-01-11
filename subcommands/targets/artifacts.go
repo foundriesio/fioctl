@@ -87,6 +87,11 @@ func downloadArtifact(factory string, target int, artifact string) {
 	run := artifact[0:firstSlash]
 	artifact = artifact[firstSlash+1:]
 
+	if strings.HasSuffix(artifact, "console.log") {
+		api.JobservTailRun(factory, target, run, artifact)
+		return
+	}
+
 	resp, err := api.JobservRunArtifact(factory, target, run, artifact)
 	subcommands.DieNotNil(err)
 
