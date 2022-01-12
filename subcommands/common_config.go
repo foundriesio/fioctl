@@ -196,7 +196,6 @@ func SetUpdatesConfig(opts *SetUpdatesConfigOptions, reportedTag string, reporte
 			opts.UpdateApps = ""
 		}
 		fmt.Printf("Changing apps from: [%s] -> [%s]\n", configuredApps, opts.UpdateApps)
-		sota.Set("pacman.docker_apps", opts.UpdateApps)
 		sota.Set("pacman.compose_apps", opts.UpdateApps)
 		changed = true
 	}
