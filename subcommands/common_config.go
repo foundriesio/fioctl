@@ -198,6 +198,8 @@ func SetUpdatesConfig(opts *SetUpdatesConfigOptions, reportedTag string, reporte
 		fmt.Printf("Changing apps from: [%s] -> [%s]\n", configuredApps, opts.UpdateApps)
 		sota.Set("pacman.compose_apps", opts.UpdateApps)
 		changed = true
+	} else if len(configuredApps) > 0 {
+		sota.Set("pacman.compose_apps", configuredApps)
 	}
 	if opts.UpdateTag != "" && configuredTag != opts.UpdateTag {
 		if strings.TrimSpace(opts.UpdateTag) == "," {
@@ -206,6 +208,8 @@ func SetUpdatesConfig(opts *SetUpdatesConfigOptions, reportedTag string, reporte
 		fmt.Printf("Changing tag from: %s -> %s\n", configuredTag, opts.UpdateTag)
 		sota.Set("pacman.tags", opts.UpdateTag)
 		changed = true
+	} else if len(configuredTag) > 0 {
+		sota.Set("pacman.tags", configuredTag)
 	}
 
 	if !changed {
