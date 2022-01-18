@@ -137,6 +137,9 @@ $ echo "autoload -U compinit; compinit" >> ~/.zshrc
 $ fioctl completion zsh > "${fpath[1]}/_fioctl"
 
 # You will need to start a new shell for this setup to take effect.
+
+# Fish:
+$ fioctl completion fish > ~/.config/fish/completions/fioctl.fish
 `,
 	DisableFlagsInUseLine: true,
 	ValidArgs:             []string{"bash", "zsh", "fish", "powershell"},
@@ -149,6 +152,10 @@ $ fioctl completion zsh > "${fpath[1]}/_fioctl"
 			}
 		case "zsh":
 			if err := cmd.Root().GenZshCompletion(os.Stdout); err != nil {
+				logrus.Fatal(err)
+			}
+		case "fish":
+			if err := cmd.Root().GenFishCompletion(os.Stdout, true); err != nil {
 				logrus.Fatal(err)
 			}
 		case "powershell":

@@ -7,15 +7,15 @@ require (
 	github.com/cheynewallace/tabby v1.1.0
 	github.com/docker/go v1.5.1-1
 	github.com/ethereum/go-ethereum v1.9.25
-	github.com/fatih/color v1.9.0
+	github.com/fatih/color v1.13.0
 	github.com/mitchellh/go-homedir v1.1.0
-	github.com/pelletier/go-toml v1.2.0
+	github.com/pelletier/go-toml v1.9.4
 	github.com/shurcooL/go v0.0.0-20200502201357-93f07166e636
 	github.com/sirupsen/logrus v1.4.2
-	github.com/spf13/cobra v0.0.5
-	github.com/spf13/viper v1.3.2
+	github.com/spf13/cobra v1.3.0
+	github.com/spf13/viper v1.10.0
 	github.com/theupdateframework/notary v0.6.1
-	gopkg.in/yaml.v2 v2.3.0
+	gopkg.in/yaml.v2 v2.4.0
 )
 
 replace github.com/docker/go => github.com/foundriesio/go v1.5.1-1.0.20210202214252-a487d04e824d
