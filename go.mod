@@ -5,7 +5,7 @@ go 1.13
 require (
 	github.com/cheynewallace/tabby v1.1.1
 	github.com/docker/go v1.5.1-1
-	github.com/ethereum/go-ethereum v1.10.10
+	github.com/ethereum/go-ethereum v1.10.15
 	github.com/fatih/color v1.13.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/pelletier/go-toml v1.9.4
