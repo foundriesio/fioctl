@@ -12,7 +12,7 @@ require (
 	github.com/shurcooL/go v0.0.0-20200502201357-93f07166e636
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/cobra v1.3.0
-	github.com/spf13/viper v1.10.0
+	github.com/spf13/viper v1.10.1
 	github.com/theupdateframework/notary v0.6.1
 	gopkg.in/yaml.v2 v2.4.0
 )
