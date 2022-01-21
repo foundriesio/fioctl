@@ -144,7 +144,7 @@ func doConfigWireguard(cmd *cobra.Command, args []string) {
 		}
 		os.Exit(0)
 	} else if args[1] != "enable" && args[1] != "disable" {
-		fmt.Printf("Invalid argument: '%s'. Must be 'enabled' or 'disabled'\n", args[1])
+		fmt.Printf("Invalid argument: '%s'. Must be 'enable' or 'disable'\n", args[1])
 		os.Exit(0)
 	}
 
