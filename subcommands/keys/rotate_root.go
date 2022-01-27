@@ -8,6 +8,7 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -48,6 +49,10 @@ func doRotateRoot(cmd *cobra.Command, args []string) {
 	subcommands.DieNotNil(err)
 
 	if initialRotation {
+		if _, err := os.Stat(credsFile); err == nil {
+			subcommands.DieNotNil(errors.New("Destination file exists. Please make sure you aren't accidentally overwriting another factory's keys"))
+		}
+
 		key, err := api.TufRootFirstKey(factory)
 		subcommands.DieNotNil(err)
 
