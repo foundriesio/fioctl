@@ -180,6 +180,18 @@ type FactoryUserAccessDetails struct {
 	EffectiveScopes []string `json:"effective-scopes"`
 }
 
+type FactoryTeam struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
+type FactoryTeamDetails struct {
+	Name        string        `json:"name"`
+	Description string        `json:"description"`
+	Scopes      []string      `json:"scopes"`
+	Members     []FactoryUser `json:"members"`
+}
+
 type JobservRun struct {
 	Name      string   `json:"name"`
 	Url       string   `json:"url"`
@@ -1441,6 +1453,36 @@ func (a *Api) UserAccessDetails(factory string, user_id string) (*FactoryUserAcc
 		return nil, err
 	}
 	return &user, nil
+}
+
+func (a *Api) TeamsList(factory string) ([]FactoryTeam, error) {
+	url := a.serverUrl + "/ota/factories/" + factory + "/teams/"
+	body, err := a.Get(url)
+	if err != nil {
+		return nil, err
+	}
+
+	var teams []FactoryTeam
+	err = json.Unmarshal(*body, &teams)
+	if err != nil {
+		return nil, err
+	}
+	return teams, nil
+}
+
+func (a *Api) TeamDetails(factory string, team_name string) (*FactoryTeamDetails, error) {
+	url := a.serverUrl + "/ota/factories/" + factory + "/teams/" + team_name
+	body, err := a.Get(url)
+	if err != nil {
+		return nil, err
+	}
+
+	var team FactoryTeamDetails
+	err = json.Unmarshal(*body, &team)
+	if err != nil {
+		return nil, err
+	}
+	return &team, nil
 }
 
 func (a *Api) FactoryGetCA(factory string) (CaCerts, error) {
