@@ -70,6 +70,7 @@ func doShow(cmd *cobra.Command, args []string) {
 			fmt.Printf("CI:\thttps://app.foundries.io/factories/%s/targets/%s/\n", factory, target.Version)
 		}
 		fmt.Println("\n## Target:", targetName)
+		fmt.Printf("\tCreated:       %s\n", target.CreatedAt)
 		fmt.Printf("\tTags:          %s\n", strings.Join(target.Tags, ","))
 		fmt.Printf("\tOSTree Hash:   %s\n", hash)
 		if len(target.OrigUri) > 0 {
