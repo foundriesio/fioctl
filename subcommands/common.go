@@ -30,17 +30,24 @@ func RequireFactory(cmd *cobra.Command) {
 
 func Login(cmd *cobra.Command) *client.Api {
 	ca := os.Getenv("CACERT")
-	initViper(cmd)
+	DieNotNil(viper.BindPFlags(cmd.Flags()))
+	Config.Token = viper.GetString("token")
 	url := os.Getenv("API_URL")
 	if len(url) == 0 {
 		url = "https://api.foundries.io"
 	}
 	if len(Config.Token) > 0 {
+		if cmd.Flags().Lookup("factory") != nil && len(viper.GetString("factory")) == 0 {
+			DieNotNil(fmt.Errorf("Required flag \"factory\" not set"))
+		}
 		return client.NewApiClient(url, Config, ca)
 	}
 
 	if len(Config.ClientCredentials.ClientId) == 0 {
 		DieNotNil(fmt.Errorf("Please run: \"fioctl login\" first"))
+	}
+	if cmd.Flags().Lookup("factory") != nil && len(viper.GetString("factory")) == 0 {
+		DieNotNil(fmt.Errorf("Required flag \"factory\" not set"))
 	}
 	creds := client.NewClientCredentials(Config.ClientCredentials)
 
@@ -99,14 +106,6 @@ func SaveOauthConfig(c client.OAuthConfig) {
 	buf, err = yaml.Marshal(cfg)
 	DieNotNil(err, "Unable to marshall oauth config:")
 	DieNotNil(ioutil.WriteFile(name, buf, os.FileMode(0644)), "Unable to update config: ")
-}
-
-func initViper(cmd *cobra.Command) {
-	DieNotNil(viper.BindPFlags(cmd.Flags()))
-	if cmd.Flags().Lookup("factory") != nil && len(viper.GetString("factory")) == 0 {
-		DieNotNil(fmt.Errorf("Required flag \"factory\" not set"))
-	}
-	Config.Token = viper.GetString("token")
 }
 
 func DieNotNil(err error, message ...string) {
