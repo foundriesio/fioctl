@@ -750,6 +750,13 @@ func (a *Api) DeviceDelete(factory, device string) error {
 	return err
 }
 
+func (a *Api) DeviceDeleteDenied(factory, uuid string) error {
+	bytes := []byte{}
+	url := a.serverUrl + "/ota/factories/" + factory + "/denied-devices/" + uuid + "/"
+	_, err := a.Delete(url, bytes)
+	return err
+}
+
 func (a *Api) DeviceListUpdates(factory, device string) (*UpdateList, error) {
 	url := a.serverUrl + "/ota/devices/" + device + "/updates/?factory=" + factory
 	return a.DeviceListUpdatesCont(url)
