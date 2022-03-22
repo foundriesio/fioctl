@@ -180,10 +180,10 @@ func showDeviceList(dl *client.DeviceList, showColumns []string) {
 		found := false
 		for i := 0; i < len(os.Args); i++ {
 			arg := os.Args[i]
-			if len(arg) > 2 && arg[:2] == "-p" {
+			if (len(arg) > 2 && arg[:2] == "-p") ||  (len(arg) > 7 && arg[:7] == "--page=") {
 				fmt.Printf("-p%d ", showPage+1)
 				found = true
-			} else if len(arg) == 6 && arg[:6] == "--page" {
+			} else if arg == "-p" || arg == "--page" {
 				fmt.Printf("-p%d ", showPage+1)
 				found = true
 				i++
