@@ -85,10 +85,7 @@ var Columns = map[string]column{
 	"is-wave":       {func(d *client.Device) string { return fmt.Sprintf("%v", d.IsWave) }},
 }
 
-func init() {
-	var defCols = []string{
-		"name", "target", "status", "apps", "up-to-date", "is-prod",
-	}
+func addPaginationFlags(cmd *cobra.Command) {
 	paginationLimits = []int{10, 20, 30, 40, 50, 100, 200, 500, 1000}
 	limitsStr := ""
 	for i, limit := range paginationLimits {
@@ -98,6 +95,14 @@ func init() {
 		limitsStr += strconv.Itoa(limit)
 	}
 
+	cmd.Flags().IntVarP(&showPage, "page", "p", 1, "Page of devices to display when pagination is needed")
+	cmd.Flags().IntVarP(&paginationLimit, "limit", "n", 500, "Number of devices to paginate by. Allowed values: "+limitsStr)
+}
+
+func init() {
+	var defCols = []string{
+		"name", "target", "status", "apps", "up-to-date", "is-prod",
+	}
 	allCols := make([]string, 0, len(Columns))
 	for k := range Columns {
 		allCols = append(allCols, k)
@@ -117,8 +122,7 @@ func init() {
 	listCmd.Flags().IntVarP(&deviceInactiveHours, "offline-threshold", "", 4, "List the device as 'OFFLINE' if not seen in the last X hours")
 	listCmd.Flags().StringVarP(&deviceUuid, "uuid", "", "", "Find device with the given UUID")
 	listCmd.Flags().StringSliceVarP(&showColumns, "columns", "", defCols, "Specify which columns to display")
-	listCmd.Flags().IntVarP(&showPage, "page", "p", 1, "Page of devices to display when pagination is needed")
-	listCmd.Flags().IntVarP(&paginationLimit, "limit", "n", 500, "Number of devices to paginate by. Allowed values: "+limitsStr)
+	addPaginationFlags(listCmd)
 }
 
 // We allow pattern matching using filepath.Match type * and ?
@@ -147,11 +151,7 @@ func assertPagination() {
 	subcommands.DieNotNil(fmt.Errorf("Invalid limit: %d", paginationLimit))
 }
 
-func doList(cmd *cobra.Command, args []string) {
-	factory := viper.GetString("factory")
-	logrus.Debugf("Listing registered devices for: %s", factory)
-	assertPagination()
-
+func showDeviceList(dl *client.DeviceList, showColumns []string) {
 	t := tabby.New()
 	var cols = make([]interface{}, len(showColumns))
 	for idx, c := range showColumns {
@@ -163,12 +163,6 @@ func doList(cmd *cobra.Command, args []string) {
 	}
 	t.AddHeader(cols...)
 
-	name_ilike := ""
-	if len(args) == 1 {
-		name_ilike = sqlLikeIfy(args[0])
-	}
-	dl, err := api.DeviceList(deviceMine, deviceByTag, factory, deviceByGroup, name_ilike, deviceUuid, showPage, paginationLimit)
-	subcommands.DieNotNil(err)
 	row := make([]interface{}, len(showColumns))
 	for _, device := range dl.Devices {
 		if len(device.TargetName) == 0 {
@@ -186,10 +180,10 @@ func doList(cmd *cobra.Command, args []string) {
 		found := false
 		for i := 0; i < len(os.Args); i++ {
 			arg := os.Args[i]
-			if len(arg) > 2 && arg[:2] == "-p" {
+			if (len(arg) > 2 && arg[:2] == "-p") ||  (len(arg) > 7 && arg[:7] == "--page=") {
 				fmt.Printf("-p%d ", showPage+1)
 				found = true
-			} else if len(arg) == 6 && arg[:6] == "--page" {
+			} else if arg == "-p" || arg == "--page" {
 				fmt.Printf("-p%d ", showPage+1)
 				found = true
 				i++
@@ -202,4 +196,18 @@ func doList(cmd *cobra.Command, args []string) {
 		}
 		fmt.Println()
 	}
+}
+
+func doList(cmd *cobra.Command, args []string) {
+	factory := viper.GetString("factory")
+	logrus.Debugf("Listing registered devices for: %s", factory)
+	assertPagination()
+
+	name_ilike := ""
+	if len(args) == 1 {
+		name_ilike = sqlLikeIfy(args[0])
+	}
+	dl, err := api.DeviceList(deviceMine, deviceByTag, factory, deviceByGroup, name_ilike, deviceUuid, showPage, paginationLimit)
+	subcommands.DieNotNil(err)
+	showDeviceList(dl, showColumns)
 }

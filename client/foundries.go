@@ -690,6 +690,7 @@ func (a *Api) DeviceList(mine bool, matchTag, byFactory, byGroup, nameIlike, uui
 }
 
 func (a *Api) DeviceListCont(url string) (*DeviceList, error) {
+	logrus.Debugf("DeviceListCont with url: %s", url)
 	body, err := a.Get(url)
 	if err != nil {
 		return nil, err
@@ -701,6 +702,12 @@ func (a *Api) DeviceListCont(url string) (*DeviceList, error) {
 		return nil, err
 	}
 	return &devices, nil
+}
+
+func (a *Api) DeviceListDenied(factory string, page, limit int) (*DeviceList, error) {
+	url := a.serverUrl + "/ota/factories/" + factory + "/denied-devices/"
+	url += fmt.Sprintf("?limit=%d&page=%d", limit, page)
+	return a.DeviceListCont(url)
 }
 
 func (a *Api) DeviceChown(factory, name, owner string) error {
@@ -739,6 +746,13 @@ func (a *Api) DeviceSetGroup(factory, device, group string) error {
 func (a *Api) DeviceDelete(factory, device string) error {
 	bytes := []byte{}
 	url := a.serverUrl + "/ota/devices/" + device + "/?factory=" + factory
+	_, err := a.Delete(url, bytes)
+	return err
+}
+
+func (a *Api) DeviceDeleteDenied(factory, uuid string) error {
+	bytes := []byte{}
+	url := a.serverUrl + "/ota/factories/" + factory + "/denied-devices/" + uuid + "/"
 	_, err := a.Delete(url, bytes)
 	return err
 }
