@@ -13,6 +13,7 @@ import (
 	"github.com/foundriesio/fioctl/subcommands"
 	cfgcmd "github.com/foundriesio/fioctl/subcommands/config"
 	"github.com/foundriesio/fioctl/subcommands/devices"
+	"github.com/foundriesio/fioctl/subcommands/docker"
 	"github.com/foundriesio/fioctl/subcommands/keys"
 	"github.com/foundriesio/fioctl/subcommands/login"
 	"github.com/foundriesio/fioctl/subcommands/logout"
@@ -37,6 +38,15 @@ var rootCmd = &cobra.Command{
 }
 
 func Execute() {
+	if os.Args[0] == docker.DOCKER_CREDS_HELPER {
+		if len(os.Args) != 2 || os.Args[1] != "get" {
+			fmt.Printf("Usage: %s get\n", os.Args[0])
+			os.Exit(1)
+		}
+		initConfig()
+		os.Exit(docker.RunCredsHelper())
+	}
+
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -53,6 +63,7 @@ func init() {
 
 	rootCmd.AddCommand(cfgcmd.NewCommand())
 	rootCmd.AddCommand(devices.NewCommand())
+	rootCmd.AddCommand(docker.NewCommand())
 	rootCmd.AddCommand(keys.NewCommand())
 	rootCmd.AddCommand(login.NewCommand())
 	rootCmd.AddCommand(logout.NewCommand())
