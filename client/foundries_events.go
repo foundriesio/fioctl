@@ -26,3 +26,17 @@ func (a *Api) EventQueuesDelete(factory, label string) error {
 	_, err := a.Delete(url, []byte{})
 	return err
 }
+
+func (a *Api) EventQueuesCreate(factory string, queue EventQueue) ([]byte, error) {
+	url := a.serverUrl + "/ota/factories/" + factory + "/event-queues/"
+	body, err := json.Marshal(queue)
+	if err != nil {
+		return nil, err
+	}
+
+	key, err := a.Post(url, body)
+	if err != nil {
+		return nil, err
+	}
+	return *key, err
+}
