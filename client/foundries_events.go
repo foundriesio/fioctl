@@ -20,3 +20,9 @@ func (a *Api) EventQueuesList(factory string) ([]EventQueue, error) {
 	err = json.Unmarshal(*body, &queues)
 	return queues, err
 }
+
+func (a *Api) EventQueuesDelete(factory, label string) error {
+	url := a.serverUrl + "/ota/factories/" + factory + "/event-queues/" + label + "/"
+	_, err := a.Delete(url, []byte{})
+	return err
+}
