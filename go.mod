@@ -3,6 +3,8 @@ module github.com/foundriesio/fioctl
 go 1.13
 
 require (
+	cloud.google.com/go/kms v1.4.0 // indirect
+	cloud.google.com/go/pubsub v1.3.1
 	github.com/cheynewallace/tabby v1.1.1
 	github.com/docker/go v1.5.1-1.0.20160303222718-d30aec9fd63c
 	github.com/ethereum/go-ethereum v1.10.15
@@ -14,6 +16,7 @@ require (
 	github.com/spf13/cobra v1.3.0
 	github.com/spf13/viper v1.10.1
 	github.com/theupdateframework/notary v0.7.0
+	google.golang.org/api v0.70.0
 	gopkg.in/yaml.v2 v2.4.0
 )
 

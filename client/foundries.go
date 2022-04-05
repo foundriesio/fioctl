@@ -1673,3 +1673,26 @@ func (a *Api) ProdTargetsGet(factory string, tag string, failNotExist bool) (*At
 	targets := targetsMap[tag]
 	return &targets, nil
 }
+
+func (a *Api) RepoId(factory string) (string, error) {
+	url := a.serverUrl + "/ota/factories/"
+	body, err := a.Get(url)
+	if err != nil {
+		return "", err
+	}
+	type factoryResp struct {
+		Name   string `json:"name"`
+		RepoId string `json:"reposerver-id"`
+	}
+	var factories []factoryResp
+	err = json.Unmarshal(*body, &factories)
+	if err != nil {
+		return "", err
+	}
+	for _, f := range factories {
+		if f.Name == factory {
+			return f.RepoId, nil
+		}
+	}
+	return "", errors.New("Factory does not exist")
+}
