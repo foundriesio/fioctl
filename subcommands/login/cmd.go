@@ -69,7 +69,7 @@ func promptForCreds() (string, string) {
 	scanner := bufio.NewScanner(os.Stdin)
 
 	fmt.Print("Please visit:\n\n")
-	fmt.Print("  https://app.foundries.io/settings/tokens/\n\n")
+	fmt.Print("  https://app.foundries.io/settings/credentials/\n\n")
 	fmt.Print("and create a new \"Application Credential\" to provide inputs below.\n\n")
 	fmt.Print("Client ID: ")
 	scanner.Scan()
