@@ -33,7 +33,7 @@ func NewCommand() *cobra.Command {
 		Use:   "configure-docker",
 		Short: "Configure a hub.foundries.io Docker credential helper",
 		Long: `Configure a Docker credential helper that allows Docker to access
-access hub.foundries.io.
+hub.foundries.io.
 
 This command will likely need to be run as root. It creates a symlink,
 docker-credential-fio, in the same directory as the docker client binary.
