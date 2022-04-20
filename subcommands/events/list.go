@@ -1,8 +1,6 @@
 package events
 
 import (
-	"fmt"
-
 	"github.com/cheynewallace/tabby"
 	"github.com/foundriesio/fioctl/subcommands"
 	"github.com/sirupsen/logrus"
@@ -25,7 +23,6 @@ func doList(cmd *cobra.Command, args []string) {
 
 	queues, err := api.EventQueuesList(factory)
 	subcommands.DieNotNil(err)
-	fmt.Println(queues)
 
 	t := tabby.New()
 	t.AddHeader("LABEL", "TYPE", "PUSH URL")
