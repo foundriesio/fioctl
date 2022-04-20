@@ -39,6 +39,16 @@ jobs:
           asset_path: ./bin/fioctl-linux-amd64
           asset_name: fioctl-linux-amd64
           asset_content_type: application/octet-stream
+      
+      - name: Upload linux-arm64
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./bin/fioctl-linux-arm64
+          asset_name: fioctl-linux-arm64
+          asset_content_type: application/octet-stream
 
       - name: Upload darwin-amd64
         uses: actions/upload-release-asset@v1
