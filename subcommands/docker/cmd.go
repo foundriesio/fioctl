@@ -24,8 +24,9 @@ var (
 
 func NewCommand() *cobra.Command {
 	path, err := exec.LookPath("docker")
-	subcommands.DieNotNil(err, "Docker not found on system")
-	helperPath = filepath.Dir(path)
+	if err == nil {
+		helperPath = filepath.Dir(path)
+	}
 
 	dockerConfigFile = dockerConfigPath()
 
@@ -40,6 +41,9 @@ docker-credential-fio, in the same directory as the docker client binary.
 
 NOTE: The credentials will need the "containers:read" scope to work with Docker`,
 		Run: doDockerCreds,
+		PreRun: func(cmd *cobra.Command, args []string) {
+			subcommands.DieNotNil(err, "Docker not found on system")
+		},
 	}
 	cmd.Flags().StringVarP(&helperPath, "creds-path", "", helperPath, "Path to install credential helper")
 	cmd.Flags().StringVarP(&dockerConfigFile, "docker-config", "", dockerConfigFile, "Docker config file to update")
