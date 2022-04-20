@@ -5,13 +5,14 @@ LDFLAGS=-ldflags "-X=github.com/foundriesio/fioctl/subcommands/version.Commit=$(
 
 linter:=$(shell which golangci-lint 2>/dev/null || echo $(HOME)/go/bin/golangci-lint)
 
-build: fioctl-linux-amd64 fioctl-windows-amd64 fioctl-darwin-amd64 fioctl-darwin-arm64
+build: fioctl-linux-amd64 fioctl-linux-arm64 fioctl-windows-amd64 fioctl-darwin-amd64 fioctl-darwin-arm64
 	@true
 
 fioctl-static:
 	CGO_ENABLED=0 go build -a -ldflags '-w -extldflags "-static"' -o ./bin/fioctl-static ./main.go
 
 fioctl-linux-amd64:
+fioctl-linux-arm64:
 fioctl-linux-armv7:
 fioctl-windows-amd64:
 fioctl-darwin-amd64:
