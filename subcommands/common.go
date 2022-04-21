@@ -17,6 +17,7 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/foundriesio/fioctl/client"
+	"github.com/foundriesio/fioctl/subcommands/version"
 )
 
 var (
@@ -40,7 +41,7 @@ func Login(cmd *cobra.Command) *client.Api {
 		if cmd.Flags().Lookup("factory") != nil && len(viper.GetString("factory")) == 0 {
 			DieNotNil(fmt.Errorf("Required flag \"factory\" not set"))
 		}
-		return client.NewApiClient(url, Config, ca)
+		return client.NewApiClient(url, Config, ca, version.Commit)
 	}
 
 	if len(Config.ClientCredentials.ClientId) == 0 {
@@ -55,7 +56,7 @@ func Login(cmd *cobra.Command) *client.Api {
 	DieNotNil(err)
 
 	if !expired && len(creds.Config.AccessToken) > 0 {
-		return client.NewApiClient(url, Config, ca)
+		return client.NewApiClient(url, Config, ca, version.Commit)
 	}
 
 	if len(creds.Config.AccessToken) == 0 {
@@ -67,7 +68,7 @@ func Login(cmd *cobra.Command) *client.Api {
 	}
 	SaveOauthConfig(creds.Config)
 	Config.ClientCredentials = creds.Config
-	return client.NewApiClient(url, Config, ca)
+	return client.NewApiClient(url, Config, ca, version.Commit)
 }
 
 func SaveOauthConfig(c client.OAuthConfig) {
