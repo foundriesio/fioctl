@@ -33,6 +33,7 @@ type Api struct {
 	serverUrl string
 	config    Config
 	client    http.Client
+	clientVer string
 }
 
 type CaCerts struct {
@@ -439,7 +440,7 @@ func (d Device) Online(inactiveHoursThreshold int) bool {
 	return true
 }
 
-func NewApiClient(serverUrl string, config Config, caCertPath string) *Api {
+func NewApiClient(serverUrl string, config Config, caCertPath string, version string) *Api {
 	if len(caCertPath) > 0 {
 		rootCAs, _ := x509.SystemCertPool()
 		if rootCAs == nil {
@@ -464,6 +465,7 @@ func NewApiClient(serverUrl string, config Config, caCertPath string) *Api {
 		serverUrl: strings.TrimRight(serverUrl, "/"),
 		config:    config,
 		client:    *http.DefaultClient,
+		clientVer: version,
 	}
 	return &api
 }
@@ -531,7 +533,7 @@ func parseJobServResponse(resp *[]byte, err error, runName string) (string, stri
 }
 
 func (a *Api) setReqHeaders(req *http.Request, jsonContent bool) {
-	req.Header.Set("User-Agent", "fioctl-2")
+	req.Header.Set("User-Agent", "fioctl-"+a.clientVer)
 
 	if len(a.config.Token) > 0 {
 		logrus.Debug("Using API token for http request")
