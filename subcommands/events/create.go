@@ -19,10 +19,16 @@ func init() {
 	})
 
 	cmd.AddCommand(&cobra.Command{
-		Use:   "mk-pull <label> <creds file>",
+		Use:   "mk-pull <label> <pubsub creds file>",
 		Short: "Create a message queue that can be polled for events",
 		Args:  cobra.ExactArgs(2),
 		Run:   doCreatePull,
+		Long: `Create a message queue that can be polled for events via the Google PubSub API:
+
+  https://cloud.google.com/pubsub/docs/reference/libraries 
+
+The command creates a credentials file to a scoped service account capable of 
+polling the resulting PubSub subscription.`,
 	})
 }
 
