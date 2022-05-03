@@ -19,6 +19,7 @@ import (
 	tuf "github.com/theupdateframework/notary/tuf/data"
 
 	"github.com/foundriesio/fioctl/client"
+	"github.com/foundriesio/fioctl/subcommands"
 )
 
 type OfflineCreds map[string][]byte
@@ -26,6 +27,59 @@ type OfflineCreds map[string][]byte
 type TufSigner struct {
 	Id  string
 	Key *rsa.PrivateKey
+}
+
+type TufKeyPair struct {
+	rsaPriv      *rsa.PrivateKey
+	atsPriv      client.AtsKey
+	atsPrivBytes []byte
+
+	atsPub      client.AtsKey
+	atsPubBytes []byte
+
+	keyid string
+}
+
+func GenKeyPair() TufKeyPair {
+	pk, err := rsa.GenerateKey(rand.Reader, 4096)
+	subcommands.DieNotNil(err)
+
+	var privBytes []byte = x509.MarshalPKCS1PrivateKey(pk)
+	block := &pem.Block{
+		Type:  "RSA PRIVATE KEY",
+		Bytes: privBytes,
+	}
+	priv := client.AtsKey{
+		KeyType:  "RSA",
+		KeyValue: client.AtsKeyVal{Private: string(pem.EncodeToMemory(block))},
+	}
+	atsPrivBytes, err := json.Marshal(priv)
+	subcommands.DieNotNil(err)
+
+	pubBytes, err := x509.MarshalPKIXPublicKey(&pk.PublicKey)
+	subcommands.DieNotNil(err)
+	block = &pem.Block{
+		Type:  "PUBLIC KEY",
+		Bytes: pubBytes,
+	}
+	pub := client.AtsKey{
+		KeyType:  "RSA",
+		KeyValue: client.AtsKeyVal{Public: string(pem.EncodeToMemory(block))},
+	}
+	atsPubBytes, err := json.Marshal(pub)
+	subcommands.DieNotNil(err)
+
+	id, err := pub.KeyID()
+	subcommands.DieNotNil(err)
+
+	return TufKeyPair{
+		atsPriv:      priv,
+		atsPrivBytes: atsPrivBytes,
+		atsPub:       pub,
+		atsPubBytes:  atsPubBytes,
+		keyid:        id,
+		rsaPriv:      pk,
+	}
 }
 
 func SignMeta(metaBytes []byte, signers ...TufSigner) ([]tuf.Signature, error) {
