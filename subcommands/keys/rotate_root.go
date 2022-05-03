@@ -3,11 +3,8 @@ package keys
 import (
 	"archive/tar"
 	"compress/gzip"
-	"crypto/rand"
 	"crypto/rsa"
-	"crypto/x509"
 	"encoding/json"
-	"encoding/pem"
 	"errors"
 	"fmt"
 	"os"
@@ -182,61 +179,8 @@ func signRoot(root *client.AtsTufRoot, signers ...TufSigner) error {
 	return nil
 }
 
-type keypair struct {
-	rsaPriv      *rsa.PrivateKey
-	atsPriv      client.AtsKey
-	atsPrivBytes []byte
-
-	atsPub      client.AtsKey
-	atsPubBytes []byte
-
-	keyid string
-}
-
-func genKeyPair() keypair {
-	pk, err := rsa.GenerateKey(rand.Reader, 4096)
-	subcommands.DieNotNil(err)
-
-	var privBytes []byte = x509.MarshalPKCS1PrivateKey(pk)
-	block := &pem.Block{
-		Type:  "RSA PRIVATE KEY",
-		Bytes: privBytes,
-	}
-	priv := client.AtsKey{
-		KeyType:  "RSA",
-		KeyValue: client.AtsKeyVal{Private: string(pem.EncodeToMemory(block))},
-	}
-	atsPrivBytes, err := json.Marshal(priv)
-	subcommands.DieNotNil(err)
-
-	pubBytes, err := x509.MarshalPKIXPublicKey(&pk.PublicKey)
-	subcommands.DieNotNil(err)
-	block = &pem.Block{
-		Type:  "PUBLIC KEY",
-		Bytes: pubBytes,
-	}
-	pub := client.AtsKey{
-		KeyType:  "RSA",
-		KeyValue: client.AtsKeyVal{Public: string(pem.EncodeToMemory(block))},
-	}
-	atsPubBytes, err := json.Marshal(pub)
-	subcommands.DieNotNil(err)
-
-	id, err := pub.KeyID()
-	subcommands.DieNotNil(err)
-
-	return keypair{
-		atsPriv:      priv,
-		atsPrivBytes: atsPrivBytes,
-		atsPub:       pub,
-		atsPubBytes:  atsPubBytes,
-		keyid:        id,
-		rsaPriv:      pk,
-	}
-}
-
 func swapRootKey(root *client.AtsTufRoot, curid string, creds OfflineCreds) (string, *rsa.PrivateKey, OfflineCreds) {
-	kp := genKeyPair()
+	kp := GenKeyPair()
 	root.Signed.Keys[kp.keyid] = kp.atsPub
 	root.Signed.Expires = time.Now().AddDate(1, 0, 0).UTC().Round(time.Second) // 1 year validity
 	root.Signed.Roles["root"].KeyIDs = []string{kp.keyid}

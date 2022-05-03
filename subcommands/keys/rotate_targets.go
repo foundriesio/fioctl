@@ -76,7 +76,7 @@ func findOnlineTargetId(factory string, root client.AtsTufRoot, creds OfflineCre
 }
 
 func replaceOfflineTargetKey(root *client.AtsTufRoot, onlineTargetId string, creds OfflineCreds) (string, OfflineCreds) {
-	kp := genKeyPair()
+	kp := GenKeyPair()
 	root.Signed.Keys[kp.keyid] = kp.atsPub
 	root.Signed.Roles["targets"].KeyIDs = []string{onlineTargetId, kp.keyid}
 	root.Signed.Roles["targets"].Threshold = 1
