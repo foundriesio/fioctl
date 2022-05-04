@@ -34,7 +34,7 @@ group is currently configured.`,
 	configUpdatesCmd.Flags().StringP("apps", "", "", "comma,separate,list")
 	configUpdatesCmd.Flags().BoolP("dryrun", "", false, "Only show what would be changed")
 	configUpdatesCmd.Flags().BoolP("force", "", false, "DANGER: For a config on a device that might result in corruption")
-	configUpdatesCmd.MarkFlagRequired("group")
+	_ = configUpdatesCmd.MarkFlagRequired("group")
 	_ = configUpdatesCmd.Flags().MarkHidden("tags") // assign for go linter
 }
 
