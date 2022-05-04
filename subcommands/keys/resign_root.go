@@ -44,9 +44,9 @@ func doResignRoot(cmd *cobra.Command, args []string) {
 	root.Signed.Expires = time.Now().AddDate(1, 0, 0).UTC().Round(time.Second) // 1 year validity
 	root.Signed.Version += 1
 
-	curid, curPk, err := findRoot(*root, creds)
-	fmt.Println("= Current root:", curid)
+	curPk, err := findRoot(*root, creds)
 	subcommands.DieNotNil(err)
+	fmt.Println("= Current root:", curPk.Id)
 
 	if len(changeReason) == 0 {
 		changeReason = "resigning root.json"
@@ -58,9 +58,7 @@ func doResignRoot(cmd *cobra.Command, args []string) {
 	}
 
 	fmt.Println("= Resigning root.json")
-	signers := []TufSigner{
-		{Id: curid, Key: curPk},
-	}
+	signers := []TufSigner{*curPk}
 	removeUnusedKeys(root)
 	subcommands.DieNotNil(signRoot(root, signers...))
 

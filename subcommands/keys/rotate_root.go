@@ -3,7 +3,6 @@ package keys
 import (
 	"archive/tar"
 	"compress/gzip"
-	"crypto/rsa"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -40,6 +39,7 @@ func init() {
 
 func doRotateRoot(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
+	keyType := ParseTufKeyType("RSA")
 	credsFile := args[0]
 
 	var creds OfflineCreds
@@ -83,16 +83,16 @@ func doRotateRoot(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	curid, curPk, err := findRoot(*root, creds)
-	fmt.Println("= Current root:", curid)
+	curPk, err := findRoot(*root, creds)
 	subcommands.DieNotNil(err)
+	fmt.Println("= Current root:", curPk.Id)
 
 	// A rotation is pretty easy:
 	// 1. change the who's listed as the root key: "swapRootKey"
 	// 2. sign the new root.json with both the old and new root
 
-	newid, newPk, newCreds := swapRootKey(root, curid, creds)
-	fmt.Println("= New root:", newid)
+	newPk, newCreds := swapRootKey(root, curPk.Id, creds, keyType)
+	fmt.Println("= New root:", newPk.Id)
 	root.Signed.Reason = &client.RootChangeReason{
 		PolisId:   user.PolisId,
 		Message:   changeReason,
@@ -100,10 +100,7 @@ func doRotateRoot(cmd *cobra.Command, args []string) {
 	}
 
 	fmt.Println("= Resigning root.json")
-	signers := []TufSigner{
-		{Id: curid, Key: curPk},
-		{Id: newid, Key: newPk},
-	}
+	signers := []TufSigner{*curPk, newPk}
 	removeUnusedKeys(root)
 	subcommands.DieNotNil(signRoot(root, signers...))
 
@@ -179,17 +176,19 @@ func signRoot(root *client.AtsTufRoot, signers ...TufSigner) error {
 	return nil
 }
 
-func swapRootKey(root *client.AtsTufRoot, curid string, creds OfflineCreds) (string, *rsa.PrivateKey, OfflineCreds) {
-	kp := GenKeyPair()
-	root.Signed.Keys[kp.keyid] = kp.atsPub
+func swapRootKey(
+	root *client.AtsTufRoot, curid string, creds OfflineCreds, keyType TufKeyType,
+) (TufSigner, OfflineCreds) {
+	kp := GenKeyPair(keyType)
+	root.Signed.Keys[kp.signer.Id] = kp.atsPub
 	root.Signed.Expires = time.Now().AddDate(1, 0, 0).UTC().Round(time.Second) // 1 year validity
-	root.Signed.Roles["root"].KeyIDs = []string{kp.keyid}
+	root.Signed.Roles["root"].KeyIDs = []string{kp.signer.Id}
 	root.Signed.Version += 1
 
-	base := "tufrepo/keys/fioctl-root-" + kp.keyid
+	base := "tufrepo/keys/fioctl-root-" + kp.signer.Id
 	creds[base+".pub"] = kp.atsPubBytes
 	creds[base+".sec"] = kp.atsPrivBytes
-	return kp.keyid, kp.rsaPriv, creds
+	return kp.signer, creds
 }
 
 func assertWritable(path string) {
@@ -238,11 +237,10 @@ func saveCreds(path string, creds OfflineCreds) {
 	}
 }
 
-func findRoot(root client.AtsTufRoot, creds OfflineCreds) (string, *rsa.PrivateKey, error) {
+func findRoot(root client.AtsTufRoot, creds OfflineCreds) (*TufSigner, error) {
 	kid := root.Signed.Roles["root"].KeyIDs[0]
 	pub := root.Signed.Keys[kid].KeyValue.Public
-	key, err := FindPrivKey(pub, creds)
-	return kid, key, err
+	return FindSigner(kid, pub, creds)
 }
 
 func syncProdRoot(factory string, root client.AtsTufRoot, creds OfflineCreds) error {
@@ -267,14 +265,11 @@ func syncProdRoot(factory string, root client.AtsTufRoot, creds OfflineCreds) er
 		if !ok {
 			key = prevRoot.Signed.Keys[sig.KeyID]
 		}
-		pkey, err := FindPrivKey(key.KeyValue.Public, creds)
+		signer, err := FindSigner(sig.KeyID, key.KeyValue.Public, creds)
 		if err != nil {
 			return err
 		}
-		signers = append(signers, TufSigner{
-			Id:  sig.KeyID,
-			Key: pkey,
-		})
+		signers = append(signers, *signer)
 	}
 	if err := signRoot(&root, signers...); err != nil {
 		return err

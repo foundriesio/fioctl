@@ -6,11 +6,7 @@ import (
 	"compress/gzip"
 	"crypto"
 	"crypto/rand"
-	"crypto/rsa"
-	"crypto/sha256"
-	"crypto/x509"
 	"encoding/json"
-	"encoding/pem"
 	"fmt"
 	"io"
 	"os"
@@ -25,46 +21,42 @@ import (
 type OfflineCreds map[string][]byte
 
 type TufSigner struct {
-	Id  string
-	Key *rsa.PrivateKey
+	Id   string
+	Type TufKeyType
+	Key  crypto.Signer
 }
 
 type TufKeyPair struct {
-	rsaPriv      *rsa.PrivateKey
+	signer       TufSigner
 	atsPriv      client.AtsKey
 	atsPrivBytes []byte
-
-	atsPub      client.AtsKey
-	atsPubBytes []byte
-
-	keyid string
+	atsPub       client.AtsKey
+	atsPubBytes  []byte
 }
 
-func GenKeyPair() TufKeyPair {
-	pk, err := rsa.GenerateKey(rand.Reader, 4096)
+func ParseTufKeyType(s string) TufKeyType {
+	t, err := parseTufKeyType(s)
+	subcommands.DieNotNil(err)
+	return t
+}
+
+func GenKeyPair(keyType TufKeyType) TufKeyPair {
+	keyTypeName := keyType.Name()
+	pk, err := keyType.GenerateKey()
+	subcommands.DieNotNil(err)
+	privKey, pubKey, err := keyType.SaveKeyPair(pk)
 	subcommands.DieNotNil(err)
 
-	var privBytes []byte = x509.MarshalPKCS1PrivateKey(pk)
-	block := &pem.Block{
-		Type:  "RSA PRIVATE KEY",
-		Bytes: privBytes,
-	}
 	priv := client.AtsKey{
-		KeyType:  "RSA",
-		KeyValue: client.AtsKeyVal{Private: string(pem.EncodeToMemory(block))},
+		KeyType:  keyTypeName,
+		KeyValue: client.AtsKeyVal{Private: privKey},
 	}
 	atsPrivBytes, err := json.Marshal(priv)
 	subcommands.DieNotNil(err)
 
-	pubBytes, err := x509.MarshalPKIXPublicKey(&pk.PublicKey)
-	subcommands.DieNotNil(err)
-	block = &pem.Block{
-		Type:  "PUBLIC KEY",
-		Bytes: pubBytes,
-	}
 	pub := client.AtsKey{
-		KeyType:  "RSA",
-		KeyValue: client.AtsKeyVal{Public: string(pem.EncodeToMemory(block))},
+		KeyType:  keyTypeName,
+		KeyValue: client.AtsKeyVal{Public: pubKey},
 	}
 	atsPubBytes, err := json.Marshal(pub)
 	subcommands.DieNotNil(err)
@@ -77,25 +69,34 @@ func GenKeyPair() TufKeyPair {
 		atsPrivBytes: atsPrivBytes,
 		atsPub:       pub,
 		atsPubBytes:  atsPubBytes,
-		keyid:        id,
-		rsaPriv:      pk,
+		signer: TufSigner{
+			Id:   id,
+			Type: keyType,
+			Key:  pk,
+		},
 	}
 }
 
 func SignMeta(metaBytes []byte, signers ...TufSigner) ([]tuf.Signature, error) {
-	opts := rsa.PSSOptions{SaltLength: 32, Hash: crypto.SHA256}
-	hashed := sha256.Sum256(metaBytes)
-
 	signatures := make([]tuf.Signature, len(signers))
 
 	for idx, signer := range signers {
-		sigBytes, err := signer.Key.Sign(rand.Reader, hashed[:], &opts)
+		digest := metaBytes[:]
+		opts := signer.Type.SigOpts()
+		if opts.HashFunc() != crypto.Hash(0) {
+			// Golang expects the caller to hash the digest if needed by the signing method
+
+			h := opts.HashFunc().New()
+			h.Write(digest)
+			digest = h.Sum(nil)
+		}
+		sigBytes, err := signer.Key.Sign(rand.Reader, digest, opts)
 		if err != nil {
 			return nil, err
 		}
 		signatures[idx] = tuf.Signature{
 			KeyID:     signer.Id,
-			Method:    "rsassa-pss-sha256",
+			Method:    tuf.SigAlgorithm(signer.Type.SigName()),
 			Signature: sigBytes,
 		}
 	}
@@ -138,29 +139,34 @@ func GetOfflineCreds(credsFile string) (OfflineCreds, error) {
 	return files, nil
 }
 
-func FindPrivKey(pubkey string, creds OfflineCreds) (*rsa.PrivateKey, error) {
+func FindSigner(keyid, pubkey string, creds OfflineCreds) (*TufSigner, error) {
 	pubkey = strings.TrimSpace(pubkey)
 	for k, v := range creds {
 		if strings.HasSuffix(k, ".pub") {
 			tk := client.AtsKey{}
 			if err := json.Unmarshal(v, &tk); err != nil {
-				return nil, err
+				return nil, fmt.Errorf("Unable to parse JSON for %s: %w", k, err)
 			}
 			if strings.TrimSpace(tk.KeyValue.Public) == pubkey {
-				pkbytes := creds[strings.Replace(k, ".pub", ".sec", 1)]
+				pkname := strings.Replace(k, ".pub", ".sec", 1)
+				pkbytes := creds[pkname]
 				tk = client.AtsKey{}
 				if err := json.Unmarshal(pkbytes, &tk); err != nil {
-					return nil, err
+					return nil, fmt.Errorf("Unable to parse JSON for %s: %w", pkname, err)
 				}
-				privPem, _ := pem.Decode([]byte(tk.KeyValue.Private))
-				if privPem == nil {
-					return nil, fmt.Errorf("Unable to parse private key: %s", string(creds[k]))
+				keyType, err := parseTufKeyType(tk.KeyType)
+				if err != nil {
+					return nil, fmt.Errorf("Unsupported key type for %s: %s", pkname, tk.KeyType)
 				}
-				if privPem.Type != "RSA PRIVATE KEY" {
-					return nil, fmt.Errorf("Invalid private key???: %s", string(k))
+				pk, err := keyType.ParseKey(tk.KeyValue.Private)
+				if err != nil {
+					return nil, fmt.Errorf("Unable to parse key value for %s: %w", pkname, err)
 				}
-				pk, err := x509.ParsePKCS1PrivateKey(privPem.Bytes)
-				return pk, err
+				return &TufSigner{
+					Id:   keyid,
+					Type: keyType,
+					Key:  pk,
+				}, nil
 			}
 		}
 	}
