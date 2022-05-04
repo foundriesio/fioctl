@@ -34,6 +34,7 @@ This command is not allowed if there is an active wave in your factory.`,
 
 func doRotateTargets(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
+	keyType := ParseTufKeyType("RSA")
 	credsFile := args[0]
 	assertWritable(credsFile)
 	creds, err := GetOfflineCreds(credsFile)
@@ -51,13 +52,13 @@ func doRotateTargets(cmd *cobra.Command, args []string) {
 	onlineTargetId, err := findOnlineTargetId(factory, *root, creds)
 	subcommands.DieNotNil(err)
 
-	rootid, rootPk, err := findRoot(*root, creds)
-	fmt.Println("= Root keyid:", rootid)
+	rootPk, err := findRoot(*root, creds)
 	subcommands.DieNotNil(err)
-	targetid, newCreds := replaceOfflineTargetKey(root, onlineTargetId, creds)
+	fmt.Println("= Root keyid:", rootPk.Id)
+	targetid, newCreds := replaceOfflineTargetKey(root, onlineTargetId, creds, keyType)
 	fmt.Println("= New target:", targetid)
 	removeUnusedKeys(root)
-	subcommands.DieNotNil(signRoot(root, TufSigner{rootid, rootPk}))
+	subcommands.DieNotNil(signRoot(root, *rootPk))
 	subcommands.DieNotNil(resignProdTargets(factory, root, onlineTargetId, creds))
 
 	tufRootPost(factory, credsFile, root, newCreds)
@@ -75,17 +76,19 @@ func findOnlineTargetId(factory string, root client.AtsTufRoot, creds OfflineCre
 	return "", errors.New("Unable to find online target key for factory")
 }
 
-func replaceOfflineTargetKey(root *client.AtsTufRoot, onlineTargetId string, creds OfflineCreds) (string, OfflineCreds) {
-	kp := GenKeyPair()
-	root.Signed.Keys[kp.keyid] = kp.atsPub
-	root.Signed.Roles["targets"].KeyIDs = []string{onlineTargetId, kp.keyid}
+func replaceOfflineTargetKey(
+	root *client.AtsTufRoot, onlineTargetId string, creds OfflineCreds, keyType TufKeyType,
+) (string, OfflineCreds) {
+	kp := GenKeyPair(keyType)
+	root.Signed.Keys[kp.signer.Id] = kp.atsPub
+	root.Signed.Roles["targets"].KeyIDs = []string{onlineTargetId, kp.signer.Id}
 	root.Signed.Roles["targets"].Threshold = 1
 	root.Signed.Version += 1
 
-	base := "tufrepo/keys/fioctl-targets-" + kp.keyid
+	base := "tufrepo/keys/fioctl-targets-" + kp.signer.Id
 	creds[base+".pub"] = kp.atsPubBytes
 	creds[base+".sec"] = kp.atsPrivBytes
-	return kp.keyid, creds
+	return kp.signer.Id, creds
 }
 
 func resignProdTargets(
@@ -104,11 +107,11 @@ func resignProdTargets(
 			continue
 		}
 		pub := root.Signed.Keys[kid].KeyValue.Public
-		pkey, err := FindPrivKey(pub, creds)
+		signer, err := FindSigner(kid, pub, creds)
 		if err != nil {
 			return fmt.Errorf("Failed to find private key for %s: %w", kid, err)
 		}
-		signers = append(signers, TufSigner{Id: kid, Key: pkey})
+		signers = append(signers, *signer)
 	}
 
 	signatureMap := make(map[string][]tuf.Signature)

@@ -138,11 +138,11 @@ func signTargets(meta []byte, factory string, offlineKeys keys.OfflineCreds) []t
 		if pub == onlinePub.KeyValue.Public {
 			continue
 		}
-		pkey, err := keys.FindPrivKey(pub, offlineKeys)
+		signer, err := keys.FindSigner(kid, pub, offlineKeys)
 		if err != nil {
 			subcommands.DieNotNil(err, fmt.Sprintf("Failed to find private key for %s", kid))
 		}
-		signers = append(signers, keys.TufSigner{Id: kid, Key: pkey})
+		signers = append(signers, *signer)
 	}
 
 	if len(signers) == 0 {
