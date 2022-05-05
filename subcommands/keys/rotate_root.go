@@ -34,12 +34,14 @@ func init() {
 	rotate.Flags().BoolVarP(&doRootSync, "sync-prod", "", false, "Make sure production root.json is up-to-date and exit")
 	rotate.Flags().BoolVarP(&initialRotation, "initial", "", false, "Used for the first customer rotation. The command will download the initial root key")
 	rotate.Flags().StringVarP(&changeReason, "changelog", "m", "", "Reason for doing rotation. Saved in root metadata for tracking change history")
+	rotate.Flags().StringP("key-type", "k", tufKeyTypeNameRSA, "Key type, supported: Ed25519, RSA (default).")
 	cmd.AddCommand(rotate)
 }
 
 func doRotateRoot(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
-	keyType := ParseTufKeyType("RSA")
+	keyTypeStr, _ := cmd.Flags().GetString("key-type")
+	keyType := ParseTufKeyType(keyTypeStr)
 	credsFile := args[0]
 
 	var creds OfflineCreds
