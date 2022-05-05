@@ -29,12 +29,14 @@ This command is not allowed if there is an active wave in your factory.`,
 		Args: cobra.ExactArgs(1),
 	}
 	subcommands.RequireFactory(rotateTargets)
+	rotateTargets.Flags().StringP("key-type", "k", tufKeyTypeNameRSA, "Key type, supported: Ed25519, RSA (default).")
 	cmd.AddCommand(rotateTargets)
 }
 
 func doRotateTargets(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
-	keyType := ParseTufKeyType("RSA")
+	keyTypeStr, _ := cmd.Flags().GetString("key-type")
+	keyType := ParseTufKeyType(keyTypeStr)
 	credsFile := args[0]
 	assertWritable(credsFile)
 	creds, err := GetOfflineCreds(credsFile)

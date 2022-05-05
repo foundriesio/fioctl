@@ -2,6 +2,7 @@ package keys
 
 import (
 	"crypto"
+	"crypto/ed25519"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -22,16 +23,21 @@ type TufKeyType interface {
 }
 
 type tufKeyTypeRSA struct{}
+type tufKeyTypeEd25519 struct{}
 
 const (
 	// These are case insensitive
-	tufKeyTypeNameRSA    = "RSA"
-	tufKeyTypeSigNameRSA = "rsassa-pss-sha256"
+	tufKeyTypeNameEd25519    = "ED25519"
+	tufKeyTypeNameRSA        = "RSA"
+	tufKeyTypeSigNameEd25519 = "ed25519"
+	tufKeyTypeSigNameRSA     = "rsassa-pss-sha256"
 )
 
 func parseTufKeyType(s string) (TufKeyType, error) {
 	su := strings.ToUpper(s)
 	switch su {
+	case tufKeyTypeNameEd25519:
+		return &tufKeyTypeEd25519{}, nil
 	case tufKeyTypeNameRSA:
 		return &tufKeyTypeRSA{}, nil
 	default:
@@ -77,5 +83,35 @@ func (t *tufKeyTypeRSA) SaveKeyPair(key crypto.Signer) (priv, pub string, err er
 		Type:  "PUBLIC KEY",
 		Bytes: pubBytes,
 	}))
+	return
+}
+
+func (t *tufKeyTypeEd25519) Name() string { return tufKeyTypeNameEd25519 }
+
+func (t *tufKeyTypeEd25519) SigName() string { return tufKeyTypeSigNameEd25519 }
+
+func (t *tufKeyTypeEd25519) SigOpts() crypto.SignerOpts {
+	return crypto.Hash(0)
+}
+
+func (t *tufKeyTypeEd25519) GenerateKey() (crypto.Signer, error) {
+	_, pk, err := ed25519.GenerateKey(rand.Reader)
+	return pk, err
+}
+
+func (t *tufKeyTypeEd25519) ParseKey(priv string) (crypto.Signer, error) {
+	pk, err := hex.DecodeString(priv)
+	if err != nil {
+		return nil, errors.New("Unable to parse Ed25519 private key HEX data")
+	}
+	if len(pk) != ed25519.PrivateKeySize {
+		return nil, errors.New("Wrong Ed25519 private key size")
+	}
+	return ed25519.PrivateKey(pk), nil
+}
+
+func (t *tufKeyTypeEd25519) SaveKeyPair(key crypto.Signer) (priv, pub string, err error) {
+	priv = hex.EncodeToString([]byte(key.(ed25519.PrivateKey)))
+	pub = hex.EncodeToString([]byte(key.Public().(ed25519.PublicKey)))
 	return
 }
