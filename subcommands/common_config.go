@@ -210,8 +210,8 @@ func SetUpdatesConfig(opts *SetUpdatesConfigOptions, reportedTag string, reporte
 	}
 
 	if !changed {
-		DieNotNil(fmt.Errorf(
-			"No changes found. Device is already configured with the specified options."))
+		fmt.Println("No changes found. Device is already configured with the specified options.")
+		os.Exit(0)
 	}
 
 	newToml, err := sota.ToTomlString()
