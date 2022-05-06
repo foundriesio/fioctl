@@ -278,11 +278,17 @@ func (k AtsKey) KeyID() (string, error) {
 	return fmt.Sprintf("%x", sha256.Sum256(bytes)), nil
 }
 
+type RootChangeReason struct {
+	PolisId   string    `json:"polis-id"`
+	Message   string    `json:"message"`
+	Timestamp time.Time `json:"timestamp"`
+}
 type AtsRootMeta struct {
 	tuf.SignedCommon
 	Consistent bool                           `json:"consistent_snapshot"`
 	Keys       map[string]AtsKey              `json:"keys"`
 	Roles      map[tuf.RoleName]*tuf.RootRole `json:"roles"`
+	Reason     *RootChangeReason              `json:"x-changelog,omitempty"`
 }
 
 type AtsTufRoot struct {

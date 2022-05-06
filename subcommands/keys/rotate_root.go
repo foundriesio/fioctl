@@ -23,6 +23,7 @@ import (
 var (
 	doRootSync      bool
 	initialRotation bool
+	changeReason    string
 )
 
 func init() {
@@ -36,6 +37,7 @@ func init() {
 	subcommands.RequireFactory(rotate)
 	rotate.Flags().BoolVarP(&doRootSync, "sync-prod", "", false, "Make sure production root.json is up-to-date and exit")
 	rotate.Flags().BoolVarP(&initialRotation, "initial", "", false, "Used for the first customer rotation. The command will download the initial root key")
+	rotate.Flags().StringVarP(&changeReason, "changelog", "m", "", "Reason for doing rotation. Saved in root metadata for tracking change history")
 	cmd.AddCommand(rotate)
 }
 
@@ -44,6 +46,9 @@ func doRotateRoot(cmd *cobra.Command, args []string) {
 	credsFile := args[0]
 
 	var creds OfflineCreds
+
+	user, err := api.UserAccessDetails(factory, "self")
+	subcommands.DieNotNil(err)
 
 	root, err := api.TufRootGet(factory)
 	subcommands.DieNotNil(err)
@@ -91,6 +96,11 @@ func doRotateRoot(cmd *cobra.Command, args []string) {
 
 	newid, newPk, newCreds := swapRootKey(root, curid, creds)
 	fmt.Println("= New root:", newid)
+	root.Signed.Reason = &client.RootChangeReason{
+		PolisId:   user.PolisId,
+		Message:   changeReason,
+		Timestamp: time.Now(),
+	}
 
 	fmt.Println("= Resigning root.json")
 	signers := []TufSigner{
