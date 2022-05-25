@@ -1,6 +1,7 @@
 package el2g
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/cheynewallace/tabby"
@@ -9,7 +10,10 @@ import (
 	"github.com/spf13/viper"
 )
 
-var add string
+var (
+	add string
+	del string
+)
 
 func init() {
 	devicesCmd := &cobra.Command{
@@ -32,9 +36,13 @@ fioctl el2g devices <device-id>
 
 # Add a device with an se050
 fioctl el2g devices --add 935389312472 <device-id>
+
+# Delete a device with an se050
+fioctl el2g devices --del 935389312472 <device-id>
 `,
 	}
 	devicesCmd.Flags().StringVarP(&add, "add", "", "", "Whitelist the device for the given nc12 product id")
+	devicesCmd.Flags().StringVarP(&del, "del", "", "", "Unclaim device for the given nc12 product id")
 	cmd.AddCommand(devicesCmd)
 }
 
@@ -55,8 +63,13 @@ func doDevice(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 	deviceId := args[0]
 
-	if len(add) > 0 {
+	if len(add) > 0 && len(del) > 0 {
+		subcommands.DieNotNil(errors.New("--add and --del are mutually exclusive"))
+	} else if len(add) > 0 {
 		subcommands.DieNotNil(api.El2gAddDevice(factory, add, deviceId))
+		return
+	} else if len(del) > 0 {
+		subcommands.DieNotNil(api.El2gDelDevice(factory, del, deviceId))
 		return
 	}
 
