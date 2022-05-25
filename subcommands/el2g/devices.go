@@ -1,6 +1,7 @@
 package el2g
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/cheynewallace/tabby"
@@ -9,7 +10,10 @@ import (
 	"github.com/spf13/viper"
 )
 
-var add string
+var (
+	add string
+	del string
+)
 
 func init() {
 	devicesCmd := &cobra.Command{
@@ -37,14 +41,22 @@ fioctl el2g devices <device-id>
 #  04005001eee3ba1ee96e60047e57da0f6880
 # This ID is hexadecimal and must be prefixed in the CLI with 0x. For example:
 fioctl el2g devices --add 935389312472 0x04005001eee3ba1ee96e60047e57da0f6880
+
+# Delete a device with an se050
+fioctl el2g devices --del 935389312472 <device-id>
 `,
 	}
 	devicesCmd.Flags().StringVarP(&add, "add", "", "", "Whitelist the device for the given nc12 product id")
+	devicesCmd.Flags().StringVarP(&del, "del", "", "", "Unclaim device for the given nc12 product id")
 	cmd.AddCommand(devicesCmd)
 }
 
 func doDevices(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
+	if len(add) > 0 || len(del) > 0 {
+		cmd.Usage()
+		return
+	}
 
 	devices, err := api.El2gDevices(factory)
 	subcommands.DieNotNil(err)
@@ -60,8 +72,13 @@ func doDevice(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 	deviceId := args[0]
 
-	if len(add) > 0 {
+	if len(add) > 0 && len(del) > 0 {
+		subcommands.DieNotNil(errors.New("--add and --del are mutually exclusive"))
+	} else if len(add) > 0 {
 		subcommands.DieNotNil(api.El2gAddDevice(factory, add, deviceId))
+		return
+	} else if len(del) > 0 {
+		subcommands.DieNotNil(api.El2gDelDevice(factory, del, deviceId))
 		return
 	}
 
