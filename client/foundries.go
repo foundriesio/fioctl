@@ -254,6 +254,7 @@ type TufCustom struct {
 	ContainersSha  string                `json:"containers-sha,omitempty"`
 	LmpManifestSha string                `json:"lmp-manifest-sha,omitempty"`
 	OverridesSha   string                `json:"meta-subscriber-overrides-sha,omitempty"`
+	Uri            string                `json:"uri,omitempty"`
 	OrigUri        string                `json:"origUri,omitempty"`
 	CreatedAt      string                `json:"createdAt,omitempty"`
 }
@@ -1109,6 +1110,15 @@ func (a *Api) tufRootPost(factory string, prod bool, root []byte) (string, error
 	}
 	return "", err
 }
+
+func (a *Api) TufMetadataGet(factory string, metadata string, tag string, prod bool) (*[]byte, error) {
+	url := a.serverUrl + "/ota/repo/" + factory + "/api/v1/user_repo/" + metadata + "?tag=" + tag
+	if prod {
+		url += "&production=1"
+	}
+	return a.Get(url)
+}
+
 func (a *Api) TufRootPost(factory string, root []byte) (string, error) {
 	return a.tufRootPost(factory, false, root)
 }
