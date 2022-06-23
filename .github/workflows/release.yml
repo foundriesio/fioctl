@@ -13,6 +13,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
       - name: Set up golang
         uses: actions/setup-go@v2
         with:
@@ -39,7 +41,7 @@ jobs:
           asset_path: ./bin/fioctl-linux-amd64
           asset_name: fioctl-linux-amd64
           asset_content_type: application/octet-stream
-      
+
       - name: Upload linux-arm64
         uses: actions/upload-release-asset@v1
         env:
