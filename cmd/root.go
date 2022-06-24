@@ -15,6 +15,7 @@ import (
 	"github.com/foundriesio/fioctl/subcommands/devices"
 	"github.com/foundriesio/fioctl/subcommands/docker"
 	"github.com/foundriesio/fioctl/subcommands/events"
+	"github.com/foundriesio/fioctl/subcommands/factories"
 	"github.com/foundriesio/fioctl/subcommands/keys"
 	"github.com/foundriesio/fioctl/subcommands/login"
 	"github.com/foundriesio/fioctl/subcommands/logout"
@@ -66,6 +67,7 @@ func init() {
 	rootCmd.AddCommand(devices.NewCommand())
 	rootCmd.AddCommand(docker.NewCommand())
 	rootCmd.AddCommand(events.NewCommand())
+	rootCmd.AddCommand(factories.NewCommand())
 	rootCmd.AddCommand(keys.NewCommand())
 	rootCmd.AddCommand(login.NewCommand())
 	rootCmd.AddCommand(logout.NewCommand())
