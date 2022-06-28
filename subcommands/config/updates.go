@@ -12,21 +12,20 @@ import (
 func init() {
 	configUpdatesCmd := &cobra.Command{
 		Use:   "updates",
-		Short: "Configure aktualizr-lite settings for how updates are applied factory wide to devices",
+		Short: "Configure aktualizr-lite settings for how updates are applied to a device group",
 		Run:   doConfigUpdates,
-		Long: `View or change factory wide configuration parameters used by aktualizr-lite for updating devices.
-When run with no options, this command will print out how the factory is
-currently configured. Use the --group parameter to view or change a device 
-group wide configuration instead.`,
+		Long: `View or change configuration parameters used by aktualizr-lite for updating devices
+in a device group. When run with no options, this command will print out how the 
+group is currently configured.`,
 		Example: `
   # Make devices start taking updates from Targets tagged with "devel":
-  fioctl config updates --tag devel
+  fioctl config updates --group beta --tag devel
 
   # Set the docker apps that devices will run:
-  fioctl config updates --apps shellhttpd
+  fioctl config updates --group beta --apps shellhttpd
 
   # Set the docker apps and the tag for devices:
-  fioctl config updates --apps shellhttpd --tag master`,
+  fioctl config updates --group beta --apps shellhttpd --tag master`,
 	}
 	cmd.AddCommand(configUpdatesCmd)
 	configUpdatesCmd.Flags().StringP("group", "g", "", "Device group to use")
@@ -35,7 +34,7 @@ group wide configuration instead.`,
 	configUpdatesCmd.Flags().StringP("apps", "", "", "comma,separate,list")
 	configUpdatesCmd.Flags().BoolP("dryrun", "", false, "Only show what would be changed")
 	configUpdatesCmd.Flags().BoolP("force", "", false, "DANGER: For a config on a device that might result in corruption")
-
+	configUpdatesCmd.MarkFlagRequired("group")
 	_ = configUpdatesCmd.Flags().MarkHidden("tags") // assign for go linter
 }
 
@@ -58,22 +57,12 @@ func doConfigUpdates(cmd *cobra.Command, args []string) {
 		IsForced:   isForced,
 	}
 
-	if group == "" {
-		logrus.Debugf("Configuring factory wide device updates for %s", factory)
-		opts.ListFunc = func() (*client.DeviceConfigList, error) {
-			return api.FactoryListConfig(factory)
-		}
-		opts.SetFunc = func(cfg client.ConfigCreateRequest, force bool) error {
-			return api.FactoryPatchConfig(factory, cfg, force)
-		}
-	} else {
-		logrus.Debugf("Configuring group wide device updates for %s group %s", factory, group)
-		opts.ListFunc = func() (*client.DeviceConfigList, error) {
-			return api.GroupListConfig(factory, group)
-		}
-		opts.SetFunc = func(cfg client.ConfigCreateRequest, force bool) error {
-			return api.GroupPatchConfig(factory, group, cfg, force)
-		}
+	logrus.Debugf("Configuring group wide device updates for %s group %s", factory, group)
+	opts.ListFunc = func() (*client.DeviceConfigList, error) {
+		return api.GroupListConfig(factory, group)
+	}
+	opts.SetFunc = func(cfg client.ConfigCreateRequest, force bool) error {
+		return api.GroupPatchConfig(factory, group, cfg, force)
 	}
 	subcommands.SetUpdatesConfig(&opts, "", nil)
 }
