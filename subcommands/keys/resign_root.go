@@ -24,6 +24,7 @@ func init() {
 	}
 	subcommands.RequireFactory(resign)
 	resign.Flags().BoolVarP(&dryRun, "dryrun", "", false, "Just print what the new root.json will look like and exit")
+	resign.Flags().StringVarP(&changeReason, "changelog", "m", "", "Reason for resigning root.json. Saved in root metadata for tracking change history")
 	cmd.AddCommand(resign)
 }
 
@@ -32,6 +33,9 @@ func doResignRoot(cmd *cobra.Command, args []string) {
 	credsFile := args[0]
 	assertWritable(credsFile)
 	creds, err := GetOfflineCreds(credsFile)
+	subcommands.DieNotNil(err)
+
+	user, err := api.UserAccessDetails(factory, "self")
 	subcommands.DieNotNil(err)
 
 	root, err := api.TufRootGet(factory)
@@ -43,6 +47,15 @@ func doResignRoot(cmd *cobra.Command, args []string) {
 	curid, curPk, err := findRoot(*root, creds)
 	fmt.Println("= Current root:", curid)
 	subcommands.DieNotNil(err)
+
+	if len(changeReason) == 0 {
+		changeReason = "resigning root.json"
+	}
+	root.Signed.Reason = &client.RootChangeReason{
+		PolisId:   user.PolisId,
+		Message:   changeReason,
+		Timestamp: time.Now(),
+	}
 
 	fmt.Println("= Resigning root.json")
 	signers := []TufSigner{
