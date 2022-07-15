@@ -162,13 +162,8 @@ func downloadTufRepo(factory string, tag string, prod bool, dstDir string) error
 		metadataFileName := fmt.Sprintf("%d.root.json", ver)
 		err := downloadMetadataFile(metadataFileName)
 		if err != nil {
-			httpErr := client.AsHttpError(err)
-			if httpErr != nil {
-				// TODO: Fix an issue in ota-lite that returns 500 for non-existing non-prod N.root.json,
-				// and then remove 500 check here
-				if httpErr.Response.StatusCode != 404 && httpErr.Response.StatusCode != 500 {
-					return err
-				}
+			if httpErr := client.AsHttpError(err); httpErr != nil && httpErr.Response.StatusCode == 404 {
+				// if 404 received for N.root.json, then stop downloading root metadata versions
 				break
 			}
 			return err
