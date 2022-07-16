@@ -8,6 +8,7 @@ require (
 	github.com/docker/go v1.5.1-1.0.20160303222718-d30aec9fd63c
 	github.com/fatih/color v1.13.0
 	github.com/foundriesio/go-ecies v0.3.0
+	github.com/hashicorp/go-version v1.6.0
 	github.com/karrick/godiff v0.0.2
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/pelletier/go-toml v1.9.4
@@ -15,8 +16,10 @@ require (
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/viper v1.10.1
+	github.com/theupdateframework/go-tuf v0.5.2
 	github.com/theupdateframework/notary v0.7.0
 	golang.org/x/exp v0.0.0-20221204150635-6dcec336b2bb
+	golang.org/x/sys v0.5.0
 	google.golang.org/api v0.70.0
 	gopkg.in/yaml.v2 v2.4.0
 )
@@ -39,6 +42,7 @@ require (
 	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/mitchellh/mapstructure v1.4.3 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
+	github.com/secure-systems-lab/go-securesystemslib v0.4.0 // indirect
 	github.com/spf13/afero v1.6.0 // indirect
 	github.com/spf13/cast v1.4.1 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
@@ -49,13 +53,11 @@ require (
 	golang.org/x/net v0.7.0 // indirect
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
-	golang.org/x/sys v0.5.0 // indirect
 	golang.org/x/text v0.7.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20220222213610-43724f9ea8cf // indirect
 	google.golang.org/grpc v1.44.0 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
-	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/ini.v1 v1.66.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
