@@ -3,6 +3,7 @@ package keys
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -30,12 +31,14 @@ This command is not allowed if there is an active wave in your factory.`,
 	}
 	subcommands.RequireFactory(rotateTargets)
 	rotateTargets.Flags().StringP("key-type", "k", tufKeyTypeNameRSA, "Key type, supported: Ed25519, RSA (default).")
+	rotateTargets.Flags().StringP("changelog", "m", "", "Reason for doing rotation. Saved in root metadata for tracking change history")
 	cmd.AddCommand(rotateTargets)
 }
 
 func doRotateTargets(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 	keyTypeStr, _ := cmd.Flags().GetString("key-type")
+	changeLog, _ := cmd.Flags().GetString("changelog")
 	keyType := ParseTufKeyType(keyTypeStr)
 	credsFile := args[0]
 	assertWritable(credsFile)
@@ -60,6 +63,16 @@ func doRotateTargets(cmd *cobra.Command, args []string) {
 	targetid, newCreds := replaceOfflineTargetKey(root, onlineTargetId, creds, keyType)
 	fmt.Println("= New target:", targetid)
 	removeUnusedKeys(root)
+	user, err := api.UserAccessDetails(factory, "self")
+	subcommands.DieNotNil(err)
+	if len(changeLog) == 0 {
+		changeLog = "Targets role key rotation"
+	}
+	root.Signed.Reason = &client.RootChangeReason{
+		PolisId:   user.PolisId,
+		Message:   changeLog,
+		Timestamp: time.Now(),
+	}
 	subcommands.DieNotNil(signRoot(root, *rootPk))
 	subcommands.DieNotNil(resignProdTargets(factory, root, onlineTargetId, creds))
 
