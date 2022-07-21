@@ -7,6 +7,7 @@ import (
 	"encoding/asn1"
 	"encoding/pem"
 	"fmt"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -106,6 +107,11 @@ func extKeyUsage(ext []x509.ExtKeyUsage) string {
 func prettyPrint(cert string) {
 	for len(cert) > 0 {
 		block, remaining := pem.Decode([]byte(cert))
+		if block == nil {
+			// could be excessive whitespace
+			cert = strings.TrimSpace(string(remaining))
+			continue
+		}
 		cert = string(remaining)
 		c, err := x509.ParseCertificate(block.Bytes)
 		if err != nil {
