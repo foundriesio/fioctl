@@ -205,6 +205,7 @@ type El2gSecureObjectProvisioning struct {
 	Name  string `json:"secureObjectName"`
 	Type  string `json:"secureObjectType"`
 	State string `json:"provisioningState"`
+	Cert  string `json:"certificate"`
 }
 
 func (a *Api) El2gSecureObjectProvisionings(factory, deviceId string) ([]El2gSecureObjectProvisioning, error) {

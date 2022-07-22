@@ -91,8 +91,23 @@ func doDevice(cmd *cobra.Command, args []string) {
 	objects, err := api.El2gSecureObjectProvisionings(factory, deviceId)
 	subcommands.DieNotNil(err)
 	t := subcommands.Tabby(1, "NAME", "TYPE", "STATUS")
+	foundCert := false
 	for _, obj := range objects {
 		t.AddLine(obj.Name, obj.Type, obj.State)
+		if len(obj.Cert) > 0 {
+			foundCert = true
+		}
 	}
 	t.Print()
+
+	if foundCert {
+		fmt.Println("Certificates:")
+		for _, obj := range objects {
+			if len(obj.Cert) > 0 {
+				fmt.Println("#", obj.Name)
+				fmt.Println(obj.Cert)
+				fmt.Println()
+			}
+		}
+	}
 }
