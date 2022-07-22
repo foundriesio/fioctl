@@ -16,7 +16,10 @@ import (
 	"github.com/foundriesio/fioctl/subcommands"
 )
 
-var prettyFormat bool
+var (
+	justRoot     bool
+	prettyFormat bool
+)
 
 func init() {
 	cmd := &cobra.Command{
@@ -26,6 +29,7 @@ func init() {
 	}
 	caCmd.AddCommand(cmd)
 	cmd.Flags().BoolVarP(&prettyFormat, "pretty", "", false, "Display human readable output of each certificate")
+	cmd.Flags().BoolVarP(&justRoot, "just-root", "", false, "Only show the Factory root CA certificate")
 }
 
 func doShowCA(cmd *cobra.Command, args []string) {
@@ -35,23 +39,27 @@ func doShowCA(cmd *cobra.Command, args []string) {
 	resp, err := api.FactoryGetCA(factory)
 	subcommands.DieNotNil(err)
 
-	fmt.Println("## Change Metadata")
-	fmt.Println("Created at:", resp.ChangeMeta.CreatedAt)
-	if len(resp.ChangeMeta.CreatedBy) > 0 {
-		fmt.Println("Created by:", resp.ChangeMeta.CreatedBy)
+	if !justRoot {
+		fmt.Println("## Change Metadata")
+		fmt.Println("Created at:", resp.ChangeMeta.CreatedAt)
+		if len(resp.ChangeMeta.CreatedBy) > 0 {
+			fmt.Println("Created by:", resp.ChangeMeta.CreatedBy)
+		}
+		if len(resp.ChangeMeta.UpdatedAt) > 0 {
+			fmt.Println("Updated at:", resp.ChangeMeta.UpdatedAt)
+		}
+		if len(resp.ChangeMeta.UpdatedBy) > 0 {
+			fmt.Println("Updated by:", resp.ChangeMeta.UpdatedBy)
+		}
+		fmt.Println("## Factory root certificate")
 	}
-	if len(resp.ChangeMeta.UpdatedAt) > 0 {
-		fmt.Println("Updated at:", resp.ChangeMeta.UpdatedAt)
-	}
-	if len(resp.ChangeMeta.UpdatedBy) > 0 {
-		fmt.Println("Updated by:", resp.ChangeMeta.UpdatedBy)
-	}
-
-	fmt.Println("## Factory root certificate")
 	if prettyFormat {
 		prettyPrint(resp.RootCrt)
 	} else {
 		fmt.Println(resp.RootCrt)
+	}
+	if justRoot {
+		return
 	}
 	fmt.Println("## Server TLS Certificate")
 	if prettyFormat {
