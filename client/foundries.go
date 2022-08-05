@@ -127,6 +127,32 @@ type DeviceGroup struct {
 	ChangeMeta ChangeMeta `json:"change-meta"`
 }
 
+type AppServiceState struct {
+	Name     string `json:"name"`
+	Hash     string `json:"hash"`
+	State    string `json:"state"`
+	Status   string `json:"status"`
+	Health   string `json:"health"`
+	ImageUri string `json:"image"`
+	Logs     string `json:"logs"`
+}
+
+type AppState struct {
+	Services []AppServiceState `json:"services"`
+	State    string            `json:"state"`
+	Uri      string            `json:"uri"`
+}
+
+type AppsState struct {
+	Ostree     string              `json:"ostree"`
+	DeviceTime string              `json:"deviceTime"`
+	Apps       map[string]AppState `json:"apps,omitempty"`
+}
+
+type AppsStates struct {
+	States []AppsState `json:"apps-states"`
+}
+
 type Device struct {
 	Uuid          string           `json:"uuid"`
 	Name          string           `json:"name"`
@@ -155,6 +181,7 @@ type Device struct {
 		TargetName string `json:"target-name"`
 		HardwareId string `json:"hardware-id"`
 	} `json:"secondary-ecus"`
+	AppsState *AppsState `json:"apps-state,omitempty"`
 }
 
 type DeviceList struct {
@@ -862,6 +889,21 @@ func (a *Api) DeviceDeleteConfig(factory, device, filename string) error {
 	logrus.Debugf("Deleting config file: %s", url)
 	_, err := a.Delete(url, nil)
 	return err
+}
+
+func (a *Api) DeviceGetAppsStates(factory, device string) (*AppsStates, error) {
+	url := a.serverUrl + "/ota/devices/" + device + "/apps-states/?factory=" + factory
+	body, err := a.Get(url)
+	if err != nil {
+		return nil, err
+	}
+
+	states := AppsStates{}
+	err = json.Unmarshal(*body, &states)
+	if err != nil {
+		return nil, err
+	}
+	return &states, nil
 }
 
 func (a *Api) FactoryCreateConfig(factory string, cfg ConfigCreateRequest) error {

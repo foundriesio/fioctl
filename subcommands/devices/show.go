@@ -73,6 +73,19 @@ func doShow(cmd *cobra.Command, args []string) {
 	if len(device.CurrentUpdate) > 0 {
 		fmt.Printf("Update Id:\t%s\n", device.CurrentUpdate)
 	}
+	if device.AppsState != nil && device.AppsState.Apps != nil {
+		var healthyApps []string
+		var unhealthyApps []string
+		for a, s := range device.AppsState.Apps {
+			if s.State == "healthy" {
+				healthyApps = append(healthyApps, a)
+			} else {
+				unhealthyApps = append(unhealthyApps, a)
+			}
+		}
+		fmt.Printf("Healthy Apps:\t%s\n", strings.Join(healthyApps, ","))
+		fmt.Printf("Unhealthy Apps:\t%s\n", strings.Join(unhealthyApps, ","))
+	}
 	if device.Network != nil {
 		fmt.Println("Network Info:")
 		fmt.Printf("\tHostname:\t%s\n", device.Network.Hostname)
