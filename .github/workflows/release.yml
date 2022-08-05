@@ -19,6 +19,9 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: 1.17
+      - name: Hack around https://github.com/actions/checkout/issues/290
+        run: |
+          git fetch --tags --force
       - name: Build binaries
         run: |
           make
