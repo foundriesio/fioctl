@@ -38,7 +38,10 @@ func doShowWave(cmd *cobra.Command, args []string) {
 	fmt.Printf("Tag: \t\t%s\n", wave.Tag)
 	fmt.Printf("Status: \t%s\n", wave.Status)
 
-	fmt.Printf("Created At: \t%s\n", wave.CreatedAt)
+	fmt.Printf("Created At: \t%s\n", wave.ChangeMeta.CreatedAt)
+	if len(wave.ChangeMeta.CreatedBy) > 0 {
+		fmt.Printf("Created By: \t%s\n", wave.ChangeMeta.CreatedBy)
+	}
 	if len(wave.RolloutGroups) > 0 {
 		groupRefs := sortRolloutGroups(wave.RolloutGroups)
 		firstLine := true
@@ -60,8 +63,11 @@ func doShowWave(cmd *cobra.Command, args []string) {
 			fmt.Println(line)
 		}
 	}
-	if wave.FinishedAt != "" {
-		fmt.Printf("Finished At: \t%s\n", wave.FinishedAt)
+	if wave.ChangeMeta.UpdatedAt != "" {
+		fmt.Printf("Finished At: \t%s\n", wave.ChangeMeta.UpdatedAt)
+	}
+	if wave.ChangeMeta.UpdatedBy != "" {
+		fmt.Printf("Finished By: \t%s\n", wave.ChangeMeta.UpdatedBy)
 	}
 
 	if showTargets {

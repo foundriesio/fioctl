@@ -371,10 +371,10 @@ type Wave struct {
 	Version       string                         `json:"version"`
 	Tag           string                         `json:"tag"`
 	Targets       *json.RawMessage               `json:"targets"`
-	CreatedAt     string                         `json:"created-at"`
-	FinishedAt    string                         `json:"finished-at"`
 	Status        string                         `json:"status"`
 	RolloutGroups map[string]WaveRolloutGroupRef `json:"rollout-groups"`
+
+	ChangeMeta ChangeMeta `json:"change-meta"`
 }
 
 type WaveCreate struct {
