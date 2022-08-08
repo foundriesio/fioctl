@@ -35,6 +35,18 @@ func doShowCA(cmd *cobra.Command, args []string) {
 	resp, err := api.FactoryGetCA(factory)
 	subcommands.DieNotNil(err)
 
+	fmt.Println("## Change Metadata")
+	fmt.Println("Created at:", resp.ChangeMeta.CreatedAt)
+	if len(resp.ChangeMeta.CreatedBy) > 0 {
+		fmt.Println("Created by:", resp.ChangeMeta.CreatedBy)
+	}
+	if len(resp.ChangeMeta.UpdatedAt) > 0 {
+		fmt.Println("Updated at:", resp.ChangeMeta.UpdatedAt)
+	}
+	if len(resp.ChangeMeta.UpdatedBy) > 0 {
+		fmt.Println("Updated by:", resp.ChangeMeta.UpdatedBy)
+	}
+
 	fmt.Println("## Factory root certificate")
 	if prettyFormat {
 		prettyPrint(resp.RootCrt)

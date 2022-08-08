@@ -43,6 +43,8 @@ type CaCerts struct {
 	TlsCrt  string `json:"tls-crt"`
 	TlsCsr  string `json:"tls-csr"`
 
+	ChangeMeta ChangeMeta `json:"change-meta"`
+
 	CreateCaScript       *string `json:"create_ca"`
 	CreateDeviceCaScript *string `json:"create_device_ca"`
 	SignCaScript         *string `json:"sign_ca_csr"`
