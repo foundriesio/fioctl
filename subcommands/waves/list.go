@@ -39,8 +39,8 @@ func doListWaves(cmd *cobra.Command, args []string) {
 			wave.Version,
 			wave.Tag,
 			wave.Status,
-			wave.CreatedAt,
-			wave.FinishedAt,
+			wave.ChangeMeta.CreatedAt,
+			wave.ChangeMeta.UpdatedAt,
 		)
 	}
 	t.Print()

@@ -43,6 +43,8 @@ type CaCerts struct {
 	TlsCrt  string `json:"tls-crt"`
 	TlsCsr  string `json:"tls-csr"`
 
+	ChangeMeta ChangeMeta `json:"change-meta"`
+
 	CreateCaScript       *string `json:"create_ca"`
 	CreateDeviceCaScript *string `json:"create_device_ca"`
 	SignCaScript         *string `json:"sign_ca_csr"`
@@ -110,11 +112,19 @@ type UpdateEvent struct {
 	Detail EventDetail `json:"event"`
 }
 
+type ChangeMeta struct {
+	CreatedBy string `json:"created-by"`
+	CreatedAt string `json:"created-at"`
+	UpdatedBy string `json:"updated-by"`
+	UpdatedAt string `json:"updated-at"`
+}
+
 type DeviceGroup struct {
 	Id          int    `json:"id"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
-	CreatedAt   string `json:"created-at"`
+
+	ChangeMeta ChangeMeta `json:"change-meta"`
 }
 
 type Device struct {
@@ -124,7 +134,6 @@ type Device struct {
 	Factory       string           `json:"factory"`
 	GroupName     string           `json:"device-group"` // Returned in List API
 	Group         *DeviceGroup     `json:"group"`        // Returned in Get API
-	CreatedAt     string           `json:"created-at"`
 	LastSeen      string           `json:"last-seen"`
 	OstreeHash    string           `json:"ostree-hash"`
 	DockerApps    []string         `json:"docker-apps,omitempty"`
@@ -140,6 +149,7 @@ type Device struct {
 	AktualizrToml string           `json:"aktualizr-toml,omitempty"`
 	IsProd        bool             `json:"is-prod"`
 	IsWave        bool             `json:"is-wave"`
+	ChangeMeta    ChangeMeta       `json:"change-meta"`
 	Secondaries   []struct {
 		Serial     string `json:"serial"`
 		TargetName string `json:"target-name"`
@@ -353,6 +363,7 @@ type WaveRolloutGroupRef struct {
 	GroupId   int    `json:"group-id"`
 	GroupName string `json:"group-name"`
 	CreatedAt string `json:"created-at"`
+	CreatedBy string `json:"created-by"`
 }
 
 type Wave struct {
@@ -360,10 +371,10 @@ type Wave struct {
 	Version       string                         `json:"version"`
 	Tag           string                         `json:"tag"`
 	Targets       *json.RawMessage               `json:"targets"`
-	CreatedAt     string                         `json:"created-at"`
-	FinishedAt    string                         `json:"finished-at"`
 	Status        string                         `json:"status"`
 	RolloutGroups map[string]WaveRolloutGroupRef `json:"rollout-groups"`
+
+	ChangeMeta ChangeMeta `json:"change-meta"`
 }
 
 type WaveCreate struct {

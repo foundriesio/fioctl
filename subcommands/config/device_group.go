@@ -55,9 +55,9 @@ func doListDeviceGroup(cmd *cobra.Command, args []string) {
 	subcommands.DieNotNil(err)
 
 	t := tabby.New()
-	t.AddHeader("NAME", "DESCRIPTION", "CREATED AT")
+	t.AddHeader("NAME", "DESCRIPTION", "CREATED AT", "UPDATED AT")
 	for _, grp := range *lst {
-		t.AddLine(grp.Name, grp.Description, grp.CreatedAt)
+		t.AddLine(grp.Name, grp.Description, grp.ChangeMeta.CreatedAt, grp.ChangeMeta.UpdatedAt)
 	}
 	t.Print()
 }
@@ -79,7 +79,7 @@ func doCreateDeviceGroup(cmd *cobra.Command, args []string) {
 	if grp.Description != "" {
 		fmt.Printf("Description: \t%s\n", grp.Description)
 	}
-	fmt.Printf("Created At: \t%s\n\n", grp.CreatedAt)
+	fmt.Printf("Created At: \t%s\n\n", grp.ChangeMeta.CreatedAt)
 }
 
 func doDeleteDeviceGroup(cmd *cobra.Command, args []string) {
