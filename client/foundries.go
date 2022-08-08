@@ -110,6 +110,13 @@ type UpdateEvent struct {
 	Detail EventDetail `json:"event"`
 }
 
+type ChangeMeta struct {
+	CreatedBy string `json:"created-by"`
+	CreatedAt string `json:"created-at"`
+	UpdatedBy string `json:"updated-by"`
+	UpdatedAt string `json:"updated-at"`
+}
+
 type DeviceGroup struct {
 	Id          int    `json:"id"`
 	Name        string `json:"name"`
@@ -124,7 +131,6 @@ type Device struct {
 	Factory       string           `json:"factory"`
 	GroupName     string           `json:"device-group"` // Returned in List API
 	Group         *DeviceGroup     `json:"group"`        // Returned in Get API
-	CreatedAt     string           `json:"created-at"`
 	LastSeen      string           `json:"last-seen"`
 	OstreeHash    string           `json:"ostree-hash"`
 	DockerApps    []string         `json:"docker-apps,omitempty"`
@@ -140,6 +146,7 @@ type Device struct {
 	AktualizrToml string           `json:"aktualizr-toml,omitempty"`
 	IsProd        bool             `json:"is-prod"`
 	IsWave        bool             `json:"is-wave"`
+	ChangeMeta    ChangeMeta       `json:"change-meta"`
 	Secondaries   []struct {
 		Serial     string `json:"serial"`
 		TargetName string `json:"target-name"`
