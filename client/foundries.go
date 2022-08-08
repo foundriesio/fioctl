@@ -363,6 +363,7 @@ type WaveRolloutGroupRef struct {
 	GroupId   int    `json:"group-id"`
 	GroupName string `json:"group-name"`
 	CreatedAt string `json:"created-at"`
+	CreatedBy string `json:"created-by"`
 }
 
 type Wave struct {

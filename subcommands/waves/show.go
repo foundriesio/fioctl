@@ -43,17 +43,21 @@ func doShowWave(cmd *cobra.Command, args []string) {
 		groupRefs := sortRolloutGroups(wave.RolloutGroups)
 		firstLine := true
 		for _, ref := range groupRefs {
-			formatLine := "\t\t%s: rollout to device group %s\n"
+			formatLine := "\t\t%s: rollout to device group %s"
 			if firstLine {
 				firstLine = false
-				formatLine = "Rollout At: \t%s: rollout to device group %s\n"
+				formatLine = "Rollout At: \t%s: rollout to device group %s"
 			}
 			groupName := ref.GroupName
 			if groupName == "" {
 				// A group has been deleted, only a reference still exists - we cannot track down a name
 				groupName = "<deleted group>"
 			}
-			fmt.Printf(formatLine, ref.CreatedAt, groupName)
+			line := fmt.Sprintf(formatLine, ref.CreatedAt, groupName)
+			if len(ref.CreatedBy) > 0 {
+				line += " by " + ref.CreatedBy
+			}
+			fmt.Println(line)
 		}
 	}
 	if wave.FinishedAt != "" {
