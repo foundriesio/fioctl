@@ -123,7 +123,8 @@ type DeviceGroup struct {
 	Id          int    `json:"id"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
-	CreatedAt   string `json:"created-at"`
+
+	ChangeMeta ChangeMeta `json:"change-meta"`
 }
 
 type Device struct {
