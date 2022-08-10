@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/cheynewallace/tabby"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -42,6 +43,21 @@ func init() {
 	}
 	showCmd.AddCommand(showAppCmd)
 	showAppCmd.Flags().Bool("manifest", false, "Show an app docker manifest")
+
+	sbomCmd := &cobra.Command{
+		Use:   "sboms <version> [<build/run>]",
+		Short: "Show SBOMs for a specific target.",
+		Run:   doShowSboms,
+		Args:  cobra.RangeArgs(1, 2),
+		Example: `
+  # Show all SBOM files for Target version 42:
+  fioctl targets show sboms 42
+
+  # Show a subset of the SBOMS for this target. In this case, the 32-bit Arm
+  # container SBOMS:
+  fioctl targets show sboms 42 41/build-armhf`,
+	}
+	showCmd.AddCommand(sbomCmd)
 }
 
 func sortedAppsNames(target client.TufCustom) []string {
@@ -221,4 +237,39 @@ func getTargets(factory string, prodTag string, version string) ([]string, map[s
 
 func indent(input string, prefix string) string {
 	return prefix + strings.Join(strings.SplitAfter(input, "\n"), prefix)
+}
+
+func doShowSboms(cmd *cobra.Command, args []string) {
+	factory := viper.GetString("factory")
+	version := args[0]
+	logrus.Debugf("Showing sboms for %s %s", factory, version)
+
+	filter := ""
+	if len(args) == 2 {
+		filter = args[1]
+	}
+
+	prodTag, _ := cmd.Flags().GetString("production-tag")
+
+	name := getSbomTargetName(factory, prodTag, version)
+	sboms, err := api.TargetSboms(factory, name)
+	subcommands.DieNotNil(err)
+	t := tabby.New()
+	t.AddHeader("BUILD/RUN", "BOM ARTIFACT")
+	for _, sbom := range sboms {
+		buildRun := sbom.CiBuild + "/" + sbom.CiRun
+		if len(filter) == 0 || strings.HasPrefix(buildRun, filter) {
+			t.AddLine(buildRun, sbom.Artifact)
+		}
+	}
+	t.Print()
+}
+
+func getSbomTargetName(factory, prodTag, version string) string {
+	_, _, targets := getTargets(factory, prodTag, version)
+	for name := range targets {
+		return name
+	}
+	subcommands.DieNotNil(fmt.Errorf("Unable to find target for version: %s", version))
+	return "" // Make compiler happy
 }
