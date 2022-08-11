@@ -2,6 +2,8 @@ package devices
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/foundriesio/fioctl/client"
 	"github.com/foundriesio/fioctl/subcommands"
 	"github.com/spf13/cobra"
@@ -51,7 +53,10 @@ func doListStates(cmd *cobra.Command, args []string) {
 				fmt.Printf("\t\t\tState:\t%s\n", srv.State)
 				fmt.Printf("\t\t\tStatus:\t%s\n", srv.Status)
 				if len(srv.Logs) > 0 {
-					fmt.Printf("\t\t\tLogs:\t%s\n", srv.Logs)
+					fmt.Println("\t\t\tLogs:")
+					for _, line := range strings.Split(srv.Logs, "\n") {
+						fmt.Printf("\t\t\t | %s\n", line)
+					}
 				}
 			}
 			fmt.Println()
