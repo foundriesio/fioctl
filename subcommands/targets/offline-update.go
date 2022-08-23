@@ -78,7 +78,12 @@ func doOfflineUpdate(cmd *cobra.Command, args []string) {
 	subcommands.DieNotNil(downloadOstree(factory, ti.ostreeVersion, ti.hardwareID, dstDir), "Failed to download Target's ostree repo:")
 
 	fmt.Printf("Downloading Apps fetched by the `assemble-system-image` run; build number:  %d, tag: %s...\n", ti.version, ti.buildTag)
-	subcommands.DieNotNil(downloadApps(factory, targetName, ti.version, ti.buildTag, path.Join(dstDir, "apps")), "Failed to download Target's Apps:")
+	err = downloadApps(factory, targetName, ti.version, ti.buildTag, path.Join(dstDir, "apps"))
+	if herr := client.AsHttpError(err); herr != nil && herr.Response.StatusCode == 404 {
+		fmt.Println("WARNING: The Target Apps were not fetched by the `assemble` run, make sure that App preloading is enabled if needed. The update won't include any Apps!")
+	} else {
+		subcommands.DieNotNil(err, "Failed to download Target's Apps:")
+	}
 
 	fmt.Println("Successfully downloaded offline update content")
 }
@@ -222,7 +227,10 @@ func downloadItem(factory string, targetVer int, runName string, artifactPath st
 		return err
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("failed to download a CI artifact; status code: %d, artifact: %s", resp.StatusCode, artifactPath)
+		return &client.HttpError{
+			Message:  fmt.Sprintf("failed to download a CI artifact; status code: %d, artifact: %s", resp.StatusCode, artifactPath),
+			Response: resp,
+		}
 	}
 
 	status := DlStatus{resp.ContentLength, 0, 20, time.Now()}
