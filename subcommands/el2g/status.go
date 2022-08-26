@@ -58,6 +58,7 @@ func doStatus(cmd *cobra.Command, args []string) {
 		}
 		fmt.Println("Name:", ca.Name)
 		fmt.Println("Algorithm:", ca.Algorithm)
+		fmt.Println("ID:", ca.Id)
 		fmt.Println(ca.Value)
 	}
 }

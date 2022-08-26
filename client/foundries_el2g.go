@@ -106,16 +106,17 @@ func (a *Api) El2gDevices(factory string) ([]El2gDevice, error) {
 	return devices, nil
 }
 
-func (a *Api) El2gAddDevice(factory, prodId, deviceUuid string) error {
+func (a *Api) El2gAddDevice(factory, prodId, deviceUuid string, production bool) error {
 	url := a.serverUrl + "/ota/factories/" + factory + "/el2g/devices/"
 	devices := []string{deviceUuid}
 
 	type Req struct {
-		ProductId string   `json:"product-id"`
-		Devices   []string `json:"devices"`
+		ProductId  string   `json:"product-id"`
+		Devices    []string `json:"devices"`
+		Production bool     `json:"production"`
 	}
 
-	body, err := json.Marshal(Req{prodId, devices})
+	body, err := json.Marshal(Req{prodId, devices, production})
 	if err != nil {
 		return err
 	}
@@ -123,16 +124,17 @@ func (a *Api) El2gAddDevice(factory, prodId, deviceUuid string) error {
 	return err
 }
 
-func (a *Api) El2gDelDevice(factory, prodId, deviceUuid string) error {
+func (a *Api) El2gDelDevice(factory, prodId, deviceUuid string, production bool) error {
 	url := a.serverUrl + "/ota/factories/" + factory + "/el2g/devices/"
 	devices := []string{deviceUuid}
 
 	type Req struct {
-		ProductId string   `json:"product-id"`
-		Devices   []string `json:"devices"`
+		ProductId  string   `json:"product-id"`
+		Devices    []string `json:"devices"`
+		Production bool     `json:"production"`
 	}
 
-	body, err := json.Marshal(Req{prodId, devices})
+	body, err := json.Marshal(Req{prodId, devices, production})
 	if err != nil {
 		return err
 	}

@@ -11,8 +11,9 @@ import (
 )
 
 var (
-	add string
-	del string
+	add        string
+	del        string
+	production bool
 )
 
 func init() {
@@ -48,6 +49,7 @@ fioctl el2g devices --del 935389312472 <device-id>
 	}
 	devicesCmd.Flags().StringVarP(&add, "add", "", "", "Whitelist the device for the given nc12 product id")
 	devicesCmd.Flags().StringVarP(&del, "del", "", "", "Unclaim device for the given nc12 product id")
+	devicesCmd.Flags().BoolVarP(&production, "production", "", false, "A production device")
 	cmd.AddCommand(devicesCmd)
 }
 
@@ -75,10 +77,10 @@ func doDevice(cmd *cobra.Command, args []string) {
 	if len(add) > 0 && len(del) > 0 {
 		subcommands.DieNotNil(errors.New("--add and --del are mutually exclusive"))
 	} else if len(add) > 0 {
-		subcommands.DieNotNil(api.El2gAddDevice(factory, add, deviceId))
+		subcommands.DieNotNil(api.El2gAddDevice(factory, add, deviceId, production))
 		return
 	} else if len(del) > 0 {
-		subcommands.DieNotNil(api.El2gDelDevice(factory, del, deviceId))
+		subcommands.DieNotNil(api.El2gDelDevice(factory, del, deviceId, production))
 		return
 	}
 
