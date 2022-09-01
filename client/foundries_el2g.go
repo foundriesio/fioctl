@@ -56,12 +56,6 @@ func (a *Api) El2gUploadDgCert(factory string, caId int, rootCa, cert string) er
 	return err
 }
 
-func (a *Api) El2gDeleteDg(factory string) error {
-	url := a.serverUrl + "/ota/factories/" + factory + "/el2g/"
-	_, err := a.Delete(url, []byte(""))
-	return err
-}
-
 type El2gAWSCert struct {
 	CA   string `json:"ca"`
 	Cert string `json:"cert"`
