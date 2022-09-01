@@ -85,3 +85,66 @@ func (a *Api) El2gDevices(factory string) ([]El2gDevice, error) {
 	}
 	return devices, nil
 }
+
+type El2gProduct struct {
+	Type string `json:"commercialName"`
+	Nc12 string `json:"nc12"`
+}
+
+func (a *Api) El2gProductInfo(factory, deviceId string) (El2gProduct, error) {
+	url := a.serverUrl + "/ota/factories/" + factory + "/el2g-proxy/devices/" + deviceId + "/product"
+	body, err := a.Get(url)
+
+	var prod El2gProduct
+	if err != nil {
+		return prod, err
+	}
+	if err = json.Unmarshal(*body, &prod); err != nil {
+		return prod, err
+	}
+	return prod, nil
+}
+
+type El2gSecureObject struct {
+	Id       json.Number `json:"id"`
+	Type     string      `json:"type"`
+	Name     string      `json:"name"`
+	ObjectId string      `json:"object-id"`
+}
+
+func (a *Api) El2gSecureObjects(factory string) ([]El2gSecureObject, error) {
+	url := a.serverUrl + "/ota/factories/" + factory + "/el2g/secure-objects/"
+	body, err := a.Get(url)
+
+	var objs []El2gSecureObject
+	if err != nil {
+		return nil, err
+	}
+	if err = json.Unmarshal(*body, &objs); err != nil {
+		return nil, err
+	}
+	return objs, nil
+}
+
+type El2gSecureObjectProvisioning struct {
+	Name  string `json:"secureObjectName"`
+	Type  string `json:"secureObjectType"`
+	State string `json:"provisioningState"`
+	Cert  string `json:"certificate"`
+}
+
+func (a *Api) El2gSecureObjectProvisionings(factory, deviceId string) ([]El2gSecureObjectProvisioning, error) {
+	url := a.serverUrl + "/ota/factories/" + factory + "/el2g-proxy/rtp/devices/" + deviceId + "/secure-object-provisionings"
+	body, err := a.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	type resp struct {
+		Content []El2gSecureObjectProvisioning `json:"content"`
+	}
+	var devices resp
+	if err = json.Unmarshal(*body, &devices); err != nil {
+		return nil, err
+	}
+	return devices.Content, nil
+}
