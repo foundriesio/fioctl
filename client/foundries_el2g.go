@@ -2,6 +2,8 @@ package client
 
 import (
 	"encoding/json"
+
+	"github.com/sirupsen/logrus"
 )
 
 type El2gCsr struct {
@@ -62,4 +64,24 @@ func (a *Api) El2gConfigAws(factory string, awsRegistrationCode string) (El2gAWS
 	var cert El2gAWSCert
 	err = json.Unmarshal(*resp, &cert)
 	return cert, err
+}
+
+type El2gDevice struct {
+	DeviceGroup    string      `json:"device-group"`
+	Id             json.Number `json:"id"`
+	LastConnection string      `json:"last-connection"`
+}
+
+func (a *Api) El2gDevices(factory string) ([]El2gDevice, error) {
+	url := a.serverUrl + "/ota/factories/" + factory + "/el2g/devices/"
+	logrus.Debugf("Getting el2g devices with: %s", url)
+	body, err := a.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	var devices []El2gDevice
+	if err = json.Unmarshal(*body, &devices); err != nil {
+		return nil, err
+	}
+	return devices, nil
 }
