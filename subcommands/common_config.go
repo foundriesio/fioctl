@@ -3,7 +3,7 @@ package subcommands
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"regexp"
 	"strings"
@@ -48,7 +48,7 @@ func SetConfig(opts *SetConfigOptions) {
 			content := parts[1]
 			if len(content) > 0 && content[0] == '=' {
 				// support for filename==/file/path.ext format
-				data, err := ioutil.ReadFile(content[1:])
+				data, err := os.ReadFile(content[1:])
 				DieNotNil(err, "Unable to read config file:")
 				content = string(data)
 			}
@@ -107,9 +107,9 @@ func ReadConfig(configFile string, cfg *client.ConfigCreateRequest) {
 
 	if configFile == "-" {
 		logrus.Debug("Reading config from STDIN")
-		content, err = ioutil.ReadAll(os.Stdin)
+		content, err = io.ReadAll(os.Stdin)
 	} else {
-		content, err = ioutil.ReadFile(configFile)
+		content, err = os.ReadFile(configFile)
 	}
 
 	DieNotNil(err, "Unable to read config file:")

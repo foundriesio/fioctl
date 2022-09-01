@@ -3,7 +3,6 @@ package subcommands
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"text/tabwriter"
@@ -95,7 +94,7 @@ func SaveOauthConfig(c client.OAuthConfig) {
 	}
 	// Try to read in config
 	cfg := make(map[string]interface{})
-	buf, err := ioutil.ReadFile(name)
+	buf, err := os.ReadFile(name)
 	if err == nil {
 		DieNotNil(yaml.Unmarshal(buf, &cfg), "Unable unmarshal configuration:")
 	}
@@ -106,7 +105,7 @@ func SaveOauthConfig(c client.OAuthConfig) {
 	}
 	buf, err = yaml.Marshal(cfg)
 	DieNotNil(err, "Unable to marshall oauth config:")
-	DieNotNil(ioutil.WriteFile(name, buf, os.FileMode(0644)), "Unable to update config: ")
+	DieNotNil(os.WriteFile(name, buf, os.FileMode(0644)), "Unable to update config: ")
 }
 
 func DieNotNil(err error, message ...string) {

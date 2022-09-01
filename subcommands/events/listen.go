@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/signal"
 
@@ -29,7 +28,7 @@ reference implementation of queue listener.`,
 }
 
 func subscriptionName(credsFile string) string {
-	buf, err := ioutil.ReadFile(credsFile)
+	buf, err := os.ReadFile(credsFile)
 	subcommands.DieNotNil(err)
 	var config map[string]string
 	err = json.Unmarshal(buf, &config)
