@@ -47,7 +47,7 @@ func doDeviceGateway(cmd *cobra.Command, args []string) {
 	subcommands.DieNotNil(err)
 	defer os.Remove(tmpfile.Name())
 
-	fmt.Println("Requesting CSR from Edgelock2Go")
+	fmt.Println("Requesting CSR from EdgeLock2Go")
 	csr, err := api.El2gCreateDg(factory)
 	subcommands.DieNotNil(err)
 
