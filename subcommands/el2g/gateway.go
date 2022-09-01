@@ -3,7 +3,6 @@ package el2g
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -43,7 +42,7 @@ func doDeviceGateway(cmd *cobra.Command, args []string) {
 	ca, err := api.FactoryGetCA(factory)
 	subcommands.DieNotNil(err)
 
-	tmpfile, err := ioutil.TempFile("", "el2g-*.csr")
+	tmpfile, err := os.CreateTemp("", "el2g-*.csr")
 	subcommands.DieNotNil(err)
 	defer os.Remove(tmpfile.Name())
 
