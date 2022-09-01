@@ -16,7 +16,10 @@ import (
 	"github.com/foundriesio/fioctl/subcommands"
 )
 
-var prettyFormat bool
+var (
+	prettyFormat  bool
+	justShowFlags subcommands.MutuallyExclusiveFlags
+)
 
 func init() {
 	cmd := &cobra.Command{
@@ -26,6 +29,9 @@ func init() {
 	}
 	caCmd.AddCommand(cmd)
 	cmd.Flags().BoolVarP(&prettyFormat, "pretty", "", false, "Display human readable output of each certificate")
+	justShowFlags.Add(cmd, "just-root", "Only show the Factory root CA certificate")
+	justShowFlags.Add(cmd, "just-tls", "Only show the device-gateway TLS certificate")
+	justShowFlags.Add(cmd, "just-device-cas", "Only show device authenticate certificates trusted by the device-gateway")
 }
 
 func doShowCA(cmd *cobra.Command, args []string) {
@@ -34,6 +40,25 @@ func doShowCA(cmd *cobra.Command, args []string) {
 
 	resp, err := api.FactoryGetCA(factory)
 	subcommands.DieNotNil(err)
+
+	flag, err := justShowFlags.GetFlag()
+	subcommands.DieNotNil(err)
+	justVal := ""
+	if flag == "just-root" {
+		justVal = resp.RootCrt
+	} else if flag == "just-tls" {
+		justVal = resp.TlsCrt
+	} else if flag == "just-device-cas" {
+		justVal = resp.CaCrt
+	}
+	if len(justVal) > 0 {
+		if prettyFormat {
+			prettyPrint(justVal)
+		} else {
+			fmt.Println(justVal)
+		}
+		return
+	}
 
 	fmt.Println("## Change Metadata")
 	fmt.Println("Created at:", resp.ChangeMeta.CreatedAt)

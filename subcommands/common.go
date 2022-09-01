@@ -132,3 +132,29 @@ func Tabby(indent int, columns ...interface{}) *tabby.Tabby {
 	}
 	return tab
 }
+
+type MutuallyExclusiveFlags struct {
+	flags map[string]*bool
+}
+
+func (f *MutuallyExclusiveFlags) Add(cmd *cobra.Command, flagName, helpText string) {
+	if f.flags == nil {
+		f.flags = make(map[string]*bool)
+	}
+	val := false
+	f.flags[flagName] = &val
+	cmd.Flags().BoolVarP(f.flags[flagName], flagName, "", false, helpText)
+}
+
+func (f *MutuallyExclusiveFlags) GetFlag() (string, error) {
+	flagName := ""
+	for k, v := range f.flags {
+		if *v && len(flagName) == 0 {
+			flagName = k
+		} else if *v {
+			return "", fmt.Errorf("--%s and --%s are mutually exclusive", flagName, k)
+		}
+
+	}
+	return flagName, nil
+}
