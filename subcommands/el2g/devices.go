@@ -50,6 +50,14 @@ fioctl el2g devices add --production 935414457472 0x04005001eee3ba1ee96e60047e57
 	}
 	add.Flags().BoolVarP(&production, "production", "", false, "A production device")
 	devicesCmd.AddCommand(add)
+	del := &cobra.Command{
+		Use:   "delete <NC12 product-id> <device-id>",
+		Short: "Revoke device access to EdgeLock 2GO",
+		Args:  cobra.ExactArgs(2),
+		Run:   doDelete,
+	}
+	del.Flags().BoolVarP(&production, "production", "", false, "A production device")
+	devicesCmd.AddCommand(del)
 }
 
 func doList(cmd *cobra.Command, args []string) {
@@ -104,4 +112,11 @@ func doAdd(cmd *cobra.Command, args []string) {
 	prodId := args[0]
 	deviceId := args[1]
 	subcommands.DieNotNil(api.El2gAddDevice(factory, prodId, deviceId, production))
+}
+
+func doDelete(cmd *cobra.Command, args []string) {
+	factory := viper.GetString("factory")
+	prodId := args[0]
+	deviceId := args[1]
+	subcommands.DieNotNil(api.El2gDeleteDevice(factory, prodId, deviceId, production))
 }
