@@ -156,9 +156,10 @@ Please, run "fioctl keys rotate-targets" in order to create offline targets keys
 }
 
 func readExpiration(cmd *cobra.Command) (expires time.Time) {
+	var err error
 	if cmd.Flags().Changed("expires-at") {
 		at, _ := cmd.Flags().GetString("expires-at")
-		expires, err := time.Parse(time.RFC3339, at)
+		expires, err = time.Parse(time.RFC3339, at)
 		subcommands.DieNotNil(err, "Invalid expires-at value:")
 		expires = expires.UTC()
 	} else {
