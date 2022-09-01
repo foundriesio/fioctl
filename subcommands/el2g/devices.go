@@ -56,7 +56,8 @@ fioctl el2g devices --del 935389312472 <device-id>
 func doDevices(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 	if len(add) > 0 || len(del) > 0 {
-		cmd.Usage()
+		err := cmd.Usage()
+		subcommands.DieNotNil(err)
 		return
 	}
 
