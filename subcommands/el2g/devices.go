@@ -9,6 +9,8 @@ import (
 	"github.com/spf13/viper"
 )
 
+var production bool
+
 func init() {
 	devicesCmd := &cobra.Command{
 		Use:   "devices",
@@ -28,6 +30,26 @@ func init() {
 		Args:  cobra.ExactArgs(1),
 		Run:   doShow,
 	})
+
+	add := &cobra.Command{
+		Use:   "add <NC12 product-id> <device-id>",
+		Short: "Grant device access to EdgeLock 2GO",
+		Args:  cobra.ExactArgs(2),
+		Run:   doAdd,
+		Example: `# Add a device with an SE050 (product ID: 935389312472)
+# Device ID can be found on a device by running:
+#  $ ssscli se05x uid | grep "Unique ID:" | cut -d: -f2
+#  ssscli se05x uid | grep "Unique ID:" | cut -d: -f2
+#  04005001eee3ba1ee96e60047e57da0f6880
+# This ID is hexadecimal and must be prefixed in the CLI with 0x. For example:
+fioctl el2g devices add 935389312472 0x04005001eee3ba1ee96e60047e57da0f6880
+
+# Add a production device with an SE051 HSM (product ID: 935414457472)
+fioctl el2g devices add --production 935414457472 0x04005001eee3ba1ee96e60047e57da0f6880
+`,
+	}
+	add.Flags().BoolVarP(&production, "production", "", false, "A production device")
+	devicesCmd.AddCommand(add)
 }
 
 func doList(cmd *cobra.Command, args []string) {
@@ -75,4 +97,11 @@ func doShow(cmd *cobra.Command, args []string) {
 		}
 	}
 
+}
+
+func doAdd(cmd *cobra.Command, args []string) {
+	factory := viper.GetString("factory")
+	prodId := args[0]
+	deviceId := args[1]
+	subcommands.DieNotNil(api.El2gAddDevice(factory, prodId, deviceId, production))
 }

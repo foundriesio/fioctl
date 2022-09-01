@@ -86,6 +86,24 @@ func (a *Api) El2gDevices(factory string) ([]El2gDevice, error) {
 	return devices, nil
 }
 
+func (a *Api) El2gAddDevice(factory, prodId, deviceUuid string, production bool) error {
+	url := a.serverUrl + "/ota/factories/" + factory + "/el2g/devices/"
+	devices := []string{deviceUuid}
+
+	type Req struct {
+		ProductId  string   `json:"product-id"`
+		Devices    []string `json:"devices"`
+		Production bool     `json:"production"`
+	}
+
+	body, err := json.Marshal(Req{prodId, devices, production})
+	if err != nil {
+		return err
+	}
+	_, err = a.Post(url, body)
+	return err
+}
+
 type El2gProduct struct {
 	Type string `json:"commercialName"`
 	Nc12 string `json:"nc12"`
