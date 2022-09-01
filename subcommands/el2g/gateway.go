@@ -64,7 +64,7 @@ func doDeviceGateway(cmd *cobra.Command, args []string) {
 	fmt.Println("Uploading signed certificate")
 	subcommands.DieNotNil(api.El2gUploadDgCert(factory, csr.Id, ca.RootCrt, out.String()))
 
-	fmt.Println("Upadating factory allowed CA's with")
+	fmt.Println("Updating factory allowed CA's with")
 	fmt.Println(out.String())
 	newCa := ca.CaCrt + "\n" + out.String()
 	certs := client.CaCerts{CaCrt: newCa}
