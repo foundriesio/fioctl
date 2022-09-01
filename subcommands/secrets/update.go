@@ -2,7 +2,6 @@ package secrets
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strings"
 
@@ -51,7 +50,7 @@ func doUpdate(cmd *cobra.Command, args []string) {
 		if value == "" {
 			secrets[i].Value = nil
 		} else if value[0] == '=' {
-			bytes, err := ioutil.ReadFile(value[1:])
+			bytes, err := os.ReadFile(value[1:])
 			subcommands.DieNotNil(err, "Unable to read secret:")
 			content := string(bytes)
 			secrets[i].Value = &content

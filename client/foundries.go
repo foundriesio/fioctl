@@ -9,7 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"strconv"
@@ -492,7 +492,7 @@ func NewApiClient(serverUrl string, config Config, caCertPath string, version st
 			rootCAs = x509.NewCertPool()
 		}
 
-		certs, err := ioutil.ReadFile(caCertPath)
+		certs, err := os.ReadFile(caCertPath)
 		if err != nil {
 			logrus.Fatalf("Failed to append %q to RootCAs: %v", caCertPath, err)
 		}
@@ -521,7 +521,7 @@ func httpLogger(req *http.Request) logrus.FieldLogger {
 
 func readResponse(res *http.Response, log logrus.FieldLogger) (*[]byte, error) {
 	defer res.Body.Close()
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		log.Debugf("I/O error reading response: %s", err)
 		return nil, err
@@ -1446,7 +1446,7 @@ func (a *Api) JobservTail(url string) {
 		if err != nil {
 			fmt.Printf("TODO LOG ERROR OR SOMETHING: %s\n", err)
 		}
-		body, err := ioutil.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			fmt.Printf("Unable to read body resp: %s", err)
 		}

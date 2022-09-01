@@ -1,7 +1,7 @@
 package events
 
 import (
-	"io/ioutil"
+	"os"
 
 	"github.com/foundriesio/fioctl/client"
 	"github.com/foundriesio/fioctl/subcommands"
@@ -57,6 +57,6 @@ func doCreatePull(cmd *cobra.Command, args []string) {
 
 	creds, err := api.EventQueuesCreate(factory, queue)
 	subcommands.DieNotNil(err)
-	err = ioutil.WriteFile(args[1], creds, 0o700)
+	err = os.WriteFile(args[1], creds, 0o700)
 	subcommands.DieNotNil(err)
 }

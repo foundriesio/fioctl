@@ -3,7 +3,6 @@ package docker
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"os/user"
@@ -79,7 +78,7 @@ func doDockerCreds(cmd *cobra.Command, args []string) {
 	self := findSelf()
 
 	var config map[string]interface{}
-	bytes, err := ioutil.ReadFile(dockerConfigFile)
+	bytes, err := os.ReadFile(dockerConfigFile)
 	if os.IsNotExist(err) {
 		dockerConfig := filepath.Dir(dockerConfigFile)
 		if _, err := os.Stat(filepath.Dir(dockerConfig)); os.IsNotExist(err) {
@@ -108,7 +107,7 @@ func doDockerCreds(cmd *cobra.Command, args []string) {
 	subcommands.DieNotNil(os.Symlink(self, dst))
 
 	fmt.Println("Adding hub.foundries.io helper to", dockerConfigFile)
-	subcommands.DieNotNil(ioutil.WriteFile(dockerConfigFile, configBytes, 0o600))
+	subcommands.DieNotNil(os.WriteFile(dockerConfigFile, configBytes, 0o600))
 }
 
 func RunCredsHelper() int {

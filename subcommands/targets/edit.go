@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 
@@ -40,7 +39,7 @@ func doEdit(cmd *cobra.Command, args []string) {
 	subcommands.DieNotNil(err)
 
 	// Create temp file to edit with
-	tmpfile, err := ioutil.TempFile("", "targets.*.json")
+	tmpfile, err := os.CreateTemp("", "targets.*.json")
 	if err != nil {
 		fmt.Println("Unable to create tempfile: ", err)
 		os.Exit(1)
@@ -71,7 +70,7 @@ func doEdit(cmd *cobra.Command, args []string) {
 	}
 
 	// Read it and see if its changed
-	content, err := ioutil.ReadFile(tmpfile.Name())
+	content, err := os.ReadFile(tmpfile.Name())
 	if err != nil {
 		fmt.Println("ERROR: Unable to re-read tempfile:", err)
 	}

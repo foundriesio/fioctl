@@ -2,7 +2,6 @@ package keys
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 
@@ -65,7 +64,7 @@ This is optional.`,
 }
 
 func writeFile(filename, contents string, mode os.FileMode) {
-	if err := ioutil.WriteFile(filename, []byte(contents), mode); err != nil {
+	if err := os.WriteFile(filename, []byte(contents), mode); err != nil {
 		fmt.Printf("ERROR: Creating %s: %s", filename, err)
 		os.Exit(1)
 	}
@@ -123,7 +122,7 @@ func doCreateCA(cmd *cobra.Command, args []string) {
 			resp.CaCrt += "\n"
 		}
 		run("./create_device_ca", "local-ca.key", "local-ca.pem")
-		buf, err := ioutil.ReadFile("local-ca.pem")
+		buf, err := os.ReadFile("local-ca.pem")
 		if err != nil {
 			fmt.Println("ERROR:", err)
 			os.Exit(1)
@@ -131,7 +130,7 @@ func doCreateCA(cmd *cobra.Command, args []string) {
 		resp.CaCrt += string(buf)
 	}
 
-	buf, err := ioutil.ReadFile("factory_ca.pem")
+	buf, err := os.ReadFile("factory_ca.pem")
 	subcommands.DieNotNil(err)
 	resp.RootCrt = string(buf)
 

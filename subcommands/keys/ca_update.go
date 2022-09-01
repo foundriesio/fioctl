@@ -1,7 +1,7 @@
 package keys
 
 import (
-	"io/ioutil"
+	"os"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -25,7 +25,7 @@ func doUpdateCA(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 	logrus.Debugf("Updating certs for %s", factory)
 
-	buf, err := ioutil.ReadFile(args[0])
+	buf, err := os.ReadFile(args[0])
 	subcommands.DieNotNil(err)
 
 	certs := client.CaCerts{CaCrt: string(buf)}
