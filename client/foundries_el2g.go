@@ -6,6 +6,22 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+type El2gOverview struct {
+	Subdomain  string `json:"subdomain"`
+	ProductIds []int  `json:"product-ids"`
+}
+
+func (a *Api) El2gOverview(factory string) (El2gOverview, error) {
+	url := a.serverUrl + "/ota/factories/" + factory + "/el2g/overview/"
+	body, err := a.Get(url)
+	if err != nil {
+		return El2gOverview{}, err
+	}
+	var overview El2gOverview
+	err = json.Unmarshal(*body, &overview)
+	return overview, err
+}
+
 type El2gCsr struct {
 	Id    int    `json:"id"`
 	Value string `json:"value"`
@@ -141,6 +157,27 @@ func (a *Api) El2gProductInfo(factory, deviceId string) (El2gProduct, error) {
 	return prod, nil
 }
 
+type El2gIntermediateCa struct {
+	Id        json.Number `json:"id"`
+	Name      string      `json:"name"`
+	Algorithm string      `json:"algorithm"`
+	Value     string      `json:"value"`
+}
+
+func (a *Api) El2gIntermediateCas(factory string) ([]El2gIntermediateCa, error) {
+	url := a.serverUrl + "/ota/factories/" + factory + "/el2g/intermediate-cas/"
+	body, err := a.Get(url)
+
+	var objs []El2gIntermediateCa
+	if err != nil {
+		return nil, err
+	}
+	if err = json.Unmarshal(*body, &objs); err != nil {
+		return nil, err
+	}
+	return objs, nil
+}
+
 type El2gSecureObject struct {
 	Id       json.Number `json:"id"`
 	Type     string      `json:"type"`
@@ -183,4 +220,17 @@ func (a *Api) El2gSecureObjectProvisionings(factory, deviceId string) ([]El2gSec
 		return nil, err
 	}
 	return devices.Content, nil
+}
+
+func (a *Api) El2gProducts(factory string) ([]El2gProduct, error) {
+	url := a.serverUrl + "/ota/factories/" + factory + "/el2g-proxy/products"
+	body, err := a.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	var products []El2gProduct
+	if err = json.Unmarshal(*body, &products); err != nil {
+		return nil, err
+	}
+	return products, nil
 }

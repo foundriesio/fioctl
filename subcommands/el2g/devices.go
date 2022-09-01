@@ -37,6 +37,8 @@ func init() {
 		Args:  cobra.ExactArgs(2),
 		Run:   doAdd,
 		Example: `# Add a device with an SE050 (product ID: 935389312472)
+# The product IDs configured for you factory can be found by running
+#  fioctl el2g status
 # Device ID can be found on a device by running:
 #  $ ssscli se05x uid | grep "Unique ID:" | cut -d: -f2
 #  ssscli se05x uid | grep "Unique ID:" | cut -d: -f2
