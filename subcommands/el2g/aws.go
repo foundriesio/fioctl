@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 
@@ -33,13 +32,13 @@ func doAwsIOT(cmd *cobra.Command, args []string) {
 	cert, err := api.El2gConfigAws(factory, resp["registrationCode"])
 	subcommands.DieNotNil(err)
 
-	cafile, err := ioutil.TempFile("", "el2g-*.crt")
+	cafile, err := os.CreateTemp("", "el2g-*.crt")
 	subcommands.DieNotNil(err)
 	defer os.Remove(cafile.Name())
 	_, err = cafile.WriteString(cert.CA)
 	subcommands.DieNotNil(err)
 
-	certfile, err := ioutil.TempFile("", "el2g-*.crt")
+	certfile, err := os.CreateTemp("", "el2g-*.crt")
 	subcommands.DieNotNil(err)
 	defer os.Remove(certfile.Name())
 	_, err = certfile.WriteString(cert.Cert)
