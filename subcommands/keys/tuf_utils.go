@@ -41,6 +41,12 @@ func ParseTufKeyType(s string) TufKeyType {
 	return t
 }
 
+func ParseTufRoleNameOffline(s string) string {
+	r, err := parseTufRoleName(s, tufRoleNameRoot, tufRoleNameTargets)
+	subcommands.DieNotNil(err)
+	return r
+}
+
 func GenKeyPair(keyType TufKeyType) TufKeyPair {
 	keyTypeName := keyType.Name()
 	pk, err := keyType.GenerateKey()
