@@ -20,7 +20,7 @@ var (
 func init() {
 	configCmd := &cobra.Command{
 		Use:   "config-device-gateway",
-		Short: "Setup EdgeLock2Go support for device gateway",
+		Short: "Setup EdgeLock 2Go support for device gateway",
 		Run:   doDeviceGateway,
 		Example: `
   fioctl el2g config-device-gateway --pki-dir /tmp/factory-pki`,
@@ -46,7 +46,7 @@ func doDeviceGateway(cmd *cobra.Command, args []string) {
 	subcommands.DieNotNil(err)
 	defer os.Remove(tmpfile.Name())
 
-	fmt.Println("Requesting CSR from EdgeLock2Go")
+	fmt.Println("Requesting CSR from EdgeLock 2Go")
 	csr, err := api.El2gCreateDg(factory)
 	subcommands.DieNotNil(err)
 

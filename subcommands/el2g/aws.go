@@ -15,7 +15,7 @@ import (
 func init() {
 	awsCmd := &cobra.Command{
 		Use:   "config-aws-iot",
-		Short: "Setup EdgeLock2Go support in AWS IOT",
+		Short: "Setup EdgeLock 2Go support in AWS IOT",
 		Run:   doAwsIOT,
 	}
 	cmd.AddCommand(awsCmd)
@@ -28,7 +28,7 @@ func doAwsIOT(cmd *cobra.Command, args []string) {
 	resp := run("/usr/bin/env", "aws", "iot", "get-registration-code")
 	fmt.Println(" |->", resp["registrationCode"])
 
-	fmt.Println("Configuring EdgeLock2Go")
+	fmt.Println("Configuring EdgeLock 2Go")
 	cert, err := api.El2gConfigAws(factory, resp["registrationCode"])
 	subcommands.DieNotNil(err)
 

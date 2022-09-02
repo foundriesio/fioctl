@@ -11,7 +11,7 @@ var api *client.Api
 
 var cmd = &cobra.Command{
 	Use:   "el2g",
-	Short: "Manage EdgeLock2Go integration",
+	Short: "Manage EdgeLock 2Go integration",
 	Long:  "This is an optional feature that must be enabled by Foundries.io customer support",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		api = subcommands.Login(cmd)
