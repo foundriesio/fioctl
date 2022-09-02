@@ -1,15 +1,12 @@
 package keys
 
 import (
-	"archive/tar"
-	"compress/gzip"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"time"
 
-	canonical "github.com/docker/go/canonical/json"
 	"github.com/foundriesio/fioctl/client"
 	"github.com/foundriesio/fioctl/subcommands"
 	"github.com/spf13/cobra"
@@ -71,9 +68,9 @@ func doRotateRoot(cmd *cobra.Command, args []string) {
 		subcommands.DieNotNil(err)
 		creds["tufrepo/keys/first-root.pub"] = bytes
 
-		saveCreds(credsFile, creds)
+		SaveCreds(credsFile, creds)
 	} else {
-		assertWritable(credsFile)
+		subcommands.AssertWritable(credsFile)
 		var err error
 		creds, err = GetOfflineCreds(credsFile)
 		subcommands.DieNotNil(err)
@@ -102,8 +99,8 @@ func doRotateRoot(cmd *cobra.Command, args []string) {
 
 	fmt.Println("= Resigning root.json")
 	signers := []TufSigner{*curPk, newPk}
-	removeUnusedKeys(root)
-	subcommands.DieNotNil(signRoot(root, signers...))
+	RemoveUnusedKeys(root)
+	subcommands.DieNotNil(SignRoot(root, signers...))
 
 	tufRootPost(factory, credsFile, root, newCreds)
 }
@@ -113,7 +110,7 @@ func tufRootPost(factory, credsFile string, root *client.AtsTufRoot, creds Offli
 	subcommands.DieNotNil(err)
 
 	// Create a backup before we try and commit this:
-	tmpCreds := saveTempCreds(credsFile, creds)
+	tmpCreds := SaveTempCreds(credsFile, creds)
 
 	fmt.Println("= Uploading rotated root")
 	body, err := api.TufRootPost(factory, bytes)
@@ -137,46 +134,6 @@ func tufRootPost(factory, credsFile string, root *client.AtsTufRoot, creds Offli
 	subcommands.DieNotNil(syncProdRoot(factory, *root, creds))
 }
 
-func removeUnusedKeys(root *client.AtsTufRoot) {
-	var inuse []string
-	for _, role := range root.Signed.Roles {
-		inuse = append(inuse, role.KeyIDs...)
-	}
-	// we also have to be careful to not loose the extra root key when doing
-	// a root key rotation
-	for _, sig := range root.Signatures {
-		inuse = append(inuse, sig.KeyID)
-	}
-
-	for k := range root.Signed.Keys {
-		// is k in inuse?
-		found := false
-		for _, val := range inuse {
-			if k == val {
-				found = true
-				break
-			}
-		}
-		if !found {
-			fmt.Println("= Removing unused key:", k)
-			delete(root.Signed.Keys, k)
-		}
-	}
-}
-
-func signRoot(root *client.AtsTufRoot, signers ...TufSigner) error {
-	bytes, err := canonical.MarshalCanonical(root.Signed)
-	if err != nil {
-		return err
-	}
-	signatures, err := SignMeta(bytes, signers...)
-	if err != nil {
-		return err
-	}
-	root.Signatures = signatures
-	return nil
-}
-
 func swapRootKey(
 	root *client.AtsTufRoot, curid string, creds OfflineCreds, keyType TufKeyType,
 ) (TufSigner, OfflineCreds) {
@@ -190,52 +147,6 @@ func swapRootKey(
 	creds[base+".pub"] = kp.atsPubBytes
 	creds[base+".sec"] = kp.atsPrivBytes
 	return kp.signer, creds
-}
-
-func assertWritable(path string) {
-	st, err := os.Stat(path)
-	subcommands.DieNotNil(err)
-	f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, st.Mode())
-	if err != nil {
-		fmt.Println("ERROR: File is not writeable:", path)
-		os.Exit(1)
-	}
-	f.Close()
-}
-
-func saveTempCreds(credsFile string, creds OfflineCreds) string {
-	path := credsFile + ".tmp"
-	if _, err := os.Stat(path); err == nil {
-		subcommands.DieNotNil(fmt.Errorf(`Backup file exists: %s
-This file may be from a previous failed key rotation and include critical data.
-Please move this file somewhere safe before re-running this command.`,
-			path,
-		))
-	}
-	saveCreds(path, creds)
-	return path
-}
-
-func saveCreds(path string, creds OfflineCreds) {
-	file, err := os.Create(path)
-	subcommands.DieNotNil(err)
-	defer file.Close()
-
-	gzipWriter := gzip.NewWriter(file)
-	defer gzipWriter.Close()
-
-	tarWriter := tar.NewWriter(gzipWriter)
-	defer tarWriter.Close()
-
-	for name, val := range creds {
-		header := &tar.Header{
-			Name: name,
-			Size: int64(len(val)),
-		}
-		subcommands.DieNotNil(tarWriter.WriteHeader(header))
-		_, err := tarWriter.Write(val)
-		subcommands.DieNotNil(err)
-	}
 }
 
 func findRoot(root client.AtsTufRoot, creds OfflineCreds) (*TufSigner, error) {
@@ -272,12 +183,15 @@ func syncProdRoot(factory string, root client.AtsTufRoot, creds OfflineCreds) er
 		}
 		signers = append(signers, *signer)
 	}
-	if err := signRoot(&root, signers...); err != nil {
+	if err := SignRoot(&root, signers...); err != nil {
 		return err
 	}
 
 	if len(root.Signed.Roles["targets"].KeyIDs) > 1 &&
-		!sliceSetEqual(root.Signed.Roles["targets"].KeyIDs, prevRoot.Signed.Roles["targets"].KeyIDs) {
+		!subcommands.IsSliceSetEqual(
+			root.Signed.Roles["targets"].KeyIDs,
+			prevRoot.Signed.Roles["targets"].KeyIDs,
+		) {
 		//subcommands.DieNotNil(fmt.Errorf("HERE"))
 		onlineTargetId, err := findOnlineTargetId(factory, root, creds)
 		if err != nil {
@@ -298,17 +212,4 @@ func syncProdRoot(factory string, root client.AtsTufRoot, creds OfflineCreds) er
 		return err
 	}
 	return nil
-}
-
-func sliceSetEqual(first, second []string) bool {
-	firstMap := make(map[string]int, len(first))
-	for _, val := range first {
-		firstMap[val] = 1
-	}
-	for _, val := range second {
-		if _, ok := firstMap[val]; !ok {
-			return false
-		}
-	}
-	return true
 }
