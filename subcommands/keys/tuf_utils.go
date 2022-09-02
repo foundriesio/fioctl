@@ -12,6 +12,7 @@ import (
 	"os"
 	"strings"
 
+	canonical "github.com/docker/go/canonical/json"
 	tuf "github.com/theupdateframework/notary/tuf/data"
 
 	"github.com/foundriesio/fioctl/client"
@@ -103,6 +104,54 @@ func SignMeta(metaBytes []byte, signers ...TufSigner) ([]tuf.Signature, error) {
 	return signatures, nil
 }
 
+func SignRoot(root *client.AtsTufRoot, signers ...TufSigner) error {
+	bytes, err := canonical.MarshalCanonical(root.Signed)
+	if err != nil {
+		return err
+	}
+	signatures, err := SignMeta(bytes, signers...)
+	if err != nil {
+		return err
+	}
+	root.Signatures = signatures
+	return nil
+}
+
+func SaveCreds(path string, creds OfflineCreds) {
+	file, err := os.Create(path)
+	subcommands.DieNotNil(err)
+	defer file.Close()
+
+	gzipWriter := gzip.NewWriter(file)
+	defer gzipWriter.Close()
+
+	tarWriter := tar.NewWriter(gzipWriter)
+	defer tarWriter.Close()
+
+	for name, val := range creds {
+		header := &tar.Header{
+			Name: name,
+			Size: int64(len(val)),
+		}
+		subcommands.DieNotNil(tarWriter.WriteHeader(header))
+		_, err := tarWriter.Write(val)
+		subcommands.DieNotNil(err)
+	}
+}
+
+func SaveTempCreds(credsFile string, creds OfflineCreds) string {
+	path := credsFile + ".tmp"
+	if _, err := os.Stat(path); err == nil {
+		subcommands.DieNotNil(fmt.Errorf(`Backup file exists: %s
+This file may be from a previous failed key rotation and include critical data.
+Please move this file somewhere safe before re-running this command.`,
+			path,
+		))
+	}
+	SaveCreds(path, creds)
+	return path
+}
+
 func GetOfflineCreds(credsFile string) (OfflineCreds, error) {
 	f, err := os.Open(credsFile)
 	if err != nil {
@@ -171,4 +220,31 @@ func FindSigner(keyid, pubkey string, creds OfflineCreds) (*TufSigner, error) {
 		}
 	}
 	return nil, fmt.Errorf("Can not find private key for: %s", pubkey)
+}
+
+func RemoveUnusedKeys(root *client.AtsTufRoot) {
+	var inuse []string
+	for _, role := range root.Signed.Roles {
+		inuse = append(inuse, role.KeyIDs...)
+	}
+	// we also have to be careful to not loose the extra root key when doing
+	// a root key rotation
+	for _, sig := range root.Signatures {
+		inuse = append(inuse, sig.KeyID)
+	}
+
+	for k := range root.Signed.Keys {
+		// is k in inuse?
+		found := false
+		for _, val := range inuse {
+			if k == val {
+				found = true
+				break
+			}
+		}
+		if !found {
+			fmt.Println("= Removing unused key:", k)
+			delete(root.Signed.Keys, k)
+		}
+	}
 }

@@ -132,6 +132,30 @@ func Tabby(indent int, columns ...interface{}) *tabby.Tabby {
 	return tab
 }
 
+func AssertWritable(path string) {
+	st, err := os.Stat(path)
+	DieNotNil(err)
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, st.Mode())
+	if err != nil {
+		fmt.Println("ERROR: File is not writeable:", path)
+		os.Exit(1)
+	}
+	f.Close()
+}
+
+func IsSliceSetEqual(first, second []string) bool {
+	firstMap := make(map[string]int, len(first))
+	for _, val := range first {
+		firstMap[val] = 1
+	}
+	for _, val := range second {
+		if _, ok := firstMap[val]; !ok {
+			return false
+		}
+	}
+	return true
+}
+
 type MutuallyExclusiveFlags struct {
 	flags map[string]*bool
 }

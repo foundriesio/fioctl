@@ -30,7 +30,7 @@ func init() {
 func doResignRoot(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 	credsFile := args[0]
-	assertWritable(credsFile)
+	subcommands.AssertWritable(credsFile)
 	creds, err := GetOfflineCreds(credsFile)
 	subcommands.DieNotNil(err)
 
@@ -58,8 +58,8 @@ func doResignRoot(cmd *cobra.Command, args []string) {
 
 	fmt.Println("= Resigning root.json")
 	signers := []TufSigner{*curPk}
-	removeUnusedKeys(root)
-	subcommands.DieNotNil(signRoot(root, signers...))
+	RemoveUnusedKeys(root)
+	subcommands.DieNotNil(SignRoot(root, signers...))
 
 	bytes, err := json.MarshalIndent(root, "", "  ")
 	subcommands.DieNotNil(err)

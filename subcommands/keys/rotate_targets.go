@@ -40,7 +40,7 @@ func doRotateTargets(cmd *cobra.Command, args []string) {
 	changeLog, _ := cmd.Flags().GetString("changelog")
 	keyType := ParseTufKeyType(keyTypeStr)
 	credsFile := args[0]
-	assertWritable(credsFile)
+	subcommands.AssertWritable(credsFile)
 	creds, err := GetOfflineCreds(credsFile)
 	subcommands.DieNotNil(err)
 
@@ -61,7 +61,7 @@ func doRotateTargets(cmd *cobra.Command, args []string) {
 	fmt.Println("= Root keyid:", rootPk.Id)
 	targetid, newCreds := replaceOfflineTargetKey(root, onlineTargetId, creds, keyType)
 	fmt.Println("= New target:", targetid)
-	removeUnusedKeys(root)
+	RemoveUnusedKeys(root)
 	user, err := api.UserAccessDetails(factory, "self")
 	subcommands.DieNotNil(err)
 	if len(changeLog) == 0 {
@@ -72,7 +72,7 @@ func doRotateTargets(cmd *cobra.Command, args []string) {
 		Message:   changeLog,
 		Timestamp: time.Now(),
 	}
-	subcommands.DieNotNil(signRoot(root, *rootPk))
+	subcommands.DieNotNil(SignRoot(root, *rootPk))
 	subcommands.DieNotNil(resignProdTargets(factory, root, onlineTargetId, creds))
 
 	tufRootPost(factory, credsFile, root, newCreds)
