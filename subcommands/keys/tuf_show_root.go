@@ -21,7 +21,19 @@ func init() {
 		Run:   doShowRoot,
 	}
 	show.Flags().BoolVarP(&showProd, "prod", "", false, "Show the production version")
-	cmd.AddCommand(show)
+	tufCmd.AddCommand(show)
+
+	legacyShow := &cobra.Command{
+		Use:   "show-root",
+		Short: "Show the Factory's TUF root metadata",
+		Deprecated: `it has moved to a new place.
+Instead, please, use the "fioctl keys tuf show-root".
+`,
+		Hidden: true,
+		Run:    doShowRoot,
+	}
+	legacyShow.Flags().BoolVarP(&showProd, "prod", "", false, "Show the production version")
+	cmd.AddCommand(legacyShow)
 }
 
 func doShowRoot(cmd *cobra.Command, args []string) {
