@@ -12,7 +12,10 @@ import (
 	"github.com/spf13/viper"
 )
 
-var dryRun bool
+var (
+	dryRun       bool
+	changeReason string
+)
 
 func init() {
 	resign := &cobra.Command{
@@ -43,7 +46,7 @@ func doResignRoot(cmd *cobra.Command, args []string) {
 	root.Signed.Expires = time.Now().AddDate(1, 0, 0).UTC().Round(time.Second) // 1 year validity
 	root.Signed.Version += 1
 
-	curPk, err := findRoot(*root, creds)
+	curPk, err := findRoot(root, creds)
 	subcommands.DieNotNil(err)
 	fmt.Println("= Current root:", curPk.Id)
 
@@ -57,9 +60,8 @@ func doResignRoot(cmd *cobra.Command, args []string) {
 	}
 
 	fmt.Println("= Resigning root.json")
-	signers := []TufSigner{*curPk}
 	RemoveUnusedKeys(root)
-	subcommands.DieNotNil(SignRoot(root, signers...))
+	subcommands.DieNotNil(SignRoot(root, *curPk))
 
 	bytes, err := json.MarshalIndent(root, "", "  ")
 	subcommands.DieNotNil(err)
@@ -80,5 +82,5 @@ func doResignRoot(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 	// backfill this new key
-	subcommands.DieNotNil(syncProdRoot(factory, *root, creds))
+	subcommands.DieNotNil(syncProdRoot(factory, root, creds))
 }

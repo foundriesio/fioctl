@@ -27,11 +27,25 @@ type tufKeyTypeEd25519 struct{}
 
 const (
 	// These are case insensitive
+	tufRoleNameRoot = "Root"
+	// tufRoleNameTimestamp  = "Timestamp"
+	// tufRoleNameSnapshot   = "Snapshot"
+	tufRoleNameTargets       = "Targets"
 	tufKeyTypeNameEd25519    = "ED25519"
 	tufKeyTypeNameRSA        = "RSA"
 	tufKeyTypeSigNameEd25519 = "ed25519"
 	tufKeyTypeSigNameRSA     = "rsassa-pss-sha256"
 )
+
+func parseTufRoleName(s string, supported ...string) (string, error) {
+	su := strings.ToUpper(s)
+	for _, ss := range supported {
+		if su == strings.ToUpper(ss) {
+			return ss, nil
+		}
+	}
+	return "", fmt.Errorf("Unsupported role type: %s", s)
+}
 
 func parseTufKeyType(s string) (TufKeyType, error) {
 	su := strings.ToUpper(s)
