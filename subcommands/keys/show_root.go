@@ -20,7 +20,6 @@ func init() {
 		Short: "Show the Factory's TUF root metadata",
 		Run:   doShowRoot,
 	}
-	subcommands.RequireFactory(show)
 	show.Flags().BoolVarP(&showProd, "prod", "", false, "Show the production version")
 	cmd.AddCommand(show)
 }
