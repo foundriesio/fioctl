@@ -29,7 +29,6 @@ This command is not allowed if there is an active wave in your factory.`,
 		},
 		Args: cobra.ExactArgs(1),
 	}
-	subcommands.RequireFactory(rotateTargets)
 	rotateTargets.Flags().StringP("key-type", "k", tufKeyTypeNameRSA, "Key type, supported: Ed25519, RSA (default).")
 	rotateTargets.Flags().StringP("changelog", "m", "", "Reason for doing rotation. Saved in root metadata for tracking change history")
 	cmd.AddCommand(rotateTargets)

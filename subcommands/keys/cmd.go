@@ -28,7 +28,7 @@ to manage mutual TLS between your devices and the Foundries.io device gateway.`,
 }
 
 func NewCommand() *cobra.Command {
-	subcommands.RequireFactory(caCmd)
+	subcommands.RequireFactory(cmd)
 	cmd.AddCommand(caCmd)
 	return cmd
 }

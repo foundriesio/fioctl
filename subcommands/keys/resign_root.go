@@ -22,7 +22,6 @@ func init() {
 		Args:  cobra.ExactArgs(1),
 		Long:  "The root metadata, root.json expires. Re-signing bumps the expiriation date.",
 	}
-	subcommands.RequireFactory(resign)
 	resign.Flags().BoolVarP(&dryRun, "dryrun", "", false, "Just print what the new root.json will look like and exit")
 	resign.Flags().StringVarP(&changeReason, "changelog", "m", "", "Reason for resigning root.json. Saved in root metadata for tracking change history")
 	cmd.AddCommand(resign)

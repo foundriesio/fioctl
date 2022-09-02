@@ -30,7 +30,6 @@ func init() {
 		Run:     doRotateRoot,
 		Args:    cobra.ExactArgs(1),
 	}
-	subcommands.RequireFactory(rotate)
 	rotate.Flags().BoolVarP(&doRootSync, "sync-prod", "", false, "Make sure production root.json is up-to-date and exit")
 	rotate.Flags().BoolVarP(&initialRotation, "initial", "", false, "Used for the first customer rotation. The command will download the initial root key")
 	rotate.Flags().StringVarP(&changeReason, "changelog", "m", "", "Reason for doing rotation. Saved in root metadata for tracking change history")

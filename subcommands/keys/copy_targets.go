@@ -22,7 +22,6 @@ waves into a new tarball so that the offline key archive isn't required for
 rolling out production updates. This should be run after each target key
 rotation and distributed to the operator in charge of production OTAs.`,
 	}
-	subcommands.RequireFactory(copy)
 	cmd.AddCommand(copy)
 }
 
