@@ -27,8 +27,16 @@ to own the PKI infrastructure of their factory. This infrastructure is used
 to manage mutual TLS between your devices and the Foundries.io device gateway.`,
 }
 
+var tufCmd = &cobra.Command{
+	Use:   "tuf",
+	Short: "Manage The Update Framework Keys for your factory",
+	Long: `These sub-commands allow you to manage your Factory's TUF private keys
+to ensure that you are in complete control of your OTA metadata.`,
+}
+
 func NewCommand() *cobra.Command {
 	subcommands.RequireFactory(cmd)
 	cmd.AddCommand(caCmd)
+	cmd.AddCommand(tufCmd)
 	return cmd
 }
