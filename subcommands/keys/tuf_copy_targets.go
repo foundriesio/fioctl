@@ -13,14 +13,20 @@ import (
 
 func init() {
 	copy := &cobra.Command{
-		Use:   "copy-targets <offline key archive> <new targets archive>",
-		Short: "Copy the target signing credentials from the offline key archive",
-		Run:   doCopyTargets,
-		Args:  cobra.ExactArgs(2),
+		Use:    "copy-targets <offline key archive> <new targets archive>",
+		Short:  "Copy the target signing credentials from the offline key archive",
+		Hidden: true,
+		Run:    doCopyTargets,
+		Args:   cobra.ExactArgs(2),
 		Long: `This command extracts the target signing credentials required for initializing 
 waves into a new tarball so that the offline key archive isn't required for
 rolling out production updates. This should be run after each target key
 rotation and distributed to the operator in charge of production OTAs.`,
+		Deprecated: `it will be removed in the future.
+Please, use a new approach to rotate the targets key into a separate file:
+	fioctl keys tuf rotate-offline-key --role=targets \
+		--keys=<offline-creds.tgz> --targets-keys=<offline-targets-creds.tgz>
+`,
 	}
 	cmd.AddCommand(copy)
 }
