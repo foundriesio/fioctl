@@ -19,11 +19,15 @@ var (
 
 func init() {
 	resign := &cobra.Command{
-		Use:   "resign-root <offline key archive>",
-		Short: "Re-sign the Factory's TUF root metadata",
-		Run:   doResignRoot,
-		Args:  cobra.ExactArgs(1),
-		Long:  "The root metadata, root.json expires. Re-signing bumps the expiriation date.",
+		Use:    "resign-root <offline key archive>",
+		Short:  "Re-sign the Factory's TUF root metadata",
+		Hidden: true,
+		Run:    doResignRoot,
+		Args:   cobra.ExactArgs(1),
+		Deprecated: `it will be removed in the future.
+Please, use a more secure way to keep your TUF root role fresh:
+- rotate the root key using "fioctl keys tuf rotate-offline-key --role=root --keys=<offline-creds.tgz>".
+`,
 	}
 	resign.Flags().BoolVarP(&dryRun, "dryrun", "", false, "Just print what the new root.json will look like and exit")
 	resign.Flags().StringVarP(&changeReason, "changelog", "m", "", "Reason for resigning root.json. Saved in root metadata for tracking change history")
