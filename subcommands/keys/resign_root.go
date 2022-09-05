@@ -82,5 +82,5 @@ func doResignRoot(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 	// backfill this new key
-	subcommands.DieNotNil(syncProdRoot(factory, root, creds))
+	subcommands.DieNotNil(syncProdRoot(factory, root, creds, nil))
 }
