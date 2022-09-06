@@ -144,12 +144,21 @@ func AssertWritable(path string) {
 }
 
 func IsSliceSetEqual(first, second []string) bool {
-	firstMap := make(map[string]int, len(first))
+	// Verify that two slices are equal as sets in just 3 O(1) iterations.
+	// firstMap[key] = false	<- key present in first;
+	// firstMap[key] = true		<- key present in both first and second.
+	firstMap := make(map[string]bool, len(first))
 	for _, val := range first {
-		firstMap[val] = 1
+		firstMap[val] = false
 	}
 	for _, val := range second {
-		if _, ok := firstMap[val]; !ok {
+		if _, inFirst := firstMap[val]; !inFirst {
+			return false
+		}
+		firstMap[val] = true
+	}
+	for _, inSecond := range firstMap {
+		if !inSecond {
 			return false
 		}
 	}
