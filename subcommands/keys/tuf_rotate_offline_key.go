@@ -35,6 +35,16 @@ The new signing key is rotated in both CI and production TUF root transactionall
 When you rotate the TUF targets offline signing key:
 - if there are production targets in your factory, they are re-signed using the new key.
 - if there is an active wave in your factory, the TUF targets rotation is not allowed.`,
+		Example: `
+  # Take ownership of TUF root and targets keys for a new factory, keep them in separate files:
+  fioctl keys tuf rotate-offline-key --role=root \
+    --keys=offline-tuf-root-keys.tgz --first-time
+  fioctl keys tuf rotate-offline-key --role=targets \
+    --keys=offline-tuf-root-keys.tgz --targets-keys=offline-tuf-targets-keys.tgz
+
+  # Rotate offline TUF targets key using the Ed25519 elliptic curve to generate a new key pair:
+  fioctl keys tuf rotate-offline-key --role=targets --key-type=ed25519 \
+    --keys=offline-tuf-root-keys.tgz --targets-keys=offline-tuf-targets-keys.tgz`,
 		Run:         doRotateOfflineKey,
 		Annotations: map[string]string{tufCmdAnnotation: tufCmdRotateOfflineKey},
 	}
