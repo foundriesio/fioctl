@@ -227,11 +227,6 @@ func RemoveUnusedKeys(root *client.AtsTufRoot) {
 	for _, role := range root.Signed.Roles {
 		inuse = append(inuse, role.KeyIDs...)
 	}
-	// we also have to be careful to not loose the extra root key when doing
-	// a root key rotation
-	for _, sig := range root.Signatures {
-		inuse = append(inuse, sig.KeyID)
-	}
 
 	for k := range root.Signed.Keys {
 		// is k in inuse?
