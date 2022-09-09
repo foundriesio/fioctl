@@ -81,6 +81,7 @@ func init() {
 	rootCmd.AddCommand(version.NewCommand())
 	rootCmd.AddCommand(waves.NewCommand())
 	rootCmd.AddCommand(subcommands.NewGetCommand())
+	rootCmd.AddCommand(subcommands.NewPostCommand())
 
 	rootCmd.AddCommand(docsRstCmd)
 	rootCmd.AddCommand(docsMdCmd)

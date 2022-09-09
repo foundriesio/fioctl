@@ -655,21 +655,29 @@ func (a *Api) Patch(url string, data []byte) (*[]byte, error) {
 	return readResponse(res, log)
 }
 
-func (a *Api) Post(url string, data []byte) (*[]byte, error) {
+func (a *Api) RawPost(url string, data []byte, headers *map[string]string) (*http.Response, error) {
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(data))
 	if err != nil {
 		return nil, err
 	}
 
 	a.setReqHeaders(req, true)
+	if headers != nil {
+		for k, v := range *headers {
+			req.Header.Set(k, v)
+		}
+	}
 
-	log := httpLogger(req)
-	res, err := a.client.Do(req)
+	return a.client.Do(req)
+}
+
+func (a *Api) Post(url string, data []byte) (*[]byte, error) {
+	log := logrus.WithFields(logrus.Fields{"url": url, "method": "POST"})
+	res, err := a.RawPost(url, data, nil)
 	if err != nil {
 		log.Debugf("Network Error: %s", err)
 		return nil, err
 	}
-
 	return readResponse(res, log)
 }
 
