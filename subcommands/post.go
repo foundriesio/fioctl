@@ -3,9 +3,11 @@ package subcommands
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"strings"
 
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -19,6 +21,15 @@ func NewPostCommand() *cobra.Command {
 		},
 		Run:  doPost,
 		Args: cobra.MinimumNArgs(1),
+		Example: `# Post data directly from CLI:
+fioctl post -d '{"key": "value"}' https://... content-type=application/json
+
+# Post data from a file:
+fioctl post -d @/tmp/tmp.json  https://... content-type=application/json
+
+# Post data from STDIN:
+echo '{"key": "value"}' | fioctl post -d - https://... content-type=application/json
+`,
 	}
 	cmd.PersistentFlags().StringP("token", "t", "", "API token from https://app.foundries.io/settings/tokens/")
 	cmd.Flags().StringP("data", "d", "", "HTTP POST data")
@@ -39,9 +50,24 @@ func doPost(cmd *cobra.Command, args []string) {
 		}
 	}
 
+	var dataBytes []byte
+	var err error
 	data, _ := cmd.Flags().GetString("data")
+	if data == "-" {
+		logrus.Debug("Reading post data from stdin")
+		dataBytes, err = ioutil.ReadAll(os.Stdin)
+		DieNotNil(err)
+	} else if data[0] == '@' {
+		// read from file
+		dataFile := data[1:]
+		logrus.Debugf("Reading post data from %s", dataFile)
+		dataBytes, err = os.ReadFile(dataFile)
+		DieNotNil(err)
+	} else {
+		dataBytes = []byte(data)
+	}
 
-	resp, err := api.RawPost(args[0], []byte(data), &headers)
+	resp, err := api.RawPost(args[0], dataBytes, &headers)
 	DieNotNil(err)
 	fmt.Fprintf(os.Stderr, "< Status: %s\n", resp.Status)
 	for k, v := range resp.Header {
