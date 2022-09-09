@@ -60,7 +60,6 @@ Instead, please, use the "fioctl keys tuf rotate-offline-key --role=root --keys=
 		Annotations: map[string]string{tufCmdAnnotation: tufCmdRotateRootLegacy},
 		Args:        cobra.ExactArgs(1),
 	}
-	legacyRotateRoot.Flags().BoolP("sync-prod", "", false, "Make sure production root.json is up-to-date and exit")
 	legacyRotateRoot.Flags().BoolP("initial", "", false, "Used for the first customer rotation. The command will download the initial root key")
 	legacyRotateRoot.Flags().StringP("changelog", "m", "", "Reason for doing rotation. Saved in root metadata for tracking change history")
 	legacyRotateRoot.Flags().StringP("key-type", "y", tufKeyTypeNameRSA, "Key type, supported: Ed25519, RSA (default).")
@@ -84,6 +83,27 @@ Instead, please, use the "fioctl keys tuf rotate-offline-key --role=targets --ke
 	legacyRotateTargets.Flags().StringP("key-type", "y", tufKeyTypeNameRSA, "Key type, supported: Ed25519, RSA (default).")
 	legacyRotateTargets.Flags().StringP("changelog", "m", "", "Reason for doing rotation. Saved in root metadata for tracking change history.")
 	cmd.AddCommand(legacyRotateTargets)
+
+	tempSyncProdRoot := &cobra.Command{
+		Use:    "sync-prod-root",
+		Short:  "Make sure production root.json is up-to-date after a failed TUF key rotation and exit",
+		Hidden: true,
+		Run:    doSyncProdRoot,
+	}
+	tempSyncProdRoot.Flags().StringP("keys", "k", "", "Path to <offline-creds.tgz> containing factory TUF keys.")
+	_ = tempSyncProdRoot.MarkFlagRequired("keys")
+	_ = tempSyncProdRoot.MarkFlagFilename("keys")
+	tufCmd.AddCommand(tempSyncProdRoot)
+}
+
+func doSyncProdRoot(cmd *cobra.Command, args []string) {
+	factory := viper.GetString("factory")
+	credsFile, _ := cmd.Flags().GetString("keys")
+	root, err := api.TufRootGet(factory)
+	subcommands.DieNotNil(err)
+	creds, err := GetOfflineCreds(credsFile)
+	subcommands.DieNotNil(err)
+	subcommands.DieNotNil(syncProdRoot(factory, root, creds))
 }
 
 func doRotateOfflineKey(cmd *cobra.Command, args []string) {
@@ -125,13 +145,6 @@ func doRotateOfflineKey(cmd *cobra.Command, args []string) {
 	subcommands.DieNotNil(err)
 	root, err := api.TufRootGet(factory)
 	subcommands.DieNotNil(err)
-
-	if syncProd, _ := cmd.Flags().GetBool("sync-prod"); syncProd {
-		creds, err := GetOfflineCreds(credsFile)
-		subcommands.DieNotNil(err)
-		subcommands.DieNotNil(syncProdRoot(factory, root, creds))
-		return
-	}
 
 	if firstTime {
 		if _, err := os.Stat(credsFile); err == nil {
@@ -220,7 +233,7 @@ func tufRootPost(factory, credsFile string, root *client.AtsTufRoot, creds Offli
 	body, err := api.TufRootPost(factory, bytes)
 	if herr := client.AsHttpError(err); herr != nil && herr.Response.StatusCode == 409 {
 		fmt.Printf(`ERROR: Your production root role is out of sync.
-Please run a hidden "fioctl keys rotate-root --sync-prod %s" command to fix this.`, credsFile)
+Please run a hidden "fioctl keys tuf sync-prod-root --keys %s" command to fix this.`, credsFile)
 		os.Exit(1)
 	} else if err != nil {
 		fmt.Println("\nERROR: ", err)
