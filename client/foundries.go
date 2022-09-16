@@ -678,6 +678,9 @@ func (a *Api) setReqHeaders(req *http.Request, jsonContent bool) {
 		req.Header.Set("Authorization", "Bearer "+tok)
 	}
 
+	// TEMP HACK while experimenting
+	req.Header.Set("OTA-LITE-SVC", "mcu")
+
 	if jsonContent {
 		req.Header.Set("Content-Type", "application/json")
 	}
