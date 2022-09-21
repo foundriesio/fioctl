@@ -2,6 +2,7 @@ package targets
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"os"
 	"sort"
@@ -18,6 +19,10 @@ import (
 	"github.com/foundriesio/fioctl/client"
 	"github.com/foundriesio/fioctl/subcommands"
 )
+
+type formats map[string]string
+
+var sbomFormats formats
 
 func init() {
 	showCmd := &cobra.Command{
@@ -45,19 +50,34 @@ func init() {
 	showAppCmd.Flags().Bool("manifest", false, "Show an app docker manifest")
 
 	sbomCmd := &cobra.Command{
-		Use:   "sboms <version> [<build/run>]",
+		Use:   "sboms <version> [<build/run> [<artifact>]] ",
 		Short: "Show SBOMs for a specific target.",
 		Run:   doShowSboms,
-		Args:  cobra.RangeArgs(1, 2),
+		Args:  cobra.RangeArgs(1, 3),
 		Example: `
   # Show all SBOM files for Target version 42:
   fioctl targets show sboms 42
 
   # Show a subset of the SBOMS for this target. In this case, the 32-bit Arm
   # container SBOMS:
-  fioctl targets show sboms 42 41/build-armhf`,
+  fioctl targets show sboms 42 41/build-armhf
+ 
+  # Show overview of a specific SBOM:
+  fioctl targets show sboms 42 41/build-armhf alpine:latest/arm.spdx.json
+  
+  # Show overview of a specific SBOM as CSV:
+  fioctl targets show sboms --format csv 42 41/build-armhf alpine:latest/arm.spdx.json`,
 	}
+
+	sbomFormats = make(formats, 4)
+	sbomFormats["table"] = "table"
+	sbomFormats["spdx"] = "application/spdx.json"
+	sbomFormats["cyclonedx"] = "application/cyclone.json"
+	sbomFormats["csv"] = "text/csv"
+	allowed := "table, spdx, cyclonedx, or csv"
+
 	showCmd.AddCommand(sbomCmd)
+	sbomCmd.Flags().String("format", "table", "The format to download/display. Must be one of "+allowed)
 }
 
 func sortedAppsNames(target client.TufCustom) []string {
@@ -239,6 +259,15 @@ func indent(input string, prefix string) string {
 	return prefix + strings.Join(strings.SplitAfter(input, "\n"), prefix)
 }
 
+func getSbomFormat(formatStr string) string {
+	format, ok := sbomFormats[formatStr]
+	if !ok {
+		fmt.Println(sbomFormats)
+		subcommands.DieNotNil(fmt.Errorf("Unknown --format: %s", formatStr))
+	}
+	return format
+}
+
 func doShowSboms(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 	version := args[0]
@@ -250,8 +279,17 @@ func doShowSboms(cmd *cobra.Command, args []string) {
 	}
 
 	prodTag, _ := cmd.Flags().GetString("production-tag")
+	formatStr, _ := cmd.Flags().GetString("format")
 
+	format := getSbomFormat(formatStr)
 	name := getSbomTargetName(factory, prodTag, version)
+
+	if len(args) == 3 {
+		path := fmt.Sprintf("%s/%s", args[1], args[2])
+		displaySbom(factory, name, path, format)
+		return
+	}
+
 	sboms, err := api.TargetSboms(factory, name)
 	subcommands.DieNotNil(err)
 	t := tabby.New()
@@ -272,4 +310,26 @@ func getSbomTargetName(factory, prodTag, version string) string {
 	}
 	subcommands.DieNotNil(fmt.Errorf("Unable to find target for version: %s", version))
 	return "" // Make compiler happy
+}
+
+func displaySbom(factory, targetName, path, format string) {
+	contentType := format
+	if format == "table" {
+		contentType = "application/spdx.json"
+	}
+	data, err := api.SbomDownload(factory, targetName, path, contentType)
+	subcommands.DieNotNil(err)
+	if format == "table" {
+		// special handling for default
+		var doc client.SpdxDocument
+		subcommands.DieNotNil(json.Unmarshal(data, &doc))
+		t := tabby.New()
+		t.AddHeader("PACKAGE", "VERSION", "LICENSE")
+		for _, pkg := range doc.Packages {
+			t.AddLine(pkg.Name, pkg.VersionInfo, pkg.License())
+		}
+		t.Print()
+	} else {
+		os.Stdout.Write(data)
+	}
 }
