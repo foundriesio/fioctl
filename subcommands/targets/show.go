@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -66,7 +67,19 @@ func init() {
   fioctl targets show sboms 42 41/build-armhf alpine:latest/arm.spdx.json
   
   # Show overview of a specific SBOM as CSV:
-  fioctl targets show sboms --format csv 42 41/build-armhf alpine:latest/arm.spdx.json`,
+  fioctl targets show sboms --format csv 42 41/build-armhf alpine:latest/arm.spdx.json
+  
+  # Download all SBOMS for a target to /tmp:
+  fioctl targets show sboms 42 --download /tmp
+  
+  # Download a filtered list of SBOMs to /tmp:
+  fioctl targets show sboms 42 41/build-armhf alpine:latest/arm.spdx.json --download /tmp
+  
+  # Download a specific SBOM as cyclonedx:
+  fioctl targets show sboms 42 41/build-armhf --download /tmp --format cyclonedx
+
+  # Download all SBOMS for a target to /tmp as CSV:
+  fioctl targets show sboms 42 --download /tmp --format csv`,
 	}
 
 	sbomFormats = make(formats, 4)
@@ -78,6 +91,7 @@ func init() {
 
 	showCmd.AddCommand(sbomCmd)
 	sbomCmd.Flags().String("format", "table", "The format to download/display. Must be one of "+allowed)
+	sbomCmd.Flags().String("download", "", "Download SBOM(s) to a directory")
 }
 
 func sortedAppsNames(target client.TufCustom) []string {
@@ -280,9 +294,15 @@ func doShowSboms(cmd *cobra.Command, args []string) {
 
 	prodTag, _ := cmd.Flags().GetString("production-tag")
 	formatStr, _ := cmd.Flags().GetString("format")
+	downloadPath, _ := cmd.Flags().GetString("download")
 
 	format := getSbomFormat(formatStr)
 	name := getSbomTargetName(factory, prodTag, version)
+
+	if len(downloadPath) > 0 {
+		doDownloadSboms(factory, name, downloadPath, format, args)
+		return
+	}
 
 	if len(args) == 3 {
 		path := fmt.Sprintf("%s/%s", args[1], args[2])
@@ -331,5 +351,43 @@ func displaySbom(factory, targetName, path, format string) {
 		t.Print()
 	} else {
 		os.Stdout.Write(data)
+	}
+}
+
+func doDownloadSboms(factory, targetName, downloadPath, format string, args []string) {
+	st, err := os.Stat(downloadPath)
+	subcommands.DieNotNil(err)
+	if !st.IsDir() {
+		subcommands.DieNotNil(fmt.Errorf("download path is not a directory: %s", downloadPath))
+	}
+
+	if format == "table" {
+		format = "application/spdx.json"
+	}
+
+	filter := ""
+	if len(args) == 2 {
+		filter = args[1]
+	} else if len(args) == 3 {
+		filter = fmt.Sprintf("%s/%s", args[1], args[2])
+	}
+
+	sboms, err := api.TargetSboms(factory, targetName)
+	subcommands.DieNotNil(err)
+	for _, sbom := range sboms {
+		buildRun := sbom.CiBuild + "/" + sbom.CiRun + "/" + sbom.Artifact
+		if len(filter) == 0 || strings.HasPrefix(buildRun, filter) {
+			dst := filepath.Join(downloadPath, sbom.CiBuild, sbom.CiRun, sbom.Artifact)
+			// dst will have .spdx.json - determine a better extension by content-type:
+			parts := strings.SplitN(format, "/", 2)
+			extension := "." + parts[1]
+			dst = strings.Replace(dst, ".spdx.json", extension, 1)
+			subcommands.DieNotNil(os.MkdirAll(filepath.Dir(dst), st.Mode()))
+			fmt.Printf("Downloading %s/%s/%s ...", sbom.CiBuild, sbom.CiRun, sbom.Artifact)
+			bytes, err := api.SbomDownload(factory, targetName, buildRun, format)
+			fmt.Println()
+			subcommands.DieNotNil(err)
+			subcommands.DieNotNil(os.WriteFile(dst, bytes, 0o744))
+		}
 	}
 }
