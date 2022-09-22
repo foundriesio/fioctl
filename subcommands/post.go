@@ -3,7 +3,6 @@ package subcommands
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"strings"
 
@@ -55,7 +54,7 @@ func doPost(cmd *cobra.Command, args []string) {
 	data, _ := cmd.Flags().GetString("data")
 	if data == "-" {
 		logrus.Debug("Reading post data from stdin")
-		dataBytes, err = ioutil.ReadAll(os.Stdin)
+		dataBytes, err = io.ReadAll(os.Stdin)
 		DieNotNil(err)
 	} else if data[0] == '@' {
 		// read from file
