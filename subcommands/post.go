@@ -56,7 +56,7 @@ func doPost(cmd *cobra.Command, args []string) {
 		logrus.Debug("Reading post data from stdin")
 		dataBytes, err = io.ReadAll(os.Stdin)
 		DieNotNil(err)
-	} else if data[0] == '@' {
+	} else if len(data) > 0 && data[0] == '@' {
 		// read from file
 		dataFile := data[1:]
 		logrus.Debugf("Reading post data from %s", dataFile)
