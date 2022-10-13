@@ -31,11 +31,12 @@ var (
 	ouTag       string
 	ouProd      bool
 	ouExpiresIn int
+	ouTufOnly   bool
 )
 
 func init() {
 	offlineUpdateCmd := &cobra.Command{
-		Use:   "offline-update <target-name> <dst> --tag <tag> [--prod] [--expires-in-days <days>]",
+		Use:   "offline-update <target-name> <dst> --tag <tag> [--prod] [--expires-in-days <days>] [--tuf-only]",
 		Short: "Download Target content for an offline update",
 		Run:   doOfflineUpdate,
 		Args:  cobra.ExactArgs(2),
@@ -55,6 +56,8 @@ func init() {
 		"Instruct to fetch content of production Target")
 	offlineUpdateCmd.Flags().IntVarP(&ouExpiresIn, "expires-in-days", "e", 30,
 		"Desired metadata validity period in days")
+	offlineUpdateCmd.Flags().BoolVarP(&ouTufOnly, "tuf-only", "m", false,
+		"Fetch only TUF metadata")
 }
 
 func doOfflineUpdate(cmd *cobra.Command, args []string) {
@@ -72,23 +75,23 @@ func doOfflineUpdate(cmd *cobra.Command, args []string) {
 	ti, err := getTargetInfo(factory, targetName)
 	subcommands.DieNotNil(err, "Failed to obtain Target's details:")
 
-	fmt.Printf("Downloading offline update content of Target %s to %s\n", targetName, dstDir)
-
-	fmt.Println("Downloading TUF metadata...")
+	fmt.Printf("Refreshing and downloading TUF metadata for Target %s to %s...\n", targetName, path.Join(dstDir, "tuf"))
 	subcommands.DieNotNil(downloadTufRepo(factory, targetName, ouTag, ouProd, ouExpiresIn, path.Join(dstDir, "tuf")), "Failed to download TUF metadata:")
+	fmt.Println("Successfully refreshed and downloaded TUF metadata")
 
-	fmt.Printf("Downloading an ostree repo from the Target's OE build %d...\n", ti.ostreeVersion)
-	subcommands.DieNotNil(downloadOstree(factory, ti.ostreeVersion, ti.hardwareID, dstDir), "Failed to download Target's ostree repo:")
+	if !ouTufOnly {
+		fmt.Printf("Downloading an ostree repo from the Target's OE build %d...\n", ti.ostreeVersion)
+		subcommands.DieNotNil(downloadOstree(factory, ti.ostreeVersion, ti.hardwareID, dstDir), "Failed to download Target's ostree repo:")
 
-	fmt.Printf("Downloading Apps fetched by the `assemble-system-image` run; build number:  %d, tag: %s...\n", ti.version, ti.buildTag)
-	err = downloadApps(factory, targetName, ti.version, ti.buildTag, path.Join(dstDir, "apps"))
-	if herr := client.AsHttpError(err); herr != nil && herr.Response.StatusCode == 404 {
-		fmt.Println("WARNING: The Target Apps were not fetched by the `assemble` run, make sure that App preloading is enabled if needed. The update won't include any Apps!")
-	} else {
-		subcommands.DieNotNil(err, "Failed to download Target's Apps:")
+		fmt.Printf("Downloading Apps fetched by the `assemble-system-image` run; build number:  %d, tag: %s...\n", ti.version, ti.buildTag)
+		err = downloadApps(factory, targetName, ti.version, ti.buildTag, path.Join(dstDir, "apps"))
+		if herr := client.AsHttpError(err); herr != nil && herr.Response.StatusCode == 404 {
+			fmt.Println("WARNING: The Target Apps were not fetched by the `assemble` run, make sure that App preloading is enabled if needed. The update won't include any Apps!")
+		} else {
+			subcommands.DieNotNil(err, "Failed to download Target's Apps:")
+		}
+		fmt.Println("Successfully downloaded offline update content")
 	}
-
-	fmt.Println("Successfully downloaded offline update content")
 }
 
 func checkIfTargetExists(factory string, targetName string, tag string, prod bool) error {
