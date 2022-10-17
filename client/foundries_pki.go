@@ -10,6 +10,7 @@ type CaCerts struct {
 	RootCrt string `json:"root-crt"`
 	CaCrt   string `json:"ca-crt"`
 	CaCsr   string `json:"ca-csr"`
+	EstCrt  string `json:"est-tls-crt"`
 	TlsCrt  string `json:"tls-crt"`
 	TlsCsr  string `json:"tls-csr"`
 
@@ -59,5 +60,38 @@ func (a *Api) FactoryPatchCA(factory string, certs CaCerts) error {
 	}
 
 	_, err = a.Patch(url, data)
+	return err
+}
+
+type estCsr struct {
+	TlsCsr string `json:"tls-csr"`
+}
+type estCrt struct {
+	TlsCrt string `json:"tls-crt"`
+}
+
+func (a *Api) FactoryCreateEstCsr(factory string) (string, error) {
+	url := a.serverUrl + "/ota/factories/" + factory + "/certs/est/"
+	logrus.Debugf("Creating EST CSR %s", url)
+	body, err := a.Post(url, nil)
+	if err != nil {
+		return "", err
+	}
+	var csr estCsr
+	if err = json.Unmarshal(*body, &csr); err != nil {
+		return "", err
+	}
+	return csr.TlsCsr, nil
+}
+
+func (a *Api) FactorySetEstCrt(factory string, cert string) error {
+	url := a.serverUrl + "/ota/factories/" + factory + "/certs/est/"
+	logrus.Debugf("Putting EST certs %s", url)
+	crt := estCrt{cert}
+	data, err := json.Marshal(crt)
+	if err != nil {
+		return err
+	}
+	_, err = a.Put(url, data)
 	return err
 }
