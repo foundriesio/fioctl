@@ -32,6 +32,7 @@ var (
 	ouProd      bool
 	ouExpiresIn int
 	ouTufOnly   bool
+	ouNoApps    bool
 )
 
 func init() {
@@ -58,6 +59,8 @@ func init() {
 		"Desired metadata validity period in days")
 	offlineUpdateCmd.Flags().BoolVarP(&ouTufOnly, "tuf-only", "m", false,
 		"Fetch only TUF metadata")
+	offlineUpdateCmd.Flags().BoolVarP(&ouNoApps, "no-apps", "", false,
+		"Skip fetching Target Apps")
 }
 
 func doOfflineUpdate(cmd *cobra.Command, args []string) {
@@ -82,13 +85,14 @@ func doOfflineUpdate(cmd *cobra.Command, args []string) {
 	if !ouTufOnly {
 		fmt.Printf("Downloading an ostree repo from the Target's OE build %d...\n", ti.ostreeVersion)
 		subcommands.DieNotNil(downloadOstree(factory, ti.ostreeVersion, ti.hardwareID, dstDir), "Failed to download Target's ostree repo:")
-
-		fmt.Printf("Downloading Apps fetched by the `assemble-system-image` run; build number:  %d, tag: %s...\n", ti.version, ti.buildTag)
-		err = downloadApps(factory, targetName, ti.version, ti.buildTag, path.Join(dstDir, "apps"))
-		if herr := client.AsHttpError(err); herr != nil && herr.Response.StatusCode == 404 {
-			fmt.Println("WARNING: The Target Apps were not fetched by the `assemble` run, make sure that App preloading is enabled if needed. The update won't include any Apps!")
-		} else {
-			subcommands.DieNotNil(err, "Failed to download Target's Apps:")
+		if !ouNoApps {
+			fmt.Printf("Downloading Apps fetched by the `assemble-system-image` run; build number:  %d, tag: %s...\n", ti.version, ti.buildTag)
+			err = downloadApps(factory, targetName, ti.version, ti.buildTag, path.Join(dstDir, "apps"))
+			if herr := client.AsHttpError(err); herr != nil && herr.Response.StatusCode == 404 {
+				fmt.Println("WARNING: The Target Apps were not fetched by the `assemble` run, make sure that App preloading is enabled if needed. The update won't include any Apps!")
+			} else {
+				subcommands.DieNotNil(err, "Failed to download Target's Apps:")
+			}
 		}
 		fmt.Println("Successfully downloaded offline update content")
 	}
