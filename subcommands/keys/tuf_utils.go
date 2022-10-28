@@ -6,6 +6,8 @@ import (
 	"compress/gzip"
 	"crypto"
 	"crypto/rand"
+	"crypto/sha256"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -47,6 +49,16 @@ func ParseTufRoleNameOffline(s string) string {
 	return r
 }
 
+func genKeyId(key crypto.Signer) string {
+	// # This has to match the exact logic used by ota-tuf (required by garage-sign):
+	// https://github.com/foundriesio/ota-tuf/blob/fio-changes/libtuf/src/main/scala/com/advancedtelematic/libtuf/crypt/TufCrypto.scala#L66-L71
+	// It sets a keyid to a signature of the key's canonical DER encoding (same logic for all keys).
+	// Note: this differs from the TUF spec, need to change once we deprecate the garage-sign.
+	pubBytes, err := x509.MarshalPKIXPublicKey(key.Public())
+	subcommands.DieNotNil(err)
+	return fmt.Sprintf("%x", sha256.Sum256(pubBytes))
+}
+
 func GenKeyPair(keyType TufKeyType) TufKeyPair {
 	keyTypeName := keyType.Name()
 	pk, err := keyType.GenerateKey()
@@ -68,8 +80,7 @@ func GenKeyPair(keyType TufKeyType) TufKeyPair {
 	atsPubBytes, err := json.Marshal(pub)
 	subcommands.DieNotNil(err)
 
-	id, err := pub.KeyID()
-	subcommands.DieNotNil(err)
+	id := genKeyId(pk)
 
 	return TufKeyPair{
 		atsPriv:      priv,
