@@ -41,6 +41,10 @@ type AtsTufRoot struct {
 	Signed            AtsRootMeta                `json:"signed"`
 }
 
+type TufRootUpdatesInit struct {
+	TransactionId string `json:"txid"`
+}
+
 func (a *Api) TufTargetsOnlineKey(factory string) (*AtsKey, error) {
 	url := a.serverUrl + "/ota/factories/" + factory + "/ci-targets.pub"
 	body, err := a.Get(url)
@@ -81,6 +85,18 @@ func (a *Api) TufRootPost(factory string, root []byte) (string, error) {
 
 func (a *Api) TufProdRootPost(factory string, root []byte) (string, error) {
 	return a.tufRootPost(factory, true, root)
+}
+
+func (a *Api) TufRootUpdatesInit(factory, changelog string) (res TufRootUpdatesInit, err error) {
+	var body *[]byte
+	url := a.serverUrl + "/ota/repo/" + factory + "/api/v1/user_repo/root/updates"
+	data, _ := json.Marshal(map[string]interface{}{"message": "changelog"})
+	if body, err = a.Post(url, data); err == nil {
+		err = json.Unmarshal(*body, &res)
+	} else if herr := AsHttpError(err); herr != nil && herr.Response.StatusCode == 409 {
+		herr.Message += "\n=Only one TUF root updates transaction can be active at a time"
+	}
+	return
 }
 
 func (a *Api) tufRootGet(factory string, prod bool, version int) (*AtsTufRoot, error) {
