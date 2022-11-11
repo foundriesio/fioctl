@@ -42,7 +42,9 @@ type AtsTufRoot struct {
 }
 
 type TufRootUpdatesInit struct {
-	TransactionId string `json:"txid"`
+	TransactionId    string          `json:"txid"`
+	FirstRootKeyPriv json.RawMessage `json:"first_root.sec"`
+	FirstRootKeyPub  json.RawMessage `json:"first_root.pub"`
 }
 
 func (a *Api) TufTargetsOnlineKey(factory string) (*AtsKey, error) {
@@ -87,10 +89,10 @@ func (a *Api) TufProdRootPost(factory string, root []byte) (string, error) {
 	return a.tufRootPost(factory, true, root)
 }
 
-func (a *Api) TufRootUpdatesInit(factory, changelog string) (res TufRootUpdatesInit, err error) {
+func (a *Api) TufRootUpdatesInit(factory, changelog string, firstTime bool) (res TufRootUpdatesInit, err error) {
 	var body *[]byte
 	url := a.serverUrl + "/ota/repo/" + factory + "/api/v1/user_repo/root/updates"
-	data, _ := json.Marshal(map[string]interface{}{"message": "changelog"})
+	data, _ := json.Marshal(map[string]interface{}{"message": "changelog", "first-time": firstTime})
 	if body, err = a.Post(url, data); err == nil {
 		err = json.Unmarshal(*body, &res)
 	} else if herr := AsHttpError(err); herr != nil && herr.Response.StatusCode == 409 {
