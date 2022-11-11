@@ -129,7 +129,7 @@ func doInitWave(cmd *cobra.Command, args []string) {
 func signTargets(meta []byte, factory string, offlineKeys keys.OfflineCreds) []tuf.Signature {
 	root, err := api.TufRootGet(factory)
 	subcommands.DieNotNil(err, "Failed to fetch root role")
-	onlinePub, err := api.GetFoundriesTargetsKey(factory)
+	onlinePub, err := api.TufTargetsOnlineKey(factory)
 	subcommands.DieNotNil(err, "Failed to fetch online targets public key")
 
 	signers := make([]keys.TufSigner, 0)

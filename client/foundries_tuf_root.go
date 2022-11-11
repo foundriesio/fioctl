@@ -41,7 +41,7 @@ type AtsTufRoot struct {
 	Signed            AtsRootMeta                `json:"signed"`
 }
 
-func (a *Api) GetFoundriesTargetsKey(factory string) (*AtsKey, error) {
+func (a *Api) TufTargetsOnlineKey(factory string) (*AtsKey, error) {
 	url := a.serverUrl + "/ota/factories/" + factory + "/ci-targets.pub"
 	body, err := a.Get(url)
 	if err != nil {

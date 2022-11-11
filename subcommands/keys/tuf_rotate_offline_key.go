@@ -392,7 +392,7 @@ func syncProdRoot(factory string, root *client.AtsTufRoot, creds, targetsCreds O
 }
 
 func findOnlineTargetsId(factory string, root client.AtsTufRoot) (string, error) {
-	onlinePub, err := api.GetFoundriesTargetsKey(factory)
+	onlinePub, err := api.TufTargetsOnlineKey(factory)
 	subcommands.DieNotNil(err)
 	for _, keyid := range root.Signed.Roles["targets"].KeyIDs {
 		pub := root.Signed.Keys[keyid].KeyValue.Public
