@@ -297,7 +297,10 @@ func doShowSboms(cmd *cobra.Command, args []string) {
 	downloadPath, _ := cmd.Flags().GetString("download")
 
 	format := getSbomFormat(formatStr)
-	name := getSbomTargetName(factory, prodTag, version)
+	name := version
+	if factory != "lmp" {
+		name = getSbomTargetName(factory, prodTag, version)
+	}
 
 	if len(downloadPath) > 0 {
 		doDownloadSboms(factory, name, downloadPath, format, args)
