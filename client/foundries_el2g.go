@@ -2,6 +2,7 @@ package client
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/sirupsen/logrus"
 )
@@ -54,7 +55,10 @@ func (a *Api) El2gUploadDgCert(factory string, caId int, rootCa, cert string) er
 	if err != nil {
 		return err
 	}
-	_, err = a.Put(url, body)
+	bytes, err := a.Put(url, body)
+	if herr := AsHttpError(err); herr != nil {
+		return fmt.Errorf("%w: %s", err, string(*bytes))
+	}
 	return err
 }
 
