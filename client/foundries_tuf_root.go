@@ -89,6 +89,19 @@ func (a *Api) TufProdRootPost(factory string, root []byte) (string, error) {
 	return a.tufRootPost(factory, true, root)
 }
 
+func (a *Api) TufRootUpdatesApply(factory, txid string) (err error) {
+	url := a.serverUrl + "/ota/repo/" + factory + "/api/v1/user_repo/root/updates/apply"
+	data, _ := json.Marshal(map[string]string{"txid": txid})
+	_, err = a.Post(url, data)
+	return
+}
+
+func (a *Api) TufRootUpdatesCancel(factory string) (err error) {
+	url := a.serverUrl + "/ota/repo/" + factory + "/api/v1/user_repo/root/updates/cancel"
+	_, err = a.Post(url, nil)
+	return
+}
+
 func (a *Api) TufRootUpdatesInit(factory, changelog string, firstTime bool) (res TufRootUpdatesInit, err error) {
 	var body *[]byte
 	url := a.serverUrl + "/ota/repo/" + factory + "/api/v1/user_repo/root/updates"
