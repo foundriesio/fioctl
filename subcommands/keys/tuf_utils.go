@@ -9,6 +9,7 @@ import (
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -265,4 +266,42 @@ func removeUnusedTufKeys(root *client.AtsTufRoot) {
 			delete(root.Signed.Keys, k)
 		}
 	}
+}
+
+func checkTufRootUpdatesStatus(updates client.TufRootUpdates, forUpdate bool) (
+	curCiRoot, newCiRoot *client.AtsTufRoot,
+) {
+	switch updates.Status {
+	case client.TufRootUpdatesStatusNone:
+		subcommands.DieNotNil(errors.New(`There are no TUF root updates in progress.
+Please, run "fioctl keys tuf updates init" to start over.`))
+	case client.TufRootUpdatesStatusStarted:
+		break
+	case client.TufRootUpdatesStatusApplying:
+		if forUpdate {
+			subcommands.DieNotNil(errors.New(
+				"No modifications to TUF root updates allowed why they are being applied.",
+			))
+		}
+	default:
+		subcommands.DieNotNil(fmt.Errorf("Unexpected TUF root updates status: %s", updates.Status))
+	}
+
+	if updates.Current != nil && updates.Current.CiRoot != "" {
+		subcommands.DieNotNil(
+			json.Unmarshal([]byte(updates.Current.CiRoot), &curCiRoot), "Current CI root",
+		)
+	}
+	if curCiRoot == nil {
+		subcommands.DieNotNil(errors.New("Current TUF CI root not set. Please, report a bug."))
+	}
+	if updates.Updated != nil && updates.Updated.CiRoot != "" {
+		subcommands.DieNotNil(
+			json.Unmarshal([]byte(updates.Updated.CiRoot), &newCiRoot), "Updated CI root",
+		)
+	}
+	if newCiRoot == nil {
+		subcommands.DieNotNil(errors.New("Updated TUF CI root not set. Please, report a bug."))
+	}
+	return
 }
