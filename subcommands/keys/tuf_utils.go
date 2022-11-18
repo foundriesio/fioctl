@@ -305,3 +305,27 @@ Please, run "fioctl keys tuf updates init" to start over.`))
 	}
 	return
 }
+
+func genProdTufRoot(ciRoot *client.AtsTufRoot) (prodRoot *client.AtsTufRoot) {
+	// Deep copy in Golang is hard; use the marshal-unmarshal trick
+	body, err := json.Marshal(ciRoot)
+	subcommands.DieNotNil(err)
+	subcommands.DieNotNil(json.Unmarshal(body, &prodRoot))
+	prodRoot.Signed.Roles["targets"].Threshold = 2
+	return
+}
+
+func signNewTufRoot(curCiRoot, newCiRoot, newProdRoot *client.AtsTufRoot, creds OfflineCreds) {
+	// Always sign with new root key; sign with old root key if it was rotated.
+	oldKey, err := findTufRootSigner(curCiRoot, creds)
+	subcommands.DieNotNil(err)
+	newKey, err := findTufRootSigner(newCiRoot, creds)
+	subcommands.DieNotNil(err)
+	signers := []TufSigner{*newKey}
+	if oldKey.Id != newKey.Id {
+		signers = append(signers, *oldKey)
+	}
+	fmt.Println("= Signing new TUF root")
+	subcommands.DieNotNil(signTufRoot(newCiRoot, signers...))
+	subcommands.DieNotNil(signTufRoot(newProdRoot, signers...))
+}
