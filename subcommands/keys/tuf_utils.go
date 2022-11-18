@@ -236,7 +236,13 @@ func FindTufSigner(keyid, pubkey string, creds OfflineCreds) (*TufSigner, error)
 			}
 		}
 	}
-	return nil, fmt.Errorf("Can not find private key for: %s", pubkey)
+	return nil, fmt.Errorf("Can not find private key for: %s", keyid)
+}
+
+func findTufRootSigner(root *client.AtsTufRoot, creds OfflineCreds) (*TufSigner, error) {
+	kid := root.Signed.Roles["root"].KeyIDs[0]
+	pub := root.Signed.Keys[kid].KeyValue.Public
+	return FindTufSigner(kid, pub, creds)
 }
 
 func removeUnusedTufKeys(root *client.AtsTufRoot) {

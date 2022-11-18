@@ -50,7 +50,7 @@ func doResignRoot(cmd *cobra.Command, args []string) {
 	root.Signed.Expires = time.Now().AddDate(1, 0, 0).UTC().Round(time.Second) // 1 year validity
 	root.Signed.Version += 1
 
-	curPk, err := findRoot(root, creds)
+	curPk, err := findTufRootSigner(root, creds)
 	subcommands.DieNotNil(err)
 	fmt.Println("= Current root:", curPk.Id)
 
