@@ -41,6 +41,25 @@ type AtsTufRoot struct {
 	Signed            AtsRootMeta                `json:"signed"`
 }
 
+type TufRootPair struct {
+	CiRoot   string `json:"ci-root"`
+	ProdRoot string `json:"prod-root"`
+}
+
+const (
+	TufRootUpdatesStatusNone     = "NONE"
+	TufRootUpdatesStatusStarted  = "STARTED"
+	TufRootUpdatesStatusApplying = "APPLYING"
+)
+
+type TufRootUpdates struct {
+	Status     string       `json:"status"`
+	Current    *TufRootPair `json:"current"`
+	Updated    *TufRootPair `json:"updated"`
+	ChangeMeta *ChangeMeta  `json:"change-meta"`
+	FirstTime  bool         `json:"first-time"`
+}
+
 type TufRootUpdatesInit struct {
 	TransactionId    string          `json:"txid"`
 	FirstRootKeyPriv json.RawMessage `json:"first_root.sec"`
@@ -99,6 +118,15 @@ func (a *Api) TufRootUpdatesApply(factory, txid string) (err error) {
 func (a *Api) TufRootUpdatesCancel(factory string) (err error) {
 	url := a.serverUrl + "/ota/repo/" + factory + "/api/v1/user_repo/root/updates/cancel"
 	_, err = a.Post(url, nil)
+	return
+}
+
+func (a *Api) TufRootUpdatesGet(factory string) (res TufRootUpdates, err error) {
+	var body *[]byte
+	url := a.serverUrl + "/ota/repo/" + factory + "/api/v1/user_repo/root/updates"
+	if body, err = a.Get(url); err == nil {
+		err = json.Unmarshal(*body, &res)
+	}
 	return
 }
 
