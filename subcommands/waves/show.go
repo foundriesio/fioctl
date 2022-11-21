@@ -1,7 +1,6 @@
 package waves
 
 import (
-	"encoding/json"
 	"fmt"
 	"sort"
 
@@ -72,7 +71,7 @@ func doShowWave(cmd *cobra.Command, args []string) {
 
 	if showTargets {
 		fmt.Printf("Targets:\n")
-		data, _ := json.MarshalIndent(wave.Targets, "  ", "  ")
+		data, _ := subcommands.MarshalIndent(wave.Targets, "  ", "  ")
 		fmt.Println("  " + string(data))
 	}
 }

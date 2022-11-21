@@ -1,7 +1,6 @@
 package keys
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/foundriesio/fioctl/client"
@@ -47,7 +46,7 @@ func doShowRoot(cmd *cobra.Command, args []string) {
 		root, err = api.TufRootGet(factory)
 	}
 	subcommands.DieNotNil(err)
-	bytes, err := json.MarshalIndent(root, "", "  ")
+	bytes, err := subcommands.MarshalIndent(root, "", "  ")
 	subcommands.DieNotNil(err)
 	fmt.Println(string(bytes))
 }

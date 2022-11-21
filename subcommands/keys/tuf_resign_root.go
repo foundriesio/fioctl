@@ -1,7 +1,6 @@
 package keys
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"time"
@@ -67,7 +66,7 @@ func doResignRoot(cmd *cobra.Command, args []string) {
 	removeUnusedTufKeys(root)
 	subcommands.DieNotNil(signTufRoot(root, *curPk))
 
-	bytes, err := json.MarshalIndent(root, "", "  ")
+	bytes, err := subcommands.MarshalIndent(root, "", "  ")
 	subcommands.DieNotNil(err)
 
 	if dryRun {

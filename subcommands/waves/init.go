@@ -118,7 +118,7 @@ func doInitWave(cmd *cobra.Command, args []string) {
 		Targets: signed,
 	}
 	if dryRun {
-		payload, err := json.MarshalIndent(&wave, "", "  ")
+		payload, err := subcommands.MarshalIndent(&wave, "", "  ")
 		subcommands.DieNotNil(err, "Failed to marshal a wave")
 		fmt.Println(string(payload))
 	} else {

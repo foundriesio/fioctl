@@ -99,7 +99,7 @@ func doDockerCreds(cmd *cobra.Command, args []string) {
 		helpers.(map[string]interface{})["hub.foundries.io"] = "fio"
 	}
 
-	configBytes, err := json.MarshalIndent(config, "", "  ")
+	configBytes, err := subcommands.MarshalIndent(config, "", "  ")
 	subcommands.DieNotNil(err)
 
 	dst := filepath.Join(helperPath, DOCKER_CREDS_HELPER)

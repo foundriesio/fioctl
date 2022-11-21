@@ -1,6 +1,7 @@
 package subcommands
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -8,6 +9,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/cheynewallace/tabby"
+	canonical "github.com/docker/go/canonical/json"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/shurcooL/go/indentwriter"
 	"github.com/sirupsen/logrus"
@@ -130,6 +132,20 @@ func Tabby(indent int, columns ...interface{}) *tabby.Tabby {
 		tab.AddHeader(columns...)
 	}
 	return tab
+}
+
+// Copied from canonical.MarshalIndent, but replaced the Marshal call with MarshalCanonical.
+func MarshalIndent(v interface{}, prefix, indent string) ([]byte, error) {
+	b, err := canonical.MarshalCanonical(v)
+	if err != nil {
+		return nil, err
+	}
+	var buf bytes.Buffer
+	err = canonical.Indent(&buf, b, prefix, indent)
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
 }
 
 func AssertWritable(path string) {
