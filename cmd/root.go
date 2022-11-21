@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/sirupsen/logrus"
@@ -17,6 +18,7 @@ import (
 	"github.com/foundriesio/fioctl/subcommands/el2g"
 	"github.com/foundriesio/fioctl/subcommands/events"
 	"github.com/foundriesio/fioctl/subcommands/factories"
+	"github.com/foundriesio/fioctl/subcommands/git"
 	"github.com/foundriesio/fioctl/subcommands/keys"
 	"github.com/foundriesio/fioctl/subcommands/login"
 	"github.com/foundriesio/fioctl/subcommands/logout"
@@ -49,6 +51,14 @@ func Execute() {
 		initConfig()
 		os.Exit(docker.RunCredsHelper())
 	}
+	if strings.Contains(os.Args[0], git.GIT_CREDS_HELPER) {
+		if len(os.Args) != 2 || os.Args[1] != "get" {
+			// It is either store or erase, we do not do anything on both
+			return
+		}
+		initConfig()
+		os.Exit(git.RunCredsHelper())
+	}
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
@@ -67,6 +77,7 @@ func init() {
 	rootCmd.AddCommand(cfgcmd.NewCommand())
 	rootCmd.AddCommand(devices.NewCommand())
 	rootCmd.AddCommand(docker.NewCommand())
+	rootCmd.AddCommand(git.NewCommand())
 	rootCmd.AddCommand(el2g.NewCommand())
 	rootCmd.AddCommand(events.NewCommand())
 	rootCmd.AddCommand(factories.NewCommand())
