@@ -42,7 +42,7 @@ func doCopyTargets(cmd *cobra.Command, args []string) {
 
 	targetsCreds, err := createTargetsCreds(factory, *root, creds)
 	subcommands.DieNotNil(err)
-	SaveCreds(args[1], targetsCreds)
+	saveTufCreds(args[1], targetsCreds)
 }
 
 func createTargetsCreds(factory string, root client.AtsTufRoot, creds OfflineCreds) (OfflineCreds, error) {

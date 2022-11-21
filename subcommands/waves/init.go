@@ -138,7 +138,7 @@ func signTargets(meta []byte, factory string, offlineKeys keys.OfflineCreds) []t
 		if pub == onlinePub.KeyValue.Public {
 			continue
 		}
-		signer, err := keys.FindSigner(kid, pub, offlineKeys)
+		signer, err := keys.FindTufSigner(kid, pub, offlineKeys)
 		if err != nil {
 			subcommands.DieNotNil(err, fmt.Sprintf("Failed to find private key for %s", kid))
 		}
@@ -150,7 +150,7 @@ func signTargets(meta []byte, factory string, offlineKeys keys.OfflineCreds) []t
 Please, run "fioctl keys rotate-targets" in order to create offline targets keys.`))
 	}
 
-	signatures, err := keys.SignMeta(meta, signers...)
+	signatures, err := keys.SignTufMeta(meta, signers...)
 	subcommands.DieNotNil(err, "Failed to sign new targets")
 	return signatures
 }

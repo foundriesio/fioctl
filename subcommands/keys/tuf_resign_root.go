@@ -64,8 +64,8 @@ func doResignRoot(cmd *cobra.Command, args []string) {
 	}
 
 	fmt.Println("= Resigning root.json")
-	RemoveUnusedKeys(root)
-	subcommands.DieNotNil(SignRoot(root, *curPk))
+	removeUnusedTufKeys(root)
+	subcommands.DieNotNil(signTufRoot(root, *curPk))
 
 	bytes, err := json.MarshalIndent(root, "", "  ")
 	subcommands.DieNotNil(err)
