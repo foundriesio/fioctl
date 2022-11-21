@@ -1,7 +1,11 @@
 package client
 
 import (
+	"crypto/x509"
 	"encoding/json"
+	"encoding/pem"
+	"errors"
+	"fmt"
 
 	"github.com/sirupsen/logrus"
 )
@@ -94,4 +98,25 @@ func (a *Api) FactorySetEstCrt(factory string, cert string) error {
 	}
 	_, err = a.Put(url, data)
 	return err
+}
+
+func (a *Api) FactoryEstUrl(factory string, port int, resource string) (string, error) {
+	cert, err := a.FactoryGetCA(factory)
+	if err != nil {
+		return "", err
+	}
+	if len(cert.EstCrt) == 0 {
+		return "", errors.New("EST server is not configured. Please see `fioctl keys est`")
+	}
+
+	block, _ := pem.Decode([]byte(cert.EstCrt))
+	c, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		return "", fmt.Errorf("Failed to parse certificate: %w", err)
+	}
+	if len(c.DNSNames) != 1 {
+		return "", fmt.Errorf("Certificate expected to have 1 DNS name, %d found", len(c.DNSNames))
+	}
+	url := fmt.Sprintf("https://%s:%d%s", c.DNSNames[0], port, resource)
+	return url, nil
 }
