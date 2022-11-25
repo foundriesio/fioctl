@@ -542,10 +542,58 @@ func readResponse(res *http.Response, log logrus.FieldLogger) (*[]byte, error) {
 		// Still return a body, a caller might need it, but also return an error
 		msg := fmt.Sprintf("HTTP error during %s '%s': %s",
 			res.Request.Method, res.Request.URL.String(), res.Status)
-		if len(body) < PRINT_LIMIT {
-			// return an error response body up to a meaningful limit - if it spans beyond a few
-			// lines, need to find a more appropriate message.
-			msg = fmt.Sprintf("%s\n=%s", msg, body)
+
+		// Some APIs return well-formatted errors, try to use them
+		var (
+			useGenericError bool
+			listErrors      struct {
+				Msg     string   `json:"msg,omitempty"`
+				Message string   `json:"message,omitempty"`
+				Errors  []string `json:"errors,omitempty"`
+			}
+			dictErrors struct {
+				Msg     string            `json:"msg,omitempty"`
+				Message string            `json:"message,omitempty"`
+				Errors  map[string]string `json:"errors,omitempty"`
+			}
+		)
+
+		if merr := json.Unmarshal(body, &listErrors); merr == nil {
+			if listErrors.Msg != "" {
+				msg += "\n= " + listErrors.Msg
+			} else if listErrors.Message != "" {
+				msg += "\n= " + listErrors.Message
+			} else {
+				useGenericError = true
+			}
+			if !useGenericError && listErrors.Errors != nil {
+				for _, emsg := range listErrors.Errors {
+					msg += "\n * " + emsg
+				}
+			}
+		} else if merr = json.Unmarshal(body, &dictErrors); merr == nil {
+			if dictErrors.Msg != "" {
+				msg += "\n= " + dictErrors.Msg
+			} else if dictErrors.Message != "" {
+				msg += "\n= " + dictErrors.Message
+			} else {
+				useGenericError = true
+			}
+			if !useGenericError && dictErrors.Errors != nil {
+				for field, emsg := range dictErrors.Errors {
+					msg += fmt.Sprintf("\n * %s: %s", field, emsg)
+				}
+			}
+		}
+		if useGenericError {
+			logrus.Debugf("Failed to parse error data... return original error")
+			if len(body) < PRINT_LIMIT {
+				// return an error response body up to a meaningful limit - if it spans beyond a few
+				// lines, need to find a more appropriate message.
+				msg = fmt.Sprintf("%s\n= %s", msg, body)
+			} else {
+				msg += "\n= Error body too long, try to use the --verbose option"
+			}
 		}
 		err = &HttpError{msg, res}
 	}
@@ -1647,25 +1695,7 @@ func (a *Api) FactoryCreateWave(factory string, wave *WaveCreate) error {
 		return err
 	}
 
-	type WaveErr struct {
-		Message string   `json:"message"`
-		Errors  []string `json:"errors"`
-	}
-	body, err := a.Post(url, data)
-	if err != nil && body != nil {
-		if herr := AsHttpError(err); herr != nil {
-			var werr WaveErr
-			if json.Unmarshal(*body, &werr) == nil {
-				herr.Message = werr.Message
-				if werr.Errors != nil {
-					for _, err := range werr.Errors {
-						herr.Message += "\n * " + err
-					}
-				}
-				herr.Message += "\n"
-			}
-		}
-	}
+	_, err = a.Post(url, data)
 	return err
 }
 
