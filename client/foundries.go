@@ -187,6 +187,12 @@ func (a ComposeApp) Hash() string {
 	return parts[len(parts)-1]
 }
 
+func (a ComposeApp) Name() string {
+	parts := strings.SplitN(a.Uri, "@sha256:", 2)
+	nameStartIndx := strings.LastIndexByte(parts[0], '/')
+	return parts[0][nameStartIndx+1:]
+}
+
 type FactoryUser struct {
 	PolisId string `json:"polis-id"`
 	Name    string `json:"name"`
@@ -277,6 +283,51 @@ type TufCustom struct {
 	Uri            string                `json:"uri,omitempty"`
 	OrigUri        string                `json:"origUri,omitempty"`
 	CreatedAt      string                `json:"createdAt,omitempty"`
+	UpdatedAt      string                `json:"updatedAt,omitempty"`
+}
+
+type Target struct {
+	Length int64      `json:"length"`
+	Hashes tuf.Hashes `json:"hashes"`
+	Custom *TufCustom `json:"custom,omitempty"`
+}
+
+func (t *Target) HardwareId() string {
+	return t.Custom.HardwareIds[0]
+}
+
+func (t *Target) Version() int {
+	ver, err := strconv.Atoi(t.Custom.Version)
+	if err != nil {
+		return -1
+	}
+	return ver
+}
+
+func (t *Target) Tags() []string {
+	return t.Custom.Tags
+}
+
+func (t *Target) HasTag(tag string) bool {
+	for _, ct := range t.Tags() {
+		if ct == tag {
+			return true
+		}
+	}
+	return false
+}
+
+func (t *Target) Name() string {
+	return t.Custom.Name + "-" + t.Custom.Version
+}
+
+func (t *Target) SetHash(hash string) error {
+	hb, err := base64.StdEncoding.DecodeString(hash)
+	if err != nil {
+		return err
+	}
+	t.Hashes["sha256"] = hb
+	return nil
 }
 
 type AtsTargetsMeta struct {
@@ -1185,6 +1236,30 @@ func (a *Api) TargetCustom(target tuf.FileMeta) (*TufCustom, error) {
 	return &custom, nil
 }
 
+func (a *Api) NewTarget(tufMeta tuf.FileMeta) (*Target, error) {
+	custom, err := a.TargetCustom(tufMeta)
+	if err != nil {
+		return nil, err
+	}
+	return &Target{
+		Length: tufMeta.Length,
+		Hashes: tufMeta.Hashes,
+		Custom: custom,
+	}, nil
+}
+
+func (t *Target) DeriveTarget(newVer int) *Target {
+	derivedCustom := *t.Custom
+	derivedCustom.Version = strconv.Itoa(newVer)
+	derivedCustom.CreatedAt = time.Now().UTC().Format(time.RFC3339)
+	derivedCustom.UpdatedAt = derivedCustom.CreatedAt
+	return &Target{
+		Length: t.Length,
+		Hashes: t.Hashes,
+		Custom: &derivedCustom,
+	}
+}
+
 func (a *Api) TargetsPut(factory string, data []byte) (string, string, error) {
 	url := a.serverUrl + "/ota/factories/" + factory + "/targets/"
 	resp, err := a.Put(url, data)
@@ -1192,6 +1267,12 @@ func (a *Api) TargetsPut(factory string, data []byte) (string, string, error) {
 		return "", "", err
 	}
 	return parseJobServResponse(resp, err, "UpdateTargets")
+}
+
+func (a *Api) TargetsPost(factory string, data []byte) error {
+	url := a.serverUrl + "/ota/factories/" + factory + "/targets/"
+	_, err := a.Post(url, data)
+	return err
 }
 
 type UpdateTarget struct {
