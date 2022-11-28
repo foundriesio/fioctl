@@ -49,7 +49,7 @@ func ParseTufRoleNameOffline(s string) string {
 	return r
 }
 
-func genKeyId(key crypto.Signer) string {
+func genTufKeyId(key crypto.Signer) string {
 	// # This has to match the exact logic used by ota-tuf (required by garage-sign):
 	// https://github.com/foundriesio/ota-tuf/blob/fio-changes/libtuf/src/main/scala/com/advancedtelematic/libtuf/crypt/TufCrypto.scala#L66-L71
 	// It sets a keyid to a signature of the key's canonical DER encoding (same logic for all keys).
@@ -59,7 +59,7 @@ func genKeyId(key crypto.Signer) string {
 	return fmt.Sprintf("%x", sha256.Sum256(pubBytes))
 }
 
-func GenKeyPair(keyType TufKeyType) TufKeyPair {
+func genTufKeyPair(keyType TufKeyType) TufKeyPair {
 	keyTypeName := keyType.Name()
 	pk, err := keyType.GenerateKey()
 	subcommands.DieNotNil(err)
@@ -80,7 +80,7 @@ func GenKeyPair(keyType TufKeyType) TufKeyPair {
 	atsPubBytes, err := json.Marshal(pub)
 	subcommands.DieNotNil(err)
 
-	id := genKeyId(pk)
+	id := genTufKeyId(pk)
 
 	return TufKeyPair{
 		atsPriv:      priv,
@@ -95,7 +95,7 @@ func GenKeyPair(keyType TufKeyType) TufKeyPair {
 	}
 }
 
-func SignMeta(metaBytes []byte, signers ...TufSigner) ([]tuf.Signature, error) {
+func SignTufMeta(metaBytes []byte, signers ...TufSigner) ([]tuf.Signature, error) {
 	signatures := make([]tuf.Signature, len(signers))
 
 	for idx, signer := range signers {
@@ -121,12 +121,12 @@ func SignMeta(metaBytes []byte, signers ...TufSigner) ([]tuf.Signature, error) {
 	return signatures, nil
 }
 
-func SignRoot(root *client.AtsTufRoot, signers ...TufSigner) error {
+func signTufRoot(root *client.AtsTufRoot, signers ...TufSigner) error {
 	bytes, err := canonical.MarshalCanonical(root.Signed)
 	if err != nil {
 		return err
 	}
-	signatures, err := SignMeta(bytes, signers...)
+	signatures, err := SignTufMeta(bytes, signers...)
 	if err != nil {
 		return err
 	}
@@ -134,7 +134,7 @@ func SignRoot(root *client.AtsTufRoot, signers ...TufSigner) error {
 	return nil
 }
 
-func SaveCreds(path string, creds OfflineCreds) {
+func saveTufCreds(path string, creds OfflineCreds) {
 	file, err := os.Create(path)
 	subcommands.DieNotNil(err)
 	defer file.Close()
@@ -156,7 +156,7 @@ func SaveCreds(path string, creds OfflineCreds) {
 	}
 }
 
-func SaveTempCreds(credsFile string, creds OfflineCreds) string {
+func saveTempTufCreds(credsFile string, creds OfflineCreds) string {
 	path := credsFile + ".tmp"
 	if _, err := os.Stat(path); err == nil {
 		subcommands.DieNotNil(fmt.Errorf(`Backup file exists: %s
@@ -165,7 +165,7 @@ Please move this file somewhere safe before re-running this command.`,
 			path,
 		))
 	}
-	SaveCreds(path, creds)
+	saveTufCreds(path, creds)
 	return path
 }
 
@@ -205,7 +205,7 @@ func GetOfflineCreds(credsFile string) (OfflineCreds, error) {
 	return files, nil
 }
 
-func FindSigner(keyid, pubkey string, creds OfflineCreds) (*TufSigner, error) {
+func FindTufSigner(keyid, pubkey string, creds OfflineCreds) (*TufSigner, error) {
 	pubkey = strings.TrimSpace(pubkey)
 	for k, v := range creds {
 		if strings.HasSuffix(k, ".pub") {
@@ -236,10 +236,16 @@ func FindSigner(keyid, pubkey string, creds OfflineCreds) (*TufSigner, error) {
 			}
 		}
 	}
-	return nil, fmt.Errorf("Can not find private key for: %s", pubkey)
+	return nil, fmt.Errorf("Can not find private key for: %s", keyid)
 }
 
-func RemoveUnusedKeys(root *client.AtsTufRoot) {
+func findTufRootSigner(root *client.AtsTufRoot, creds OfflineCreds) (*TufSigner, error) {
+	kid := root.Signed.Roles["root"].KeyIDs[0]
+	pub := root.Signed.Keys[kid].KeyValue.Public
+	return FindTufSigner(kid, pub, creds)
+}
+
+func removeUnusedTufKeys(root *client.AtsTufRoot) {
 	var inuse []string
 	for _, role := range root.Signed.Roles {
 		inuse = append(inuse, role.KeyIDs...)

@@ -1,7 +1,6 @@
 package devices
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -103,7 +102,7 @@ func doShow(cmd *cobra.Command, args []string) {
 		}
 	}
 	if device.Hardware != nil {
-		b, err := json.MarshalIndent(device.Hardware, "\t", "  ")
+		b, err := subcommands.MarshalIndent(device.Hardware, "\t", "  ")
 		if err != nil {
 			fmt.Println("Unable to marshall hardware info: ", err)
 		}

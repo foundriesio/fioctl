@@ -195,13 +195,13 @@ func doRotateOfflineKey(cmd *cobra.Command, args []string) {
 		subcommands.DieNotNil(err)
 		creds["tufrepo/keys/first-root.pub"] = bytes
 
-		SaveCreds(credsFile, creds)
+		saveTufCreds(credsFile, creds)
 	} else {
 		creds, err = GetOfflineCreds(credsFile)
 		subcommands.DieNotNil(err)
 	}
 
-	rootKey, err := findRoot(root, creds)
+	rootKey, err := findTufRootSigner(root, creds)
 	subcommands.DieNotNil(err)
 	signers = append(signers, *rootKey)
 	credsFileToSave := credsFile
@@ -213,7 +213,7 @@ func doRotateOfflineKey(cmd *cobra.Command, args []string) {
 		// 2. sign the new root.json with both the old and new root
 		subcommands.AssertWritable(credsFile)
 		fmt.Println("= Current root keyid:", rootKey.Id)
-		newKey, newCreds = swapRootKey(root, rootKey.Id, creds, keyType)
+		newKey, newCreds = swapRootKey(root, creds, keyType)
 		fmt.Println("= New root keyid:", newKey.Id)
 		signers = append(signers, *newKey)
 		if changeLog == "" {
@@ -249,7 +249,8 @@ func doRotateOfflineKey(cmd *cobra.Command, args []string) {
 		newKey, newCreds = replaceOfflineTargetsKey(root, onlineTargetsId, targetsCreds, keyType)
 		fmt.Println("= New target keyid:", newKey.Id)
 		fmt.Println("= Resigning prod targets")
-		subcommands.DieNotNil(resignProdTargets(factory, root, onlineTargetsId, newCreds))
+		root.TargetsSignatures, err = resignProdTargets(factory, root, onlineTargetsId, newCreds)
+		subcommands.DieNotNil(err)
 		if changeLog == "" {
 			changeLog = "Targets role offline key rotation, new keyid: " + newKey.Id
 		}
@@ -257,14 +258,15 @@ func doRotateOfflineKey(cmd *cobra.Command, args []string) {
 		panic(fmt.Errorf("Unexpected role name: %s", roleName))
 	}
 
-	RemoveUnusedKeys(root)
+	removeUnusedTufKeys(root)
 	root.Signed.Reason = &client.RootChangeReason{
 		PolisId:   user.PolisId,
 		Message:   changeLog,
 		Timestamp: time.Now(),
 	}
+	root.Signed.Version += 1
 	fmt.Println("= Resigning root.json")
-	subcommands.DieNotNil(SignRoot(root, signers...))
+	subcommands.DieNotNil(signTufRoot(root, signers...))
 
 	recoverySyncProdRootArgs := "--keys " + credsFile
 	if targetsCredsFile != "" {
@@ -290,7 +292,7 @@ func tufRootPost(
 	subcommands.DieNotNil(err)
 
 	// Create a backup before we try and commit this:
-	tmpCreds := SaveTempCreds(credsFileToSave, credsToSave)
+	tmpCreds := saveTempTufCreds(credsFileToSave, credsToSave)
 
 	fmt.Println("= Uploading rotated root")
 	body, err := api.TufRootPost(factory, bytes)
@@ -313,24 +315,17 @@ Please run a hidden "fioctl keys tuf sync-prod-root %s" command to fix this.`, s
 }
 
 func swapRootKey(
-	root *client.AtsTufRoot, curid string, creds OfflineCreds, keyType TufKeyType,
+	root *client.AtsTufRoot, creds OfflineCreds, keyType TufKeyType,
 ) (*TufSigner, OfflineCreds) {
-	kp := GenKeyPair(keyType)
+	kp := genTufKeyPair(keyType)
 	root.Signed.Keys[kp.signer.Id] = kp.atsPub
 	root.Signed.Expires = time.Now().AddDate(1, 0, 0).UTC().Round(time.Second) // 1 year validity
 	root.Signed.Roles["root"].KeyIDs = []string{kp.signer.Id}
-	root.Signed.Version += 1
 
 	base := "tufrepo/keys/fioctl-root-" + kp.signer.Id
 	creds[base+".pub"] = kp.atsPubBytes
 	creds[base+".sec"] = kp.atsPrivBytes
 	return &kp.signer, creds
-}
-
-func findRoot(root *client.AtsTufRoot, creds OfflineCreds) (*TufSigner, error) {
-	kid := root.Signed.Roles["root"].KeyIDs[0]
-	pub := root.Signed.Keys[kid].KeyValue.Public
-	return FindSigner(kid, pub, creds)
 }
 
 func syncProdRoot(factory string, root *client.AtsTufRoot, creds, targetsCreds OfflineCreds) error {
@@ -355,13 +350,13 @@ func syncProdRoot(factory string, root *client.AtsTufRoot, creds, targetsCreds O
 		if !ok {
 			key = prevRoot.Signed.Keys[sig.KeyID]
 		}
-		signer, err := FindSigner(sig.KeyID, key.KeyValue.Public, creds)
+		signer, err := FindTufSigner(sig.KeyID, key.KeyValue.Public, creds)
 		if err != nil {
 			return err
 		}
 		signers = append(signers, *signer)
 	}
-	if err := SignRoot(root, signers...); err != nil {
+	if err := signTufRoot(root, signers...); err != nil {
 		return err
 	}
 
@@ -374,7 +369,7 @@ func syncProdRoot(factory string, root *client.AtsTufRoot, creds, targetsCreds O
 		if err != nil {
 			return err
 		}
-		err = resignProdTargets(factory, root, onlineTargetsId, targetsCreds)
+		root.TargetsSignatures, err = resignProdTargets(factory, root, onlineTargetsId, targetsCreds)
 		if err != nil {
 			return err
 		}
@@ -392,7 +387,7 @@ func syncProdRoot(factory string, root *client.AtsTufRoot, creds, targetsCreds O
 }
 
 func findOnlineTargetsId(factory string, root client.AtsTufRoot) (string, error) {
-	onlinePub, err := api.GetFoundriesTargetsKey(factory)
+	onlinePub, err := api.TufTargetsOnlineKey(factory)
 	subcommands.DieNotNil(err)
 	for _, keyid := range root.Signed.Roles["targets"].KeyIDs {
 		pub := root.Signed.Keys[keyid].KeyValue.Public
@@ -406,11 +401,10 @@ func findOnlineTargetsId(factory string, root client.AtsTufRoot) (string, error)
 func replaceOfflineTargetsKey(
 	root *client.AtsTufRoot, onlineTargetsId string, creds OfflineCreds, keyType TufKeyType,
 ) (*TufSigner, OfflineCreds) {
-	kp := GenKeyPair(keyType)
+	kp := genTufKeyPair(keyType)
 	root.Signed.Keys[kp.signer.Id] = kp.atsPub
 	root.Signed.Roles["targets"].KeyIDs = []string{onlineTargetsId, kp.signer.Id}
 	root.Signed.Roles["targets"].Threshold = 1
-	root.Signed.Version += 1
 
 	base := "tufrepo/keys/fioctl-targets-" + kp.signer.Id
 	creds[base+".pub"] = kp.atsPubBytes
@@ -420,12 +414,12 @@ func replaceOfflineTargetsKey(
 
 func resignProdTargets(
 	factory string, root *client.AtsTufRoot, onlineTargetsId string, creds OfflineCreds,
-) error {
+) (map[string][]tuf.Signature, error) {
 	targetsMap, err := api.ProdTargetsList(factory, false)
 	if err != nil {
-		return fmt.Errorf("Failed to fetch production targets: %w", err)
+		return nil, fmt.Errorf("Failed to fetch production targets: %w", err)
 	} else if targetsMap == nil {
-		return nil
+		return nil, nil
 	}
 
 	var signers []TufSigner
@@ -434,9 +428,9 @@ func resignProdTargets(
 			continue
 		}
 		pub := root.Signed.Keys[kid].KeyValue.Public
-		signer, err := FindSigner(kid, pub, creds)
+		signer, err := FindTufSigner(kid, pub, creds)
 		if err != nil {
-			return fmt.Errorf("Failed to find private key for %s: %w", kid, err)
+			return nil, fmt.Errorf("Failed to find private key for %s: %w", kid, err)
 		}
 		signers = append(signers, *signer)
 	}
@@ -445,14 +439,13 @@ func resignProdTargets(
 	for tag, targets := range targetsMap {
 		bytes, err := canonical.MarshalCanonical(targets.Signed)
 		if err != nil {
-			return fmt.Errorf("Failed to marshal targets for tag %s: %w", tag, err)
+			return nil, fmt.Errorf("Failed to marshal targets for tag %s: %w", tag, err)
 		}
-		signatures, err := SignMeta(bytes, signers...)
+		signatures, err := SignTufMeta(bytes, signers...)
 		if err != nil {
-			return fmt.Errorf("Failed to re-sign targets for tag %s: %w", tag, err)
+			return nil, fmt.Errorf("Failed to re-sign targets for tag %s: %w", tag, err)
 		}
 		signatureMap[tag] = signatures
 	}
-	root.TargetsSignatures = signatureMap
-	return nil
+	return signatureMap, nil
 }

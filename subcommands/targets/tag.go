@@ -1,7 +1,6 @@
 package targets
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -108,7 +107,7 @@ func doTag(cmd *cobra.Command, args []string) {
 	}
 
 	if dryRun {
-		data, err := json.MarshalIndent(updates, "  ", "  ")
+		data, err := subcommands.MarshalIndent(updates, "  ", "  ")
 		subcommands.DieNotNil(err)
 		fmt.Println(string(data))
 		return

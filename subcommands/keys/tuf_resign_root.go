@@ -1,7 +1,6 @@
 package keys
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"time"
@@ -50,7 +49,7 @@ func doResignRoot(cmd *cobra.Command, args []string) {
 	root.Signed.Expires = time.Now().AddDate(1, 0, 0).UTC().Round(time.Second) // 1 year validity
 	root.Signed.Version += 1
 
-	curPk, err := findRoot(root, creds)
+	curPk, err := findTufRootSigner(root, creds)
 	subcommands.DieNotNil(err)
 	fmt.Println("= Current root:", curPk.Id)
 
@@ -64,10 +63,10 @@ func doResignRoot(cmd *cobra.Command, args []string) {
 	}
 
 	fmt.Println("= Resigning root.json")
-	RemoveUnusedKeys(root)
-	subcommands.DieNotNil(SignRoot(root, *curPk))
+	removeUnusedTufKeys(root)
+	subcommands.DieNotNil(signTufRoot(root, *curPk))
 
-	bytes, err := json.MarshalIndent(root, "", "  ")
+	bytes, err := subcommands.MarshalIndent(root, "", "  ")
 	subcommands.DieNotNil(err)
 
 	if dryRun {
