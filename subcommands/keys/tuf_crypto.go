@@ -118,14 +118,18 @@ func (t *tufKeyTypeEd25519) ParseKey(priv string) (crypto.Signer, error) {
 	if err != nil {
 		return nil, errors.New("Unable to parse Ed25519 private key HEX data")
 	}
-	if len(pk) != ed25519.PrivateKeySize {
+	switch len(pk) {
+	case ed25519.PrivateKeySize:
+		return ed25519.PrivateKey(pk), nil
+	case ed25519.SeedSize:
+		return ed25519.NewKeyFromSeed(pk), nil
+	default:
 		return nil, errors.New("Wrong Ed25519 private key size")
 	}
-	return ed25519.PrivateKey(pk), nil
 }
 
 func (t *tufKeyTypeEd25519) SaveKeyPair(key crypto.Signer) (priv, pub string, err error) {
-	priv = hex.EncodeToString([]byte(key.(ed25519.PrivateKey)))
+	priv = hex.EncodeToString(key.(ed25519.PrivateKey).Seed())
 	pub = hex.EncodeToString([]byte(key.Public().(ed25519.PublicKey)))
 	return
 }
