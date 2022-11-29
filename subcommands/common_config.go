@@ -1,12 +1,14 @@
 package subcommands
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/fatih/color"
 	toml "github.com/pelletier/go-toml"
@@ -143,6 +145,33 @@ func PrintConfig(cfg *client.DeviceConfig, showAppliedAt, highlightFirstLine boo
 				printf("\t | %s\n", line)
 			}
 		}
+	}
+}
+
+type RotateCertOptions struct {
+	Reason    string
+	EstServer string
+	PkeyIds   []string
+	CertIds   []string
+}
+
+func (o RotateCertOptions) AsConfig() client.ConfigCreateRequest {
+	b := new(bytes.Buffer)
+	fmt.Fprintf(b, "ESTSERVER=%s\n", o.EstServer)
+	fmt.Fprintf(b, "PKEYIDS=%s\n", strings.Join(o.PkeyIds, ","))
+	fmt.Fprintf(b, "CERTIDS=%s\n", strings.Join(o.CertIds, ","))
+	fmt.Fprintf(b, "ROTATIONID=certs-%d\n", time.Now().Unix())
+
+	return client.ConfigCreateRequest{
+		Reason: o.Reason,
+		Files: []client.ConfigFile{
+			{
+				Name:        "fio-rotate-certs",
+				Value:       b.String(),
+				Unencrypted: true,
+				OnChanged:   []string{"/usr/share/fioconfig/handlers/renew-client-cert"},
+			},
+		},
 	}
 }
 
