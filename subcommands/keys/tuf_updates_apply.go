@@ -3,6 +3,8 @@ package keys
 import (
 	"fmt"
 
+	"golang.org/x/exp/slices"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
@@ -30,13 +32,7 @@ func doTufUpdatesApply(cmd *cobra.Command, args []string) {
 		msg := "Failed to apply staged TUF root updates:\n%w\n"
 		var isNonFatal bool
 		if herr := client.AsHttpError(err); herr != nil {
-			nonFatalCodes := []int{400, 401, 403, 422, 423}
-			for _, code := range nonFatalCodes {
-				if code == herr.Response.StatusCode {
-					isNonFatal = true
-					break
-				}
-			}
+			isNonFatal = slices.Contains([]int{400, 401, 403, 422, 423}, herr.Response.StatusCode)
 		}
 		if isNonFatal {
 			msg += `No changes were made to your Factory.
