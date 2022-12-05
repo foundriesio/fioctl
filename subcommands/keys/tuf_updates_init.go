@@ -45,7 +45,8 @@ Please make sure you aren't accidentally overwriting another factory's keys`))
 	fmt.Printf(`A new transaction to update TUF root keys started.
 Your transaction ID is %s .
 Please, keep it secret and only share with participants of the transaction.
-Nobody can make changes to the transaction without this ID other than cancel it.
+Only the user who initiated the transaction can make changes to it without the transaction ID.
+Other users are required to supply this transaction ID for all commands except review and cancel.
 `,
 		res.TransactionId)
 

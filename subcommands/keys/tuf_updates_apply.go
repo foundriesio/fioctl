@@ -19,7 +19,6 @@ func init() {
 		Run:   doTufUpdatesApply,
 	}
 	applyCmd.Flags().StringP("txid", "x", "", "TUF root updates transaction ID.")
-	_ = applyCmd.MarkFlagRequired("txid")
 	tufUpdatesCmd.AddCommand(applyCmd)
 }
 
