@@ -19,7 +19,6 @@ func init() {
 		Run:   doTufUpdatesSign,
 	}
 	signCmd.Flags().StringP("txid", "x", "", "TUF root updates transaction ID.")
-	_ = signCmd.MarkFlagRequired("txid")
 	signCmd.Flags().StringP("keys", "k", "", "Path to <tuf-root-keys.tgz> used to sign TUF root.")
 	_ = signCmd.MarkFlagFilename("keys")
 	_ = signCmd.MarkFlagRequired("keys")

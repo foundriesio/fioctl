@@ -43,7 +43,6 @@ When you rotate the TUF targets offline signing key:
 	rotate.Flags().StringP("role", "r", "", "TUF role name, supported: Root, Targets.")
 	_ = rotate.MarkFlagRequired("role")
 	rotate.Flags().StringP("txid", "x", "", "TUF root updates transaction ID.")
-	_ = rotate.MarkFlagRequired("txid")
 	rotate.Flags().StringP("keys", "k", "", "Path to <tuf-root-keys.tgz> used to sign TUF root.")
 	_ = rotate.MarkFlagFilename("keys")
 	rotate.Flags().StringP("targets-keys", "K", "", "Path to <tuf-targets-keys.tgz> used to sign prod & wave TUF targets.")
