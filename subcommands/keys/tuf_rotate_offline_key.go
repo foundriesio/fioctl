@@ -1,13 +1,11 @@
 package keys
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 
 	canonical "github.com/docker/go/canonical/json"
 	tuf "github.com/theupdateframework/notary/tuf/data"
@@ -97,36 +95,6 @@ Instead, please, use a new approach to rotate TUF targets key:
 	legacyRotateTargets.Flags().StringP("key-type", "y", tufKeyTypeNameRSA, "Key type, supported: Ed25519, RSA (default).")
 	legacyRotateTargets.Flags().StringP("changelog", "m", "", "Reason for doing rotation. Saved in root metadata for tracking change history.")
 	cmd.AddCommand(legacyRotateTargets)
-
-	tempSyncProdRoot := &cobra.Command{
-		Use:    "sync-prod-root",
-		Short:  "Make sure production root.json is up-to-date after a failed TUF key rotation and exit",
-		Hidden: true,
-		Run:    doSyncProdRoot,
-	}
-	tempSyncProdRoot.Flags().StringP("keys", "k", "", "Path to <offline-creds.tgz> used to sign TUF root.")
-	_ = tempSyncProdRoot.MarkFlagRequired("keys")
-	_ = tempSyncProdRoot.MarkFlagFilename("keys")
-	tempSyncProdRoot.Flags().StringP("targets-keys", "K", "", "Path to <offline-targets-creds.tgz> used to sign prod & wave TUF targets.")
-	_ = tempSyncProdRoot.MarkFlagFilename("targets-keys")
-	tufCmd.AddCommand(tempSyncProdRoot)
-}
-
-func doSyncProdRoot(cmd *cobra.Command, args []string) {
-	factory := viper.GetString("factory")
-	credsFile, _ := cmd.Flags().GetString("keys")
-	targetsCredsFile, _ := cmd.Flags().GetString("targets-keys")
-	root, err := api.TufRootGet(factory)
-	subcommands.DieNotNil(err)
-	creds, err := GetOfflineCreds(credsFile)
-	subcommands.DieNotNil(err)
-	if targetsCredsFile == "" {
-		subcommands.DieNotNil(syncProdRoot(factory, root, creds, creds))
-	} else {
-		targetsCreds, err := GetOfflineCreds(targetsCredsFile)
-		subcommands.DieNotNil(err)
-		subcommands.DieNotNil(syncProdRoot(factory, root, creds, targetsCreds))
-	}
 }
 
 func doRotateOfflineKey(cmd *cobra.Command, args []string) {
@@ -212,64 +180,6 @@ func swapRootKey(
 	creds[base+".pub"] = kp.atsPubBytes
 	creds[base+".sec"] = kp.atsPrivBytes
 	return &kp.signer, creds
-}
-
-func syncProdRoot(factory string, root *client.AtsTufRoot, creds, targetsCreds OfflineCreds) error {
-	fmt.Println("= Populating production root version")
-
-	if root.Signed.Version == 1 {
-		return fmt.Errorf("Unexpected error: production root version 1 can only be generated on server side")
-	}
-
-	prevRoot, err := api.TufRootGetVer(factory, root.Signed.Version-1)
-	if err != nil {
-		return err
-	}
-
-	// Bump the threshold
-	root.Signed.Roles["targets"].Threshold = 2
-
-	// Sign with the same keys used for the ci copy
-	var signers []TufSigner
-	for _, sig := range root.Signatures {
-		key, ok := root.Signed.Keys[sig.KeyID]
-		if !ok {
-			key = prevRoot.Signed.Keys[sig.KeyID]
-		}
-		signer, err := FindTufSigner(sig.KeyID, key.KeyValue.Public, creds)
-		if err != nil {
-			return err
-		}
-		signers = append(signers, *signer)
-	}
-	if err := signTufRoot(root, signers...); err != nil {
-		return err
-	}
-
-	if len(root.Signed.Roles["targets"].KeyIDs) > 1 &&
-		!subcommands.IsSliceSetEqual(
-			root.Signed.Roles["targets"].KeyIDs,
-			prevRoot.Signed.Roles["targets"].KeyIDs,
-		) {
-		onlineTargetsId, err := findOnlineTargetsId(factory, *root)
-		if err != nil {
-			return err
-		}
-		root.TargetsSignatures, err = resignProdTargets(factory, root, onlineTargetsId, targetsCreds)
-		if err != nil {
-			return err
-		}
-	}
-
-	bytes, err := json.Marshal(root)
-	if err != nil {
-		return err
-	}
-	_, err = api.TufProdRootPost(factory, bytes)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func findOnlineTargetsId(factory string, root client.AtsTufRoot) (string, error) {
