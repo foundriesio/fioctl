@@ -39,7 +39,6 @@ NOTE: The credentials will need the "source:read-update" scope to work with Git`
 		PreRun: func(cmd *cobra.Command, args []string) {
 			subcommands.DieNotNil(err, "Git not found on system")
 		},
-		Hidden: true,
 	}
 	cmd.Flags().StringVarP(&helperPath, "creds-path", "", helperPath, "Path to install credential helper")
 	return cmd
