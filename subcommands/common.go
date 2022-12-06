@@ -110,6 +110,16 @@ func SaveOauthConfig(c client.OAuthConfig) {
 	DieNotNil(os.WriteFile(name, buf, os.FileMode(0644)), "Unable to update config: ")
 }
 
+// An os.Exit exits immediately, skipping all deferred functions
+// We need a way to execute the finalizing code in some cases.
+type LastWill = func()
+
+var onLastWill []LastWill
+
+func AddLastWill(lastWill LastWill) {
+	onLastWill = append(onLastWill, lastWill)
+}
+
 func DieNotNil(err error, message ...string) {
 	if err != nil {
 		parts := []interface{}{"ERROR:"}
@@ -118,6 +128,9 @@ func DieNotNil(err error, message ...string) {
 		}
 		parts = append(parts, err)
 		fmt.Println(parts...)
+		for _, w := range onLastWill {
+			w()
+		}
 		os.Exit(1)
 	}
 }
