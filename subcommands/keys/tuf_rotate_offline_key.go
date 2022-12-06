@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -131,19 +130,15 @@ func doSyncProdRoot(cmd *cobra.Command, args []string) {
 }
 
 func doRotateOfflineKey(cmd *cobra.Command, args []string) {
+	isTufUpdatesShortcut = true
 	var (
 		roleName, credsFile string
 		targetsCredsFile    string
 		firstTime           bool
-		creds, newCreds     OfflineCreds
-		newKey              *TufSigner
-		signers             []TufSigner
-		err                 error
 	)
-	factory := viper.GetString("factory")
-	keyTypeStr, _ := cmd.Flags().GetString("key-type")
-	keyType := ParseTufKeyType(keyTypeStr)
-	changeLog, _ := cmd.Flags().GetString("changelog")
+	keyType, _ := cmd.Flags().GetString("key-type")
+	ParseTufKeyType(keyType) // fails on error
+	changelog, _ := cmd.Flags().GetString("changelog")
 	cmdName := cmd.Annotations[tufCmdAnnotation]
 	switch cmdName {
 	case tufCmdRotateOfflineKey:
@@ -170,148 +165,39 @@ func doRotateOfflineKey(cmd *cobra.Command, args []string) {
 		panic(fmt.Errorf("Unexpected command: %s", cmdName))
 	}
 
-	user, err := api.UserAccessDetails(factory, "self")
-	subcommands.DieNotNil(err)
-	root, err := api.TufRootGet(factory)
-	subcommands.DieNotNil(err)
+	if changelog == "" {
+		switch roleName {
+		case tufRoleNameRoot:
+			changelog = "Rotate TUF root offline signing key"
+		case tufRoleNameTargets:
+			changelog = "Rotate TUF targets offline signing key"
+		default:
+			panic(fmt.Errorf("Unexpected role name: %s", roleName))
+		}
+	}
 
+	// Below the `tuf updates` subcommands are chained in a correct order.
+	// Detach from the parent, so that command calls below use correct args.
+	tufCmd.RemoveCommand(tufUpdatesCmd)
+
+	fmt.Println("= Creating new TUF updates transaction")
+	args = []string{"init", "-m", changelog}
 	if firstTime {
-		if _, err := os.Stat(credsFile); err == nil {
-			subcommands.DieNotNil(errors.New("Destination file exists. Please make sure you aren't accidentally overwriting another factory's keys"))
-		}
-
-		key, err := api.TufRootFirstKey(factory)
-		subcommands.DieNotNil(err)
-
-		pkid := root.Signed.Roles["root"].KeyIDs[0]
-		pub := root.Signed.Keys[pkid]
-
-		creds = make(OfflineCreds)
-		bytes, err := json.Marshal(key)
-		subcommands.DieNotNil(err)
-		creds["tufrepo/keys/first-root.sec"] = bytes
-
-		bytes, err = json.Marshal(pub)
-		subcommands.DieNotNil(err)
-		creds["tufrepo/keys/first-root.pub"] = bytes
-
-		saveTufCreds(credsFile, creds)
-	} else {
-		creds, err = GetOfflineCreds(credsFile)
-		subcommands.DieNotNil(err)
+		args = append(args, "--first-time", "-k", credsFile)
 	}
+	tufUpdatesCmd.SetArgs(args)
+	subcommands.DieNotNil(tufUpdatesCmd.Execute())
 
-	rootKey, err := findTufRootSigner(root, creds)
-	subcommands.DieNotNil(err)
-	signers = append(signers, *rootKey)
-	credsFileToSave := credsFile
-
-	switch roleName {
-	case tufRoleNameRoot:
-		// A rotation is pretty easy:
-		// 1. change the who's listed as the root key: "swapRootKey"
-		// 2. sign the new root.json with both the old and new root
-		subcommands.AssertWritable(credsFile)
-		fmt.Println("= Current root keyid:", rootKey.Id)
-		newKey, newCreds = swapRootKey(root, creds, keyType)
-		fmt.Println("= New root keyid:", newKey.Id)
-		signers = append(signers, *newKey)
-		if changeLog == "" {
-			changeLog = "Root role offline key rotation, new keyid: " + newKey.Id
-		}
-
-	case tufRoleNameTargets:
-		// Target "rotation" works like this:
-		// 1. Find the "online target key" - this the key used by CI, so we don't
-		//    want to lose it.
-		// 2. Generate a new key.
-		// 3. Set these keys in root.json.
-		// 4. Re-sign existing production targets.
-		targetsCreds := creds
-		if targetsCredsFile != "" {
-			if _, err = os.Stat(targetsCredsFile); err == nil {
-				targetsCreds, err = GetOfflineCreds(targetsCredsFile)
-				subcommands.DieNotNil(err)
-			} else if os.IsNotExist(err) {
-				// Targets key rotation to a new file - just verify it is writeable
-				targetsCreds = make(OfflineCreds, 0)
-			} else {
-				subcommands.DieNotNil(err)
-			}
-			subcommands.AssertWritable(targetsCredsFile)
-			credsFileToSave = targetsCredsFile
-		} else {
-			subcommands.AssertWritable(credsFile)
-		}
-
-		onlineTargetsId, err := findOnlineTargetsId(factory, *root)
-		subcommands.DieNotNil(err)
-		newKey, newCreds = replaceOfflineTargetsKey(root, onlineTargetsId, targetsCreds, keyType)
-		fmt.Println("= New target keyid:", newKey.Id)
-		fmt.Println("= Resigning prod targets")
-		root.TargetsSignatures, err = resignProdTargets(factory, root, onlineTargetsId, newCreds)
-		subcommands.DieNotNil(err)
-		if changeLog == "" {
-			changeLog = "Targets role offline key rotation, new keyid: " + newKey.Id
-		}
-	default:
-		panic(fmt.Errorf("Unexpected role name: %s", roleName))
-	}
-
-	removeUnusedTufKeys(root)
-	root.Signed.Reason = &client.RootChangeReason{
-		PolisId:   user.PolisId,
-		Message:   changeLog,
-		Timestamp: time.Now(),
-	}
-	root.Signed.Version += 1
-	fmt.Println("= Resigning root.json")
-	subcommands.DieNotNil(signTufRoot(root, signers...))
-
-	recoverySyncProdRootArgs := "--keys " + credsFile
+	args = []string{"rotate-offline-key", "-r", roleName, "-k", credsFile, "-y", keyType, "-s"}
 	if targetsCredsFile != "" {
-		recoverySyncProdRootArgs += " --targets-keys " + targetsCredsFile
+		args = append(args, "-K", targetsCredsFile)
 	}
-	tufRootPost(factory, credsFileToSave, recoverySyncProdRootArgs, root, newCreds)
+	tufUpdatesCmd.SetArgs(args)
+	subcommands.DieNotNil(tufUpdatesCmd.Execute())
 
-	// backfill this new key
-	switch roleName {
-	case tufRoleNameRoot:
-		// newCreds contains a new TUF root key; there is no need to resign production targets
-		subcommands.DieNotNil(syncProdRoot(factory, root, newCreds, nil))
-	case tufRoleNameTargets:
-		// newCreds contains a new TUF targets key; creds contains existing TUF root key
-		subcommands.DieNotNil(syncProdRoot(factory, root, creds, newCreds))
-	}
-}
-
-func tufRootPost(
-	factory, credsFileToSave, syncProdRootArgs string, root *client.AtsTufRoot, credsToSave OfflineCreds,
-) {
-	bytes, err := json.Marshal(root)
-	subcommands.DieNotNil(err)
-
-	// Create a backup before we try and commit this:
-	tmpCreds := saveTempTufCreds(credsFileToSave, credsToSave)
-
-	fmt.Println("= Uploading rotated root")
-	body, err := api.TufRootPost(factory, bytes)
-	if herr := client.AsHttpError(err); herr != nil && herr.Response.StatusCode == 409 {
-		fmt.Printf(`ERROR: Your production root role is out of sync.
-Please run a hidden "fioctl keys tuf sync-prod-root %s" command to fix this.`, syncProdRootArgs)
-		os.Exit(1)
-	} else if err != nil {
-		fmt.Println("\nERROR: ", err)
-		fmt.Println(body)
-		fmt.Println("A temporary copy of the new root was saved:", tmpCreds)
-		fmt.Println("Before deleting this please ensure your factory isn't configured with this new key")
-		os.Exit(1)
-	}
-	if err := os.Rename(tmpCreds, credsFileToSave); err != nil {
-		fmt.Println("\nERROR: Unable to update offline keys file.", err)
-		fmt.Println("Temp copy still available at:", tmpCreds)
-		fmt.Println("This temp file contains your new factory private key. You must copy this file.")
-	}
+	fmt.Println("= Applying staged TUF root changes")
+	tufUpdatesCmd.SetArgs([]string{"apply"})
+	subcommands.DieNotNil(tufUpdatesCmd.Execute())
 }
 
 func swapRootKey(
