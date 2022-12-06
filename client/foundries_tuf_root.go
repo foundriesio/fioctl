@@ -136,7 +136,7 @@ func (a *Api) TufRootUpdatesInit(
 	var body *[]byte
 	url := a.serverUrl + "/ota/repo/" + factory + "/api/v1/user_repo/root/updates"
 	data, _ := json.Marshal(map[string]interface{}{
-		"message": "changelog", "first-time": firstTime, "shortcut": shortcut,
+		"message": changelog, "first-time": firstTime, "shortcut": shortcut,
 	})
 	if body, err = a.Post(url, data); err == nil {
 		err = json.Unmarshal(*body, &res)
