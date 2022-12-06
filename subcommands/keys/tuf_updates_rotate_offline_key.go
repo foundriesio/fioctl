@@ -4,10 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	canonical "github.com/docker/go/canonical/json"
 	tuf "github.com/theupdateframework/notary/tuf/data"
 
 	"github.com/foundriesio/fioctl/client"
@@ -96,9 +98,9 @@ func doTufUpdatesRotateOfflineRootKey(cmd *cobra.Command) {
 	curCiRoot, newCiRoot := checkTufRootUpdatesStatus(updates, true)
 
 	// A rotation is pretty easy:
-	// 1. change the who's listed as the root key: "swapRootKey"
+	// 1. change the who's listed as the root key
 	// 2. sign the new root.json with both the old and new root
-	newKey, newCreds := swapRootKey(newCiRoot, creds, keyType)
+	newKey, newCreds := replaceOfflineRootKey(newCiRoot, creds, keyType)
 	fmt.Println("= New root keyid:", newKey.Id)
 	newCiRoot.Signatures = make([]tuf.Signature, 0)
 	removeUnusedTufKeys(newCiRoot)
@@ -190,6 +192,84 @@ func doTufUpdatesRotateOfflineTargetsKey(cmd *cobra.Command) {
 	tmpFile := saveTempTufCreds(targetsKeysFile, newCreds)
 	err = api.TufRootUpdatesPut(factory, txid, newCiRoot, newProdRoot, newTargetsSigs)
 	handleTufRootUpdatesUpload(tmpFile, targetsKeysFile, err)
+}
+
+func findOnlineTargetsId(factory string, root client.AtsTufRoot) (string, error) {
+	onlinePub, err := api.TufTargetsOnlineKey(factory)
+	subcommands.DieNotNil(err)
+	for _, keyid := range root.Signed.Roles["targets"].KeyIDs {
+		pub := root.Signed.Keys[keyid].KeyValue.Public
+		if pub == onlinePub.KeyValue.Public {
+			return keyid, nil
+		}
+	}
+	return "", errors.New("Unable to find online target key for factory")
+}
+
+func replaceOfflineRootKey(
+	root *client.AtsTufRoot, creds OfflineCreds, keyType TufKeyType,
+) (*TufSigner, OfflineCreds) {
+	kp := genTufKeyPair(keyType)
+	root.Signed.Keys[kp.signer.Id] = kp.atsPub
+	root.Signed.Expires = time.Now().AddDate(1, 0, 0).UTC().Round(time.Second) // 1 year validity
+	root.Signed.Roles["root"].KeyIDs = []string{kp.signer.Id}
+
+	base := "tufrepo/keys/fioctl-root-" + kp.signer.Id
+	creds[base+".pub"] = kp.atsPubBytes
+	creds[base+".sec"] = kp.atsPrivBytes
+	return &kp.signer, creds
+}
+
+func replaceOfflineTargetsKey(
+	root *client.AtsTufRoot, onlineTargetsId string, creds OfflineCreds, keyType TufKeyType,
+) (*TufSigner, OfflineCreds) {
+	kp := genTufKeyPair(keyType)
+	root.Signed.Keys[kp.signer.Id] = kp.atsPub
+	root.Signed.Roles["targets"].KeyIDs = []string{onlineTargetsId, kp.signer.Id}
+	root.Signed.Roles["targets"].Threshold = 1
+
+	base := "tufrepo/keys/fioctl-targets-" + kp.signer.Id
+	creds[base+".pub"] = kp.atsPubBytes
+	creds[base+".sec"] = kp.atsPrivBytes
+	return &kp.signer, creds
+}
+
+func resignProdTargets(
+	factory string, root *client.AtsTufRoot, onlineTargetsId string, creds OfflineCreds,
+) (map[string][]tuf.Signature, error) {
+	targetsMap, err := api.ProdTargetsList(factory, false)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to fetch production targets: %w", err)
+	} else if targetsMap == nil {
+		return nil, nil
+	}
+
+	var signers []TufSigner
+	for _, kid := range root.Signed.Roles["targets"].KeyIDs {
+		if kid == onlineTargetsId {
+			continue
+		}
+		pub := root.Signed.Keys[kid].KeyValue.Public
+		signer, err := FindTufSigner(kid, pub, creds)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to find private key for %s: %w", kid, err)
+		}
+		signers = append(signers, *signer)
+	}
+
+	signatureMap := make(map[string][]tuf.Signature)
+	for tag, targets := range targetsMap {
+		bytes, err := canonical.MarshalCanonical(targets.Signed)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to marshal targets for tag %s: %w", tag, err)
+		}
+		signatures, err := SignTufMeta(bytes, signers...)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to re-sign targets for tag %s: %w", tag, err)
+		}
+		signatureMap[tag] = signatures
+	}
+	return signatureMap, nil
 }
 
 func handleTufRootUpdatesUpload(tmpKeysFile, keysFile string, err error) {
