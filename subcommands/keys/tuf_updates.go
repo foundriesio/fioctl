@@ -1,8 +1,15 @@
 package keys
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
+
+	"github.com/foundriesio/fioctl/subcommands"
 )
+
+// This allows to chain several TUF updates subcommands into a single "shortcut" worklfow.
+var isTufUpdatesShortcut, isTufUpdatesInitialized bool
 
 var tufUpdatesCmd = &cobra.Command{
 	Use:   "updates",
@@ -39,4 +46,21 @@ For increased safety there can be only one active TUF updates transaction at a t
 
 func init() {
 	tufCmd.AddCommand(tufUpdatesCmd)
+
+	subcommands.AddLastWill(func() {
+		if isTufUpdatesShortcut {
+			if isTufUpdatesInitialized {
+				// Tuf updates initialized; but the shortcut failed before trying to apply it.
+				fmt.Println(`
+No changes were made to your Factory.
+Please, cancel the staged TUF root updates
+using the "fioctl keys updates cancel" command, and try again later.`)
+			} else {
+				// The init phase failed itself, so there is no active transaction.
+				fmt.Println(`
+No changes were made to your Factory.
+Please, fix an error above and try again.`)
+			}
+		}
+	})
 }
