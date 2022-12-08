@@ -3,12 +3,14 @@ package waves
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/docker/go/canonical/json"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"golang.org/x/exp/slices"
 
 	"github.com/foundriesio/fioctl/client"
 	"github.com/foundriesio/fioctl/subcommands"
@@ -28,6 +30,14 @@ Use a "fioctl wave complete <wave>" to update all devices (make it globally avai
 Use a "fioctl wave cancel <wave> to cancel a wave (make it no longer available).`,
 		Run:  doInitWave,
 		Args: cobra.ExactArgs(3),
+		Example: `
+Start a new wave for the target version 4 and the 'production' device tag:
+$ fioctl wave init -k ~/path/to/keys/targets.only.key.tgz wave-name 4 production
+
+Start a new wave for the target version 16 and also prune old production versions 1,2,3 and 4 in this case:
+$ fioctl wave init -k ~/path/to/keys/targets.only.key.tgz wave-name 16 production --prune 1,2,3,4
+
+`,
 	}
 	cmd.AddCommand(initCmd)
 	initCmd.Flags().IntP("expires-days", "e", 0, `Role expiration in days; default 365.
@@ -37,6 +47,8 @@ The same expiration will be used for production targets when a wave is complete.
 When set this value overrides an 'expires-days' argument.
 Example: 2020-01-01T00:00:00Z`)
 	initCmd.Flags().BoolP("dry-run", "d", false, "Don't create a wave, print it to standard output.")
+	initCmd.Flags().StringSlice("prune", []string{}, `Prune old unused Target(s) from the production metadata.
+Example: 1,2,3`)
 	initCmd.Flags().StringP("keys", "k", "", "Path to <offline-creds.tgz> used to sign wave targets.")
 	initCmd.Flags().StringP("source-tag", "", "", "Match this tag when looking for target versions. Certain advanced tagging configurations may require this argument.")
 	_ = initCmd.MarkFlagRequired("keys")
@@ -49,8 +61,10 @@ func doInitWave(cmd *cobra.Command, args []string) {
 	subcommands.DieNotNil(err, "Version must be an integer")
 	expires := readExpiration(cmd)
 	dryRun, _ := cmd.Flags().GetBool("dry-run")
+	prune, _ := cmd.Flags().GetStringSlice("prune")
 	sourceTag, _ := cmd.Flags().GetString("source-tag")
 	offlineKeys := readOfflineKeys(cmd)
+
 	logrus.Debugf("Creating a wave %s for factory %s targets version %s and new tag %s expires %s",
 		name, factory, version, tag, expires.Format(time.RFC3339))
 
@@ -73,7 +87,7 @@ func doInitWave(cmd *cobra.Command, args []string) {
 		targets.Targets = current_targets.Signed.Targets
 		if targets.Version <= current_targets.Signed.Version {
 			subcommands.DieNotNil(fmt.Errorf(
-				"Cannot create a wave for a version lower than production targets for the same tag"))
+				"Cannot create a wave for a version lower than or equal to production targets for the same tag"))
 		}
 	}
 
@@ -100,6 +114,13 @@ func doInitWave(cmd *cobra.Command, args []string) {
 		targets.Targets[name] = file
 	}
 
+	if len(prune) > 0 {
+		if slices.Contains(prune, version) {
+			subcommands.DieNotNil(fmt.Errorf("Cannot prune current version"))
+		}
+		targets = pruneTargets(&targets, prune)
+	}
+
 	meta, err := json.MarshalCanonical(targets)
 	subcommands.DieNotNil(err, "Failed to serialize new targets")
 	signatures := signTargets(meta, factory, offlineKeys)
@@ -124,6 +145,29 @@ func doInitWave(cmd *cobra.Command, args []string) {
 	} else {
 		subcommands.DieNotNil(api.FactoryCreateWave(factory, &wave), "Failed to create a wave")
 	}
+}
+
+func pruneTargets(currentTargets *client.AtsTargetsMeta, versions []string) client.AtsTargetsMeta {
+	var missing []string
+	for _, version := range versions {
+		found := false
+		for name, file := range currentTargets.Targets {
+			custom, err := api.TargetCustom(file)
+			subcommands.DieNotNil(err)
+			if custom.Version == version {
+				delete(currentTargets.Targets, name)
+				found = true
+			}
+		}
+		if !found {
+			missing = append(missing, version)
+		}
+	}
+	if len(missing) > 0 {
+		subcommands.DieNotNil(fmt.Errorf(""), fmt.Sprintf("Unable to prune following versions: %s", strings.Join(missing, ",")))
+	}
+
+	return *currentTargets
 }
 
 func signTargets(meta []byte, factory string, offlineKeys keys.OfflineCreds) []tuf.Signature {
