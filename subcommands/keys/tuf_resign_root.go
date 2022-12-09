@@ -2,18 +2,11 @@ package keys
 
 import (
 	"fmt"
-	"os"
 	"time"
 
-	"github.com/foundriesio/fioctl/client"
 	"github.com/foundriesio/fioctl/subcommands"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-)
-
-var (
-	dryRun       bool
-	changeReason string
 )
 
 func init() {
@@ -28,62 +21,40 @@ Please, use a more secure way to keep your TUF root role fresh:
 - rotate the root key using "fioctl keys tuf rotate-offline-key --role=root --keys=<offline-creds.tgz>".
 `,
 	}
-	resign.Flags().BoolVarP(&dryRun, "dryrun", "", false, "Just print what the new root.json will look like and exit")
-	resign.Flags().StringVarP(&changeReason, "changelog", "m", "", "Reason for resigning root.json. Saved in root metadata for tracking change history")
+	resign.Flags().StringP("changelog", "m", "Refresh TUF root expiration by 1 year",
+		"Reason for re-signing root.json. Saved in root metadata to track change history.")
 	cmd.AddCommand(resign)
 }
 
 func doResignRoot(cmd *cobra.Command, args []string) {
+	isTufUpdatesShortcut = true
 	factory := viper.GetString("factory")
-	credsFile := args[0]
-	subcommands.AssertWritable(credsFile)
-	creds, err := GetOfflineCreds(credsFile)
+	changelog, _ := cmd.Flags().GetString("changelog")
+	keysFile := args[0]
+
+	creds, err := GetOfflineCreds(keysFile)
 	subcommands.DieNotNil(err)
 
-	user, err := api.UserAccessDetails(factory, "self")
+	// Below the `tuf updates` subcommands are chained in a correct order.
+	// Detach from the parent, so that command calls below use correct args.
+	tufCmd.RemoveCommand(tufUpdatesCmd)
+
+	fmt.Println("= Creating new TUF updates transaction")
+	tufUpdatesCmd.SetArgs([]string{"init", "-m", changelog})
+	subcommands.DieNotNil(tufUpdatesCmd.Execute())
+
+	fmt.Println("= Extending TUF root expiration")
+	updates, err := api.TufRootUpdatesGet(factory)
 	subcommands.DieNotNil(err)
 
-	root, err := api.TufRootGet(factory)
-	subcommands.DieNotNil(err)
+	curCiRoot, newCiRoot := checkTufRootUpdatesStatus(updates, true)
+	newCiRoot.Signed.Expires = time.Now().AddDate(1, 0, 0).UTC().Round(time.Second) // 1 year validity
+	newProdRoot := genProdTufRoot(newCiRoot)
+	signNewTufRoot(curCiRoot, newCiRoot, newProdRoot, creds)
+	fmt.Println("= Uploading new TUF root")
+	subcommands.DieNotNil(api.TufRootUpdatesPut(factory, "", newCiRoot, newProdRoot, nil))
 
-	root.Signed.Expires = time.Now().AddDate(1, 0, 0).UTC().Round(time.Second) // 1 year validity
-	root.Signed.Version += 1
-
-	curPk, err := findTufRootSigner(root, creds)
-	subcommands.DieNotNil(err)
-	fmt.Println("= Current root:", curPk.Id)
-
-	if len(changeReason) == 0 {
-		changeReason = "resigning root.json"
-	}
-	root.Signed.Reason = &client.RootChangeReason{
-		PolisId:   user.PolisId,
-		Message:   changeReason,
-		Timestamp: time.Now(),
-	}
-
-	fmt.Println("= Resigning root.json")
-	removeUnusedTufKeys(root)
-	subcommands.DieNotNil(signTufRoot(root, *curPk))
-
-	bytes, err := subcommands.MarshalIndent(root, "", "  ")
-	subcommands.DieNotNil(err)
-
-	if dryRun {
-		fmt.Println(string(bytes))
-		return
-	}
-
-	fmt.Println("= Uploading new root.json")
-	body, err := api.TufRootPost(factory, bytes)
-	if herr := client.AsHttpError(err); herr != nil && herr.Response.StatusCode == 409 {
-		fmt.Println("ERROR: Your production root role is out of sync. Please run `fioctl keys rotate-root --sync-prod` to fix this.")
-		os.Exit(1)
-	} else if err != nil {
-		fmt.Println("\nERROR: ", err)
-		fmt.Println(body)
-		os.Exit(1)
-	}
-	// backfill this new key
-	subcommands.DieNotNil(syncProdRoot(factory, root, creds, nil))
+	fmt.Println("= Applying staged TUF root changes")
+	tufUpdatesCmd.SetArgs([]string{"apply"})
+	subcommands.DieNotNil(tufUpdatesCmd.Execute())
 }

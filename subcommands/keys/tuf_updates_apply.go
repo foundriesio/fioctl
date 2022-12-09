@@ -26,6 +26,9 @@ func doTufUpdatesApply(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 	txid, _ := cmd.Flags().GetString("txid")
 
+	// Clear the shortcut flag; this function will print the correct message on error.
+	isTufUpdatesShortcut = false
+
 	err := api.TufRootUpdatesApply(factory, txid)
 	if err != nil {
 		msg := "Failed to apply staged TUF root updates:\n%w\n"

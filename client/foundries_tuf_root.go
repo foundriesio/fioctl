@@ -130,10 +130,14 @@ func (a *Api) TufRootUpdatesGet(factory string) (res TufRootUpdates, err error) 
 	return
 }
 
-func (a *Api) TufRootUpdatesInit(factory, changelog string, firstTime bool) (res TufRootUpdatesInit, err error) {
+func (a *Api) TufRootUpdatesInit(
+	factory, changelog string, firstTime, shortcut bool,
+) (res TufRootUpdatesInit, err error) {
 	var body *[]byte
 	url := a.serverUrl + "/ota/repo/" + factory + "/api/v1/user_repo/root/updates"
-	data, _ := json.Marshal(map[string]interface{}{"message": "changelog", "first-time": firstTime})
+	data, _ := json.Marshal(map[string]interface{}{
+		"message": changelog, "first-time": firstTime, "shortcut": shortcut,
+	})
 	if body, err = a.Post(url, data); err == nil {
 		err = json.Unmarshal(*body, &res)
 	} else if herr := AsHttpError(err); herr != nil && herr.Response.StatusCode == 409 {
