@@ -32,6 +32,7 @@ var estCmd = &cobra.Command{
 	Short: "Manage the Foundries EST server TLS keypair for your factory",
 	Long: `This command allows users to authorize Foundries.io to run an EST 7030 server
 for device certificate renewal.`,
+	Hidden: true,
 }
 
 var tufCmd = &cobra.Command{
