@@ -12,11 +12,12 @@ import (
 )
 
 var (
-	addTargetType string
-	addTags       string
-	addSrcTag     string
-	addQuiet      bool
-	addDryRun     bool
+	addTargetType     string
+	addTags           string
+	addSrcTag         string
+	addQuiet          bool
+	addDryRun         bool
+	addTargetsCreator string
 )
 
 type Targets map[string]*client.Target
@@ -29,12 +30,12 @@ func init() {
 		Long: `
 Compose new Targets out of the latest Targets tagged with the specified source tag and the specified via the command arguments eiter OSTree commit hashes or App URIs.
 
-fioctl targets add --type <ostree | app> --tags <comma,separate,list of Target tags> --src-tag <source Target tag> \ 
+fioctl targets add --type <ostree | app> --tags <comma,separate,list of Target tags> --src-tag <source Target tag> [--targets-creator <something about Targets originator>]\ 
 	<hardware ID> <ostree commit hash> [<hardware ID> <ostree commit hash>]  (for ostree type)
 	<App #1 URI> [App #N URI] (for app type)`,
 		Example: `
 Add new ostree Targets: 
-	fioctl targets add --type ostree --tags dev,test --src-tag dev intel-corei7-64 00b2ad4a1dd7fe1e856a6d607ed492c354a423be22a44bad644092bb275e12fa raspberrypi4-64 5e05a59529dcdd54310945b2628d73c0533097d76cc483334925a901845b3794
+	fioctl targets add --type ostree --tags dev,test --src-tag dev --targets-creator "custom jenkins ostree build" intel-corei7-64 00b2ad4a1dd7fe1e856a6d607ed492c354a423be22a44bad644092bb275e12fa raspberrypi4-64 5e05a59529dcdd54310945b2628d73c0533097d76cc483334925a901845b3794
 		
 Add new App Targets:
 	fioctl targets add --type app --tags dev,test --src-tag dev hub.foundries.io/factory/simpleapp@sha256:be955ad958ef37bcce5afaaad32a21b783b3cc29ec3096a76484242afc333e26 hub.foundries.io/factory/app-03@sha256:59b080fe42d7c45bc81ea17ab772fc8b3bb5ef0950f74669d069a2e6dc266a24 
@@ -46,6 +47,7 @@ Add new App Targets:
 	addCmd.Flags().StringVarP(&addSrcTag, "src-tag", "", "", "OSTree Target tag to base app targets on")
 	addCmd.Flags().BoolVarP(&addQuiet, "quiet", "", false, "don't print generated new Targets to stdout")
 	addCmd.Flags().BoolVarP(&addDryRun, "dry-run", "", false, "don't post generated new Targets")
+	addCmd.Flags().StringVarP(&addTargetsCreator, "targets-creator", "", "fioctl", "optional name/comment/context about Targets origination")
 }
 
 func doAdd(cmd *cobra.Command, args []string) {
@@ -76,7 +78,7 @@ func doAdd(cmd *cobra.Command, args []string) {
 	}
 	if !addDryRun {
 		fmt.Printf("Posting new Targets...")
-		err = newTargets.post(factory)
+		err = newTargets.post(factory, addTargetsCreator)
 		if err == nil {
 			fmt.Println("OK")
 		} else {
@@ -189,9 +191,10 @@ func deriveTargets(factory string, hwIds map[string]interface{}, srcTag string, 
 	return newTargets, nil
 }
 
-func (t Targets) post(factory string) error {
-	reqPayload := map[string]Targets{
-		"targets": t,
+func (t Targets) post(factory string, targetsCreator string) error {
+	reqPayload := map[string]interface{}{
+		"targets":         t,
+		"targets-creator": targetsCreator,
 	}
 	b, err := json.Marshal(reqPayload)
 	if err != nil {
