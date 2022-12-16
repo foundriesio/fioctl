@@ -18,6 +18,7 @@ fioctl-windows-amd64:
 fioctl-darwin-amd64:
 fioctl-darwin-arm64:
 fioctl-%:
+	CGO_ENABLED=0 \
 	GOOS=$(shell echo $* | cut -f1 -d\- ) \
 	GOARCH=$(shell echo $* | cut -f2 -d\-) \
 		go build $(LDFLAGS) -o bin/$@ main.go
