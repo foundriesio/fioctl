@@ -138,10 +138,12 @@ func createOstreeTarget(factory string, tags []string, srcTag string, hwIdToHash
 }
 
 func deriveTargets(factory string, hwIds map[string]interface{}, srcTag string, customizeFunc func(target *client.Target) error) (Targets, error) {
+	latestBuild, err := api.JobservLatestBuild(factory, false)
+	subcommands.DieNotNil(err)
+
 	targets, err := api.TargetsList(factory)
 	subcommands.DieNotNil(err)
 
-	latestOverallVer := 0                                   // is needed for new Target name <hardware-ID>-<lmp>-<LatestVersion + 1>
 	latestTargetsPerHwId := make(map[string]*client.Target) // latest Targets per hardware ID that have  `srcTag`
 	for _, meta := range targets {
 		target, err := api.NewTarget(meta)
@@ -149,9 +151,6 @@ func deriveTargets(factory string, hwIds map[string]interface{}, srcTag string, 
 			return nil, err
 		}
 		curVer := target.Version()
-		if latestOverallVer < curVer {
-			latestOverallVer = curVer
-		}
 		if !target.HasTag(srcTag) {
 			continue
 		}
@@ -181,7 +180,7 @@ func deriveTargets(factory string, hwIds map[string]interface{}, srcTag string, 
 	fmt.Println("Deriving new Targets...")
 	for _, latest := range latestTargetsPerHwId {
 		fmt.Printf("\t %s -> ", latest.Name())
-		newTarget := latest.DeriveTarget(latestOverallVer + 1)
+		newTarget := latest.DeriveTarget(latestBuild.ID + 1)
 		if err := customizeFunc(newTarget); err != nil {
 			return nil, err
 		}

@@ -219,6 +219,10 @@ type FactoryTeamDetails struct {
 	Members     []FactoryUser `json:"members"`
 }
 
+type JobservBuild struct {
+	ID int `json:"build_id"`
+}
+
 type JobservRun struct {
 	Name      string   `json:"name"`
 	Url       string   `json:"url"`
@@ -1421,6 +1425,26 @@ func (a *Api) TargetTestArtifact(factory string, target int, testId string, arti
 	url := a.serverUrl + "/ota/factories/" + factory + "/targets/" + strconv.Itoa(target) + "/testing/" + testId + "/" + artifact
 	logrus.Debugf("TargetTests with url: %s", url)
 	return a.Get(url)
+}
+func (a *Api) JobservLatestBuild(factory string, successful bool) (*JobservBuild, error) {
+	url := a.serverUrl + "/projects/" + factory + "/lmp/builds/latest/"
+	if !successful {
+		url += "?all=1"
+	}
+	b, err := a.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	latestBuild := struct {
+		Data struct {
+			Build JobservBuild `json:"build"`
+		} `json:"data"`
+	}{}
+	err = json.Unmarshal(*b, &latestBuild)
+	if err != nil {
+		return nil, err
+	}
+	return &latestBuild.Data.Build, nil
 }
 
 func (a *Api) JobservRuns(factory string, build int) ([]JobservRun, error) {
