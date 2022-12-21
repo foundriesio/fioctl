@@ -27,9 +27,9 @@ type tufKeyTypeEd25519 struct{}
 
 const (
 	// These are case insensitive
-	tufRoleNameRoot = "Root"
-	// tufRoleNameTimestamp  = "Timestamp"
-	// tufRoleNameSnapshot   = "Snapshot"
+	tufRoleNameRoot          = "Root"
+	tufRoleNameTimestamp     = "Timestamp"
+	tufRoleNameSnapshot      = "Snapshot"
 	tufRoleNameTargets       = "Targets"
 	tufKeyTypeNameEd25519    = "ED25519"
 	tufKeyTypeNameRSA        = "RSA"
