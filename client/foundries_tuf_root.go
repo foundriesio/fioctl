@@ -131,6 +131,19 @@ func (a *Api) TufRootUpdatesGet(factory string) (res TufRootUpdates, err error) 
 	return
 }
 
+func (a *Api) TufRootUpdatesGenerateOnlineKeys(
+	factory, txid, keyType string, roleNames []string,
+) (err error) {
+	url := a.serverUrl + "/ota/repo/" + factory + "/api/v1/user_repo/root/updates/gen-online-keys"
+	data := map[string]interface{}{"txid": txid, "key-type": keyType}
+	for _, roleName := range roleNames {
+		data[roleName] = true
+	}
+	body, _ := json.Marshal(data)
+	_, err = a.Post(url, body)
+	return
+}
+
 func (a *Api) TufRootUpdatesInit(
 	factory, changelog string, firstTime, shortcut bool,
 ) (res TufRootUpdatesInit, err error) {
