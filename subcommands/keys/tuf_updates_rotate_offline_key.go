@@ -172,7 +172,10 @@ func doTufUpdatesRotateOfflineTargetsKey(cmd *cobra.Command) {
 	// 2. Generate a new key.
 	// 3. Set these keys in root.json.
 	// 4. Re-sign existing production targets.
-	onlineTargetsId, err := findOnlineTargetsId(factory, *newCiRoot)
+	onlineTargetsId := updates.Updated.OnlineKeys["targets"]
+	if onlineTargetsId == "" {
+		subcommands.DieNotNil(errors.New("Unable to find online target key for factory"))
+	}
 	subcommands.DieNotNil(err)
 	newKey, newCreds := replaceOfflineTargetsKey(newCiRoot, onlineTargetsId, targetsCreds, keyType)
 	fmt.Println("= New target keyid:", newKey.Id)
@@ -192,18 +195,6 @@ func doTufUpdatesRotateOfflineTargetsKey(cmd *cobra.Command) {
 	tmpFile := saveTempTufCreds(targetsKeysFile, newCreds)
 	err = api.TufRootUpdatesPut(factory, txid, newCiRoot, newProdRoot, newTargetsSigs)
 	handleTufRootUpdatesUpload(tmpFile, targetsKeysFile, err)
-}
-
-func findOnlineTargetsId(factory string, root client.AtsTufRoot) (string, error) {
-	onlinePub, err := api.TufTargetsOnlineKey(factory)
-	subcommands.DieNotNil(err)
-	for _, keyid := range root.Signed.Roles["targets"].KeyIDs {
-		pub := root.Signed.Keys[keyid].KeyValue.Public
-		if pub == onlinePub.KeyValue.Public {
-			return keyid, nil
-		}
-	}
-	return "", errors.New("Unable to find online target key for factory")
 }
 
 func replaceOfflineRootKey(

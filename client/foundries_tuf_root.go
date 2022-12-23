@@ -42,8 +42,9 @@ type AtsTufRoot struct {
 }
 
 type TufRootPair struct {
-	CiRoot   string `json:"ci-root"`
-	ProdRoot string `json:"prod-root"`
+	CiRoot     string            `json:"ci-root"`
+	ProdRoot   string            `json:"prod-root"`
+	OnlineKeys map[string]string `json:"online-keys"`
 }
 
 const (
