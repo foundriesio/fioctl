@@ -1,6 +1,7 @@
 package keys
 
 import (
+	"errors"
 	"fmt"
 
 	"golang.org/x/exp/slices"
@@ -34,6 +35,13 @@ func doTufUpdatesApply(cmd *cobra.Command, args []string) {
 		msg := "Failed to apply staged TUF root updates:\n%w\n"
 		var isNonFatal bool
 		if herr := client.AsHttpError(err); herr != nil {
+			if herr.Response.StatusCode == 404 {
+				// Double check: if there are no TUF updates - fail clean; otherwise, fatal error.
+				updates, err1 := api.TufRootUpdatesGet(factory)
+				if err1 == nil && updates.Status == client.TufRootUpdatesStatusNone {
+					subcommands.DieNotNil(errors.New("There are no TUF root updates in progress."))
+				}
+			}
 			isNonFatal = slices.Contains([]int{400, 401, 403, 422, 423}, herr.Response.StatusCode)
 		}
 		if isNonFatal {
