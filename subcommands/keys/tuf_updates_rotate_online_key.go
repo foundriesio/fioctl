@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"golang.org/x/exp/slices"
 
 	"github.com/foundriesio/fioctl/subcommands"
 )
@@ -70,11 +71,17 @@ func doTufUpdatesRotateOnlineKey(cmd *cobra.Command, args []string) {
 		factory, txid, keyType.Name(), roleNames,
 	))
 
+	updates, err = api.TufRootUpdatesGet(factory)
+	subcommands.DieNotNil(err, "Failed to fetch new online TUF keys")
+	for _, roleName := range []string{tufRoleNameTargets, tufRoleNameSnapshot, tufRoleNameTimestamp} {
+		roleName = strings.ToLower(roleName)
+		if slices.Contains(roleNames, roleName) {
+			fmt.Printf("= New online %s keyid: %s\n", roleName, updates.Updated.OnlineKeys[roleName])
+		}
+	}
+
 	if shouldSign {
 		creds, err := GetOfflineCreds(keysFile)
-		subcommands.DieNotNil(err)
-
-		updates, err := api.TufRootUpdatesGet(factory)
 		subcommands.DieNotNil(err)
 
 		curCiRoot, newCiRoot := checkTufRootUpdatesStatus(updates, true)
