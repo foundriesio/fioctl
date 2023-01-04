@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"os/user"
 	"path/filepath"
 
 	"github.com/foundriesio/fioctl/subcommands"
@@ -20,10 +19,7 @@ var (
 )
 
 func NewCommand() *cobra.Command {
-	path, err := exec.LookPath("git")
-	if err == nil {
-		helperPath = filepath.Dir(path)
-	}
+	_, err := exec.LookPath("git")
 
 	cmd := &cobra.Command{
 		Use:   "configure-git",
@@ -41,6 +37,7 @@ NOTE: The credentials will need the "source:read-update" scope to work with Git`
 		},
 	}
 	cmd.Flags().StringVarP(&helperPath, "creds-path", "", helperPath, "Path to install credential helper")
+
 	return cmd
 }
 
@@ -58,30 +55,21 @@ func findSelf() string {
 }
 
 func doGitCreds(cmd *cobra.Command, args []string) {
+	if len(helperPath) == 0 {
+		path, err := getSymlinkDir()
+		subcommands.DieNotNil(err)
+		helperPath = path
+	}
+
 	self := findSelf()
 
-	sudoer := os.Getenv("SUDO_USER")
-	var execCommand string
-	var gitUsernameCommandArgs []string
-	var gitHelperCommandArgs []string
-	if len(sudoer) > 0 {
-		u, err := user.Lookup(sudoer)
-		subcommands.DieNotNil(err)
-		execCommand = "su"
-		gitUsernameCommandArgs = []string{u.Username, "-c", "git config --global credential.https://source.foundries.io.username fio-oauth2"}
-		gitHelperCommandArgs = []string{u.Username, "-c", "git config --global credential.https://source.foundries.io.helper fio"}
-	} else {
-		execCommand = "git"
-		gitUsernameCommandArgs = []string{"config", "--global", "credential.https://source.foundries.io.username", "fio-oauth2"}
-		gitHelperCommandArgs = []string{"config", "--global", "credential.https://source.foundries.io.helper", "fio"}
-	}
-	c := exec.Command(execCommand, gitUsernameCommandArgs...)
+	c := exec.Command("git", "config", "--global", "credential.https://source.foundries.io.username", "fio-oauth2")
 	out, err := c.CombinedOutput()
 	if len(out) > 0 {
 		fmt.Printf("%s\n", string(out))
 	}
 	subcommands.DieNotNil(err)
-	c = exec.Command(execCommand, gitHelperCommandArgs...)
+	c = exec.Command("git", "config", "--global", "credential.https://source.foundries.io.helper", "fio")
 	out, err = c.CombinedOutput()
 	if len(out) > 0 {
 		fmt.Printf("%s\n", string(out))
