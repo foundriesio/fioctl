@@ -1318,7 +1318,7 @@ func (a *Api) TargetImageCreate(factory, targetName, appShortlist, ciScriptsRepo
 	url := a.serverUrl + "/ota/factories/" + factory + "/targets/" + targetName + "/images/"
 	url += "?script_repo=" + ciScriptsRepo + "&script_repo_ref=" + ciScriptsRef
 	if len(appShortlist) > 0 {
-		url += "?app_shortlist=" + appShortlist
+		url += "&app_shortlist=" + appShortlist
 	}
 	resp, err := a.Post(url, nil)
 	return parseJobServResponse(resp, err, "assemble-system-image")
