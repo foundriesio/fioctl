@@ -26,6 +26,21 @@ func init() {
 		Short: "Prune target(s)",
 		Run:   doPrune,
 		Args:  cobra.MinimumNArgs(1),
+		Example: `
+  # prune a single target by name:
+  fioctl targets prune intel-corei7-64-lmp-123
+
+  # prune all targets with the "custom.tags" set to ["devel"]:
+  fioctl targets prune --by-tag devel
+
+  # prune all targets with the "custom.tags" set to ["devel"] except for the most recent 10:
+  fioctl targets prune --by-tag devel --keep-last=10
+
+  # prune all targets with the "custom.tags" set to ["devel", "my-test"]:
+  fioctl targets prune --by-tag devel my-test
+
+  # see the list of targets to be pruned (based on the above example), don't prune them:
+  fioctl targets prune --by-tag devel my-test --dryrun`,
 	}
 	cmd.AddCommand(pruneCmd)
 	pruneCmd.Flags().BoolVarP(&pruneNoTail, "no-tail", "", false, "Don't tail output of CI Job")
