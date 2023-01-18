@@ -27,6 +27,7 @@ This command will only work for devices running LmP version 90 and later.`,
 	cmd.Flags().StringP("reason", "r", "", "The reason for changing the cert")
 	cmd.Flags().StringP("hsm-pkey-ids", "", "01,07", "Available PKCS11 slot IDs for the private key")
 	cmd.Flags().StringP("hsm-cert-ids", "", "03,09", "Available PKCS11 slot IDs for the client certificate")
+	cmd.Flags().StringP("server-name", "", "", "EST server name when not using the Foundries managed server. e.g. est.example.com")
 	cmd.Flags().BoolP("dryrun", "", false, "Show what the fioconfig entry will be and exit")
 	configCmd.AddCommand(cmd)
 	_ = cmd.MarkFlagRequired("reason")
@@ -40,6 +41,7 @@ func doConfigRotate(cmd *cobra.Command, args []string) {
 	keyIds, _ := cmd.Flags().GetString("hsm-pkey-ids")
 	certIds, _ := cmd.Flags().GetString("hsm-cert-ids")
 	reason, _ := cmd.Flags().GetString("reason")
+	serverName, _ := cmd.Flags().GetString("server-name")
 	dryRun, _ := cmd.Flags().GetBool("dryrun")
 
 	if estResource[0] != '/' {
@@ -52,8 +54,13 @@ func doConfigRotate(cmd *cobra.Command, args []string) {
 	_, err := api.DeviceGet(factory, name)
 	subcommands.DieNotNil(err, "Failed to fetch a device:")
 
-	url, err := api.FactoryEstUrl(factory, estPort, estResource)
-	subcommands.DieNotNil(err)
+	var url string
+	if len(serverName) > 0 {
+		url = fmt.Sprintf("https://%s:%d%s", serverName, estPort, estResource)
+	} else {
+		url, err = api.FactoryEstUrl(factory, estPort, estResource)
+		subcommands.DieNotNil(err)
+	}
 	logrus.Debugf("Using EST server: %s", url)
 
 	opts := subcommands.RotateCertOptions{
