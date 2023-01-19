@@ -59,6 +59,8 @@ func doAuthorizeEst(cmd *cobra.Command, args []string) {
 	signPath := filepath.Join(pkiDir, "sign_tls_csr")
 	_, err := os.Stat(signPath)
 	subcommands.DieNotNil(err)
+	signPath, err = filepath.Abs(signPath)
+	subcommands.DieNotNil(err)
 
 	tmpDir, err := os.MkdirTemp("", "*-fio-est")
 	subcommands.DieNotNil(err)
