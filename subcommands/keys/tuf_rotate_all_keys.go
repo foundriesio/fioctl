@@ -69,7 +69,7 @@ func doRotateAllKeys(cmd *cobra.Command, unusedArgs []string) {
 	tufUpdatesCmd.SetArgs(args)
 	subcommands.DieNotNil(tufUpdatesCmd.Execute())
 
-	args = []string{"rotate-online-key", "-r", "targets,snapshot,timestamp", "-y", keyType}
+	args = []string{"rotate-offline-key", "-r", "root", "-k", credsFile, "-y", keyType}
 	tufUpdatesCmd.SetArgs(args)
 	subcommands.DieNotNil(tufUpdatesCmd.Execute())
 
@@ -77,7 +77,11 @@ func doRotateAllKeys(cmd *cobra.Command, unusedArgs []string) {
 	tufUpdatesCmd.SetArgs(args)
 	subcommands.DieNotNil(tufUpdatesCmd.Execute())
 
-	args = []string{"rotate-offline-key", "-r", "root", "-sk", credsFile, "-y", keyType}
+	args = []string{"rotate-online-key", "-r", "targets,snapshot,timestamp", "-y", keyType}
+	tufUpdatesCmd.SetArgs(args)
+	subcommands.DieNotNil(tufUpdatesCmd.Execute())
+
+	args = []string{"sign", "-k", credsFile}
 	tufUpdatesCmd.SetArgs(args)
 	subcommands.DieNotNil(tufUpdatesCmd.Execute())
 
