@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
+	"github.com/karrick/godiff"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
@@ -19,6 +21,8 @@ func init() {
 		Run:   doTufUpdatesReview,
 	}
 	review.Flags().BoolP("raw", "", false, "Show the raw root.json")
+	review.Flags().BoolP("diff", "", false, "Show the unified diff between current and staged root.json")
+	review.MarkFlagsMutuallyExclusive("raw", "diff")
 	review.Flags().BoolP("prod", "", false, "Show the production root.json")
 	tufUpdatesCmd.AddCommand(review)
 }
@@ -26,10 +30,11 @@ func init() {
 func doTufUpdatesReview(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 	showRaw, _ := cmd.Flags().GetBool("raw")
+	showDiff, _ := cmd.Flags().GetBool("diff")
 	showProd, _ := cmd.Flags().GetBool("prod")
-	if showProd && !showRaw {
+	if showProd && !showRaw && !showDiff {
 		subcommands.DieNotNil(errors.New(
-			"If the flag 'prod' is set then the flag 'raw' must also be set",
+			"If the flag 'prod' is set then one of the flags [raw diff] must also be set",
 		))
 	}
 
@@ -37,9 +42,9 @@ func doTufUpdatesReview(cmd *cobra.Command, args []string) {
 	subcommands.DieNotNil(err)
 
 	// Other states than Started or Applying are rejected by checkTufRootUpdatesStatus.
-	_, newCiRoot := checkTufRootUpdatesStatus(updates, false)
+	oldCiRoot, newCiRoot := checkTufRootUpdatesStatus(updates, false)
 
-	if showRaw {
+	if showRaw || showDiff {
 		var newProdRoot, rootToShow *client.AtsTufRoot
 		if updates.Updated.ProdRoot != "" {
 			subcommands.DieNotNil(
@@ -56,9 +61,37 @@ func doTufUpdatesReview(cmd *cobra.Command, args []string) {
 		} else {
 			rootToShow = newCiRoot
 		}
-		bytes, err := subcommands.MarshalIndent(rootToShow, "", "  ")
-		subcommands.DieNotNil(err)
-		fmt.Println(string(bytes))
+
+		if showRaw {
+			bytes, err := subcommands.MarshalIndent(rootToShow, "", "  ")
+			subcommands.DieNotNil(err)
+			fmt.Println(string(bytes))
+		} else {
+			var baseRootToShow *client.AtsTufRoot
+			if showProd {
+				if updates.Current.ProdRoot != "" {
+					subcommands.DieNotNil(
+						json.Unmarshal([]byte(updates.Current.ProdRoot), &baseRootToShow),
+						"Current prod root",
+					)
+				} else {
+					// First rotation, old prod root equals old CI root
+					baseRootToShow = oldCiRoot
+				}
+			} else {
+				baseRootToShow = oldCiRoot
+			}
+
+			before, err := subcommands.MarshalIndent(baseRootToShow, "", "  ")
+			subcommands.DieNotNil(err)
+			after, err := subcommands.MarshalIndent(rootToShow, "", "  ")
+			subcommands.DieNotNil(err)
+			diff := godiff.Strings(
+				strings.Split(string(before), "\n"),
+				strings.Split(string(after), "\n"),
+			)
+			fmt.Println(strings.Join(diff, "\n"))
+		}
 	} else {
 		fmt.Println("The following TUF root changes are staged for your factory:")
 		for _, amendment := range updates.Amendments {
