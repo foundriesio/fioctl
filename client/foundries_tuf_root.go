@@ -53,12 +53,19 @@ const (
 	TufRootUpdatesStatusApplying = "APPLYING"
 )
 
+type TufRootAmendment struct {
+	Kind    string            `json:"kind"`
+	Message string            `json:"message"`
+	Args    map[string]string `json:"args"`
+}
+
 type TufRootUpdates struct {
-	Status     string       `json:"status"`
-	Current    *TufRootPair `json:"current"`
-	Updated    *TufRootPair `json:"updated"`
-	ChangeMeta *ChangeMeta  `json:"change-meta"`
-	FirstTime  bool         `json:"first-time"`
+	Status     string             `json:"status"`
+	Current    *TufRootPair       `json:"current"`
+	Updated    *TufRootPair       `json:"updated"`
+	ChangeMeta *ChangeMeta        `json:"change-meta"`
+	FirstTime  bool               `json:"first-time"`
+	Amendments []TufRootAmendment `json:"amendments"`
 }
 
 type TufRootUpdatesInit struct {
