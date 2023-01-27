@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/fatih/color"
 	"github.com/karrick/godiff"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -90,7 +91,15 @@ func doTufUpdatesReview(cmd *cobra.Command, args []string) {
 				strings.Split(string(before), "\n"),
 				strings.Split(string(after), "\n"),
 			)
-			fmt.Println(strings.Join(diff, "\n"))
+			for _, line := range diff {
+				if line[0] == '+' {
+					color.Green(line)
+				} else if line[0] == '-' {
+					color.Red(line)
+				} else {
+					fmt.Println(line)
+				}
+			}
 		}
 	} else {
 		fmt.Println("The following TUF root changes are staged for your factory:")
