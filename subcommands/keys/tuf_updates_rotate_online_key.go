@@ -41,7 +41,7 @@ When you apply the online key rotation, these features are temporarily disabled 
 	rotate.Flags().StringP("txid", "x", "", "TUF root updates transaction ID.")
 	rotate.Flags().StringP("keys", "k", "", "Path to <tuf-root-keys.tgz> used to sign TUF root.")
 	_ = rotate.MarkFlagFilename("keys")
-	rotate.Flags().StringP("key-type", "y", tufKeyTypeNameRSA, "Key type, supported: Ed25519, RSA (default).")
+	rotate.Flags().StringP("key-type", "y", tufKeyTypeNameEd25519, "Key type, supported: Ed25519, RSA.")
 	rotate.Flags().BoolP("sign", "s", false, "Sign the new TUF root using the offline root keys.")
 	rotate.MarkFlagsRequiredTogether("sign", "keys")
 	tufUpdatesCmd.AddCommand(rotate)

@@ -49,7 +49,7 @@ When you rotate the TUF targets offline signing key:
 	_ = rotate.MarkFlagFilename("keys")
 	rotate.Flags().StringP("targets-keys", "K", "", "Path to <tuf-targets-keys.tgz> used to sign prod & wave TUF targets.")
 	_ = rotate.MarkFlagFilename("targets-keys")
-	rotate.Flags().StringP("key-type", "y", tufKeyTypeNameRSA, "Key type, supported: Ed25519, RSA (default).")
+	rotate.Flags().StringP("key-type", "y", tufKeyTypeNameEd25519, "Key type, supported: Ed25519, RSA.")
 	rotate.Flags().BoolP("sign", "s", false, "Sign the new TUF root using the offline root keys.")
 	tufUpdatesCmd.AddCommand(rotate)
 }

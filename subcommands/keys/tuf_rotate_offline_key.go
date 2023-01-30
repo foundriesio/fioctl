@@ -48,7 +48,7 @@ When you rotate the TUF targets offline signing key:
 	rotate.Flags().StringP("targets-keys", "K", "", "Path to <offline-targets-creds.tgz> used to sign prod & wave TUF targets.")
 	_ = rotate.MarkFlagFilename("targets-keys")
 	rotate.Flags().BoolP("first-time", "", false, "Used for the first customer rotation. The command will download the initial root key.")
-	rotate.Flags().StringP("key-type", "y", tufKeyTypeNameRSA, "Key type, supported: Ed25519, RSA (default).")
+	rotate.Flags().StringP("key-type", "y", tufKeyTypeNameEd25519, "Key type, supported: Ed25519, RSA.")
 	rotate.Flags().StringP("changelog", "m", "", "Reason for doing rotation. Saved in root metadata for tracking change history.")
 	tufCmd.AddCommand(rotate)
 
@@ -67,7 +67,7 @@ Instead, please, use a new approach to rotate TUF root key:
 	}
 	legacyRotateRoot.Flags().BoolP("initial", "", false, "Used for the first customer rotation. The command will download the initial root key")
 	legacyRotateRoot.Flags().StringP("changelog", "m", "", "Reason for doing rotation. Saved in root metadata for tracking change history")
-	legacyRotateRoot.Flags().StringP("key-type", "y", tufKeyTypeNameRSA, "Key type, supported: Ed25519, RSA (default).")
+	legacyRotateRoot.Flags().StringP("key-type", "y", tufKeyTypeNameEd25519, "Key type, supported: Ed25519, RSA.")
 	cmd.AddCommand(legacyRotateRoot)
 
 	legacyRotateTargets := &cobra.Command{
@@ -87,7 +87,7 @@ Instead, please, use a new approach to rotate TUF targets key:
 		Annotations: map[string]string{tufCmdAnnotation: tufCmdRotateTargetsLegacy},
 		Args:        cobra.ExactArgs(1),
 	}
-	legacyRotateTargets.Flags().StringP("key-type", "y", tufKeyTypeNameRSA, "Key type, supported: Ed25519, RSA (default).")
+	legacyRotateTargets.Flags().StringP("key-type", "y", tufKeyTypeNameEd25519, "Key type, supported: Ed25519, RSA.")
 	legacyRotateTargets.Flags().StringP("changelog", "m", "", "Reason for doing rotation. Saved in root metadata for tracking change history.")
 	cmd.AddCommand(legacyRotateTargets)
 }
