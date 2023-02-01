@@ -48,7 +48,7 @@ func doTufUpdatesApply(cmd *cobra.Command, args []string) {
 			msg += `No changes were made to your Factory.
 There are two options available for you now:
 - fix the errors listed above and run the "fioctl keys tuf updates apply" again.
-- cancel the staged TUF root updates using the "fioctl keys updates cancel"`
+- cancel the staged TUF root updates using the "fioctl keys tuf updates cancel"`
 		} else {
 			msg += `
 This is a critical error: Staged TUF root updates may be partially applied to your Factory.
