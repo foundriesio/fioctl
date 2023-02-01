@@ -54,7 +54,7 @@ func init() {
 				fmt.Println(`
 No changes were made to your Factory.
 Please, cancel the staged TUF root updates
-using the "fioctl keys updates cancel" command, and try again later.`)
+using the "fioctl keys tuf updates cancel" command, and try again later.`)
 			} else {
 				// The init phase failed itself, so there is no active transaction.
 				fmt.Println(`
