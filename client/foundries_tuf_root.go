@@ -59,6 +59,11 @@ type TufRootAmendment struct {
 	Args    map[string]string `json:"args"`
 }
 
+type TufRootIssues struct {
+	Errors   []TufRootAmendment `json:"errors"`
+	Warnings []TufRootAmendment `json:"warnings"`
+}
+
 type TufRootUpdates struct {
 	Status     string             `json:"status"`
 	Current    *TufRootPair       `json:"current"`
@@ -66,6 +71,7 @@ type TufRootUpdates struct {
 	ChangeMeta *ChangeMeta        `json:"change-meta"`
 	FirstTime  bool               `json:"first-time"`
 	Amendments []TufRootAmendment `json:"amendments"`
+	Issues     TufRootIssues      `json:"issues"`
 }
 
 type TufRootUpdatesInit struct {

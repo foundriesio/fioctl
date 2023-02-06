@@ -42,10 +42,12 @@ func doTufUpdatesReview(cmd *cobra.Command, args []string) {
 	updates, err := api.TufRootUpdatesGet(factory)
 	subcommands.DieNotNil(err)
 
-	// Other states than Started or Applying are rejected by checkTufRootUpdatesStatus.
 	oldCiRoot, newCiRoot := checkTufRootUpdatesStatus(updates, false)
 
 	if showRaw || showDiff {
+		if updates.Status == client.TufRootUpdatesStatusNone {
+			subcommands.DieNotNil(errors.New("There are no TUF root updates in progress."))
+		}
 		var newProdRoot, rootToShow *client.AtsTufRoot
 		if updates.Updated.ProdRoot != "" {
 			subcommands.DieNotNil(
@@ -101,20 +103,41 @@ func doTufUpdatesReview(cmd *cobra.Command, args []string) {
 				}
 			}
 		}
+	} else if updates.Status == client.TufRootUpdatesStatusNone {
+		fmt.Println("There are no TUF root updates in progress.")
+		// There can be no errors for existing root: it is impossible to upload erroneous TUF root.
+		if len(updates.Issues.Warnings) > 0 {
+			fmt.Println("\nThese updates to your existing TUF metadata are recommended:")
+			for _, issue := range updates.Issues.Warnings {
+				fmt.Printf(" - %s\n", issue.Message)
+			}
+		}
 	} else {
-		fmt.Println("The following TUF root changes are staged for your factory:")
+		fmt.Println("The following TUF root updates are staged for your factory:")
 		for _, amendment := range updates.Amendments {
 			fmt.Printf(" - %s\n", amendment.Message)
 		}
-		if updates.Updated.ProdRoot == "" {
-			fmt.Println(`
-There are no effective changes to your TUF root except the version and changelog.
-These changes cannot be applied before some of the key rotation commands are performed.
-Please, run the 'fioctl keys tuf updates --help' for details.`)
-		} else if updates.Status == client.TufRootUpdatesStatusApplying {
+		if len(updates.Issues.Errors) > 0 {
+			fmt.Println("\nThese updates to your staged TUF root are mandatory before applying it:")
+			for _, issue := range updates.Issues.Errors {
+				fmt.Printf(" - %s\n", issue.Message)
+			}
+		}
+		if len(updates.Issues.Warnings) > 0 {
+			fmt.Println("\nThese updates to your staged TUF root are recommended:")
+			for _, issue := range updates.Issues.Warnings {
+				fmt.Printf(" - %s\n", issue.Message)
+			}
+		}
+
+		if updates.Status == client.TufRootUpdatesStatusApplying {
 			fmt.Println(`
 These changes are currently being applied. No more changes can be staged.
 If the previous 'fioctl keys tuf updates apply' command failed, please, try to run it again.`)
+		} else {
+			fmt.Println(`
+Once your are satisfied with your TUF updates, please, run 'fioctl keys tuf updates apply'.
+If you want to cancel staged TUF updates, please, run 'fioctl keys tuf updates cancel'.`)
 		}
 	}
 }
