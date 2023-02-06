@@ -279,14 +279,16 @@ func checkTufRootUpdatesStatus(updates client.TufRootUpdates, forUpdate bool) (
 ) {
 	switch updates.Status {
 	case client.TufRootUpdatesStatusNone:
-		subcommands.DieNotNil(errors.New(`There are no TUF root updates in progress.
-Please, run "fioctl keys tuf updates init" to start over.`))
+		if forUpdate {
+			subcommands.DieNotNil(errors.New(`There are no TUF root updates in progress.
+Please, run 'fioctl keys tuf updates init' to start over.`))
+		}
 	case client.TufRootUpdatesStatusStarted:
 		break
 	case client.TufRootUpdatesStatusApplying:
 		if forUpdate {
 			subcommands.DieNotNil(errors.New(
-				"No modifications to TUF root updates allowed why they are being applied.",
+				"No modifications to TUF root updates allowed while they are being applied.",
 			))
 		}
 	default:
@@ -306,7 +308,7 @@ Please, run "fioctl keys tuf updates init" to start over.`))
 			json.Unmarshal([]byte(updates.Updated.CiRoot), &newCiRoot), "Updated CI root",
 		)
 	}
-	if newCiRoot == nil {
+	if newCiRoot == nil && updates.Status != client.TufRootUpdatesStatusNone {
 		subcommands.DieNotNil(errors.New("Updated TUF CI root not set. Please, report a bug."))
 	}
 	return
