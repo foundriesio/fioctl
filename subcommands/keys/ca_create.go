@@ -1,6 +1,9 @@
 package keys
 
 import (
+	"crypto/x509"
+	"encoding/pem"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -13,11 +16,12 @@ import (
 )
 
 var (
-	createOnlineCA bool
-	createLocalCA  bool
-	hsmModule      string
-	hsmPin         string
-	hsmTokenLabel  string
+	createOnlineCA  bool
+	createLocalCA   bool
+	hsmModule       string
+	hsmPin          string
+	hsmTokenLabel   string
+	useExistingRoot bool
 )
 
 func init() {
@@ -61,6 +65,7 @@ This is optional.`,
 	cmd.Flags().StringVarP(&hsmModule, "hsm-module", "", "", "Create key on an PKCS#11 compatible HSM using this module")
 	cmd.Flags().StringVarP(&hsmPin, "hsm-pin", "", "", "The PKCS#11 PIN to set up on the HSM, if using one")
 	cmd.Flags().StringVarP(&hsmTokenLabel, "hsm-token-label", "", "device-gateway-root", "The label of the HSM token created for this")
+	cmd.Flags().BoolVarP(&useExistingRoot, "use-existing", "", false, "Use a pre-existing root certificate. Requires factory_ca.pem to exist and either factory_ca.key or the PKCS11 object to be avaible")
 }
 
 func writeFile(filename, contents string, mode os.FileMode) {
@@ -96,7 +101,6 @@ func doCreateCA(cmd *cobra.Command, args []string) {
 
 	resp, err := api.FactoryCreateCA(factory)
 	subcommands.DieNotNil(err)
-
 	writeFile("ca-csr", resp.CaCsr, 0400)
 	writeFile("tls-csr", resp.TlsCsr, 0400)
 	writeFile("create_ca", *resp.CreateCaScript, 0700)
@@ -104,8 +108,13 @@ func doCreateCA(cmd *cobra.Command, args []string) {
 	writeFile("sign_ca_csr", *resp.SignCaScript, 0700)
 	writeFile("sign_tls_csr", *resp.SignTlsScript, 0700)
 
-	fmt.Println("Creating offline root CA for Factory")
-	run("./create_ca")
+	if useExistingRoot {
+		fmt.Println("Checking user provide root CA")
+		checkExistingRoot()
+	} else {
+		fmt.Println("Creating offline root CA for Factory")
+		run("./create_ca")
+	}
 
 	fmt.Println("Signing Foundries TLS CSR")
 	resp.TlsCrt = run("./sign_tls_csr", "tls-csr")
@@ -136,4 +145,25 @@ func doCreateCA(cmd *cobra.Command, args []string) {
 
 	fmt.Println("Uploading signed certs to Foundries")
 	subcommands.DieNotNil(api.FactoryPatchCA(factory, resp))
+}
+
+func checkExistingRoot() {
+	if len(hsmModule) > 0 {
+		panic("TODO HSM Support")
+	}
+	buf, err := os.ReadFile("factory_ca.pem")
+	subcommands.DieNotNil(err)
+	block, _ := pem.Decode(buf)
+	cert, err := x509.ParseCertificate(block.Bytes)
+	subcommands.DieNotNil(err)
+
+	buf, err = os.ReadFile("factory_ca.key")
+	subcommands.DieNotNil(err)
+	block, _ = pem.Decode(buf)
+	key, err := x509.ParseECPrivateKey(block.Bytes)
+	subcommands.DieNotNil(err)
+
+	if !key.PublicKey.Equal(cert.PublicKey) {
+		subcommands.DieNotNil(errors.New("Private key and public key do not match"))
+	}
 }
