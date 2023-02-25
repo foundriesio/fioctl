@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"os/user"
 	"path/filepath"
+	"runtime"
 
 	"github.com/foundriesio/fioctl/subcommands"
 	"github.com/sirupsen/logrus"
@@ -64,16 +65,24 @@ func doGitCreds(cmd *cobra.Command, args []string) {
 	var execCommand string
 	var gitUsernameCommandArgs []string
 	var gitHelperCommandArgs []string
+
+	helperName := "fio"
+	dst := filepath.Join(helperPath, GIT_CREDS_HELPER)
+	if runtime.GOOS == "windows" {
+		dst += ".exe"
+		helperName += ".exe"
+	}
+
 	if len(sudoer) > 0 {
 		u, err := user.Lookup(sudoer)
 		subcommands.DieNotNil(err)
 		execCommand = "su"
 		gitUsernameCommandArgs = []string{u.Username, "-c", "git config --global credential.https://source.foundries.io.username fio-oauth2"}
-		gitHelperCommandArgs = []string{u.Username, "-c", "git config --global credential.https://source.foundries.io.helper fio"}
+		gitHelperCommandArgs = []string{u.Username, "-c", "git config --global credential.https://source.foundries.io.helper " + helperName}
 	} else {
 		execCommand = "git"
 		gitUsernameCommandArgs = []string{"config", "--global", "credential.https://source.foundries.io.username", "fio-oauth2"}
-		gitHelperCommandArgs = []string{"config", "--global", "credential.https://source.foundries.io.helper", "fio"}
+		gitHelperCommandArgs = []string{"config", "--global", "credential.https://source.foundries.io.helper", helperName}
 	}
 	c := exec.Command(execCommand, gitUsernameCommandArgs...)
 	out, err := c.CombinedOutput()
@@ -88,7 +97,6 @@ func doGitCreds(cmd *cobra.Command, args []string) {
 	}
 	subcommands.DieNotNil(err)
 
-	dst := filepath.Join(helperPath, GIT_CREDS_HELPER)
 	fmt.Println("Symlinking", self, "to", dst)
 	subcommands.DieNotNil(os.Symlink(self, dst))
 }
