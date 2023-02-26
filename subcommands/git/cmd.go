@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"os/user"
 	"path/filepath"
+	"runtime"
 
 	"github.com/foundriesio/fioctl/subcommands"
 	"github.com/sirupsen/logrus"
@@ -24,6 +25,7 @@ func NewCommand() *cobra.Command {
 	if err == nil {
 		helperPath = filepath.Dir(path)
 	}
+	helperPath = findWritableDirInPath(helperPath)
 
 	cmd := &cobra.Command{
 		Use:   "configure-git",
@@ -40,7 +42,10 @@ NOTE: The credentials will need the "source:read-update" scope to work with Git`
 			subcommands.DieNotNil(err, "Git not found on system")
 		},
 	}
-	cmd.Flags().StringVarP(&helperPath, "creds-path", "", helperPath, "Path to install credential helper")
+	cmd.Flags().StringVarP(&helperPath, "creds-path", "", helperPath, "Path to install credential helper. This needs to be writable and in $PATH")
+	if len(helperPath) == 0 {
+		_ = cmd.MarkFlagRequired("creds-path")
+	}
 	return cmd
 }
 
@@ -64,16 +69,24 @@ func doGitCreds(cmd *cobra.Command, args []string) {
 	var execCommand string
 	var gitUsernameCommandArgs []string
 	var gitHelperCommandArgs []string
+
+	helperName := "fio"
+	dst := filepath.Join(helperPath, GIT_CREDS_HELPER)
+	if runtime.GOOS == "windows" {
+		dst += ".exe"
+		helperName += ".exe"
+	}
+
 	if len(sudoer) > 0 {
 		u, err := user.Lookup(sudoer)
 		subcommands.DieNotNil(err)
 		execCommand = "su"
 		gitUsernameCommandArgs = []string{u.Username, "-c", "git config --global credential.https://source.foundries.io.username fio-oauth2"}
-		gitHelperCommandArgs = []string{u.Username, "-c", "git config --global credential.https://source.foundries.io.helper fio"}
+		gitHelperCommandArgs = []string{u.Username, "-c", "git config --global credential.https://source.foundries.io.helper " + helperName}
 	} else {
 		execCommand = "git"
 		gitUsernameCommandArgs = []string{"config", "--global", "credential.https://source.foundries.io.username", "fio-oauth2"}
-		gitHelperCommandArgs = []string{"config", "--global", "credential.https://source.foundries.io.helper", "fio"}
+		gitHelperCommandArgs = []string{"config", "--global", "credential.https://source.foundries.io.helper", helperName}
 	}
 	c := exec.Command(execCommand, gitUsernameCommandArgs...)
 	out, err := c.CombinedOutput()
@@ -88,7 +101,6 @@ func doGitCreds(cmd *cobra.Command, args []string) {
 	}
 	subcommands.DieNotNil(err)
 
-	dst := filepath.Join(helperPath, GIT_CREDS_HELPER)
 	fmt.Println("Symlinking", self, "to", dst)
 	subcommands.DieNotNil(os.Symlink(self, dst))
 }
@@ -111,4 +123,32 @@ func RunCredsHelper() int {
 	input += fmt.Sprintf("password=%s\n", subcommands.Config.ClientCredentials.AccessToken)
 	os.Stdout.WriteString(input)
 	return 0
+}
+
+// Find an entry in the PATH we can write to. For example, on MacOS git is
+// installed under /usr/bin but even root can't write to that because of
+// filesystem protection logic they have.
+func findWritableDirInPath(gitPath string) string {
+	path := os.Getenv("PATH")
+	paths := make(map[string]bool)
+	for _, part := range filepath.SplitList(path) {
+		paths[part] = true
+	}
+
+	// Give preference to git location if its in PATH
+	if len(gitPath) > 0 {
+		if _, ok := paths[gitPath]; ok {
+			if isWritable(gitPath) {
+				return gitPath
+			}
+		}
+	}
+
+	// Now try everything
+	for _, path := range filepath.SplitList(path) {
+		if isWritable(path) {
+			return path
+		}
+	}
+	return ""
 }
