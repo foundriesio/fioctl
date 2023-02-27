@@ -25,7 +25,7 @@ func NewCommand() *cobra.Command {
 	if err == nil {
 		helperPath = filepath.Dir(path)
 	}
-	helperPath = findWritableDirInPath(helperPath)
+	helperPath = subcommands.FindWritableDirInPath(helperPath)
 
 	cmd := &cobra.Command{
 		Use:   "configure-git",
@@ -123,32 +123,4 @@ func RunCredsHelper() int {
 	input += fmt.Sprintf("password=%s\n", subcommands.Config.ClientCredentials.AccessToken)
 	os.Stdout.WriteString(input)
 	return 0
-}
-
-// Find an entry in the PATH we can write to. For example, on MacOS git is
-// installed under /usr/bin but even root can't write to that because of
-// filesystem protection logic they have.
-func findWritableDirInPath(gitPath string) string {
-	path := os.Getenv("PATH")
-	paths := make(map[string]bool)
-	for _, part := range filepath.SplitList(path) {
-		paths[part] = true
-	}
-
-	// Give preference to git location if its in PATH
-	if len(gitPath) > 0 {
-		if _, ok := paths[gitPath]; ok {
-			if isWritable(gitPath) {
-				return gitPath
-			}
-		}
-	}
-
-	// Now try everything
-	for _, path := range filepath.SplitList(path) {
-		if isWritable(path) {
-			return path
-		}
-	}
-	return ""
 }
