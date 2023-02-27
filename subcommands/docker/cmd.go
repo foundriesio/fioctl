@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"os/user"
 	"path/filepath"
+	"runtime"
 
 	"github.com/foundriesio/fioctl/subcommands"
 	"github.com/mitchellh/go-homedir"
@@ -26,7 +27,7 @@ func NewCommand() *cobra.Command {
 	if err == nil {
 		helperPath = filepath.Dir(path)
 	}
-
+	helperPath = subcommands.FindWritableDirInPath(helperPath)
 	dockerConfigFile = dockerConfigPath()
 
 	cmd := &cobra.Command{
@@ -45,7 +46,13 @@ NOTE: The credentials will need the "containers:read" scope to work with Docker`
 		},
 	}
 	cmd.Flags().StringVarP(&helperPath, "creds-path", "", helperPath, "Path to install credential helper")
+	if len(helperPath) == 0 {
+		_ = cmd.MarkFlagRequired("creds-path")
+	}
 	cmd.Flags().StringVarP(&dockerConfigFile, "docker-config", "", dockerConfigFile, "Docker config file to update")
+	if len(dockerConfigFile) == 0 {
+		_ = cmd.MarkFlagRequired("docker-config")
+	}
 	return cmd
 }
 
@@ -103,6 +110,9 @@ func doDockerCreds(cmd *cobra.Command, args []string) {
 	subcommands.DieNotNil(err)
 
 	dst := filepath.Join(helperPath, DOCKER_CREDS_HELPER)
+	if runtime.GOOS == "windows" {
+		dst += ".exe"
+	}
 	fmt.Println("Symlinking", self, "to", dst)
 	subcommands.DieNotNil(os.Symlink(self, dst))
 

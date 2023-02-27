@@ -219,3 +219,31 @@ func (f *MutuallyExclusiveFlags) GetFlag() (string, error) {
 	}
 	return flagName, nil
 }
+
+// Find an entry in the PATH we can write to. For example, on MacOS git is
+// installed under /usr/bin but even root can't write to that because of
+// filesystem protection logic they have.
+func FindWritableDirInPath(helperPath string) string {
+	path := os.Getenv("PATH")
+	paths := make(map[string]bool)
+	for _, part := range filepath.SplitList(path) {
+		paths[part] = true
+	}
+
+	// Give preference to helper executable location if its in PATH
+	if len(helperPath) > 0 {
+		if _, ok := paths[helperPath]; ok {
+			if isWritable(helperPath) {
+				return helperPath
+			}
+		}
+	}
+
+	// Now try everything
+	for _, path := range filepath.SplitList(path) {
+		if isWritable(path) {
+			return path
+		}
+	}
+	return ""
+}

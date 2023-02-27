@@ -1,7 +1,7 @@
 //go:build !windows
 // +build !windows
 
-package git
+package subcommands
 
 import "golang.org/x/sys/unix"
 
