@@ -59,6 +59,12 @@ func doGetTeam(api *client.Api, factory, team_name string) {
 	}
 	t.AddLine()
 
+	t.AddHeader("DEVICE GROUPS")
+	for _, group := range team.Groups {
+		t.AddLine(group)
+	}
+	t.AddLine()
+
 	t.AddHeader("ID", "NAME")
 	for _, member := range team.Members {
 		t.AddLine(member.PolisId, member.Name)
