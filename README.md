@@ -3,7 +3,7 @@
 A simple tool to interact with the Foundries.io REST API for managing a
 Factory. Its based on the Foundries.io "ota-lite" API defined here:
 
-[https://app.swaggerhub.com/apis/foundriesio/ota-lite/](https://app.swaggerhub.com/apis/foundriesio/ota-lite/)
+[https://api.foundries.io/ota/](https://api.foundries.io/ota/)
 
 ## Using
 
