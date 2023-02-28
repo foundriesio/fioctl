@@ -91,7 +91,7 @@ func doDockerCreds(cmd *cobra.Command, args []string) {
 	bytes, err := os.ReadFile(dockerConfigFile)
 	if os.IsNotExist(err) {
 		dockerConfig := filepath.Dir(dockerConfigFile)
-		if _, err := os.Stat(filepath.Dir(dockerConfig)); os.IsNotExist(err) {
+		if _, err := os.Stat(dockerConfig); os.IsNotExist(err) {
 			fmt.Println("Creating docker config directory:", dockerConfig)
 			subcommands.DieNotNil(os.Mkdir(dockerConfig, 0o755))
 		}
