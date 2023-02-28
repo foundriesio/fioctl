@@ -1,7 +1,9 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"strings"
 
@@ -104,7 +106,7 @@ func getConfigDir() string {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	if _, err := os.Stat(config); os.IsNotExist(err) {
+	if _, err := os.Stat(config); errors.Is(err, fs.ErrNotExist) {
 		if err := os.Mkdir(config, 0755); err != nil {
 			fmt.Println(err)
 			os.Exit(1)

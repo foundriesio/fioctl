@@ -3,6 +3,7 @@ package keys
 import (
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"time"
 
@@ -145,7 +146,7 @@ func doTufUpdatesRotateOfflineTargetsKey(cmd *cobra.Command) {
 		targetsCreds, err = GetOfflineCreds(targetsKeysFile)
 		subcommands.DieNotNil(err)
 		subcommands.AssertWritable(targetsKeysFile)
-	} else if os.IsNotExist(err) {
+	} else if errors.Is(err, fs.ErrNotExist) {
 		targetsCreds = make(OfflineCreds, 0)
 		saveTufCreds(targetsKeysFile, targetsCreds)
 	} else {
