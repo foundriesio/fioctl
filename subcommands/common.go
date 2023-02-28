@@ -233,7 +233,7 @@ func FindWritableDirInPath(helperPath string) string {
 	// Give preference to helper executable location if its in PATH
 	if len(helperPath) > 0 {
 		if _, ok := paths[helperPath]; ok {
-			if isWritable(helperPath) {
+			if IsWritable(helperPath) {
 				return helperPath
 			}
 		}
@@ -241,7 +241,7 @@ func FindWritableDirInPath(helperPath string) string {
 
 	// Now try everything
 	for _, path := range filepath.SplitList(path) {
-		if isWritable(path) {
+		if IsWritable(path) {
 			return path
 		}
 	}

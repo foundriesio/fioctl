@@ -2,7 +2,9 @@ package docker
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"os/exec"
 	"os/user"
@@ -29,6 +31,9 @@ func NewCommand() *cobra.Command {
 	}
 	helperPath = subcommands.FindWritableDirInPath(helperPath)
 	dockerConfigFile = dockerConfigPath()
+	if !subcommands.IsWritable(dockerConfigFile) {
+		dockerConfigFile = ""
+	}
 
 	cmd := &cobra.Command{
 		Use:   "configure-docker",
@@ -86,9 +91,9 @@ func doDockerCreds(cmd *cobra.Command, args []string) {
 
 	var config map[string]interface{}
 	bytes, err := os.ReadFile(dockerConfigFile)
-	if os.IsNotExist(err) {
+	if errors.Is(err, fs.ErrNotExist) {
 		dockerConfig := filepath.Dir(dockerConfigFile)
-		if _, err := os.Stat(filepath.Dir(dockerConfig)); os.IsNotExist(err) {
+		if _, err := os.Stat(dockerConfig); errors.Is(err, fs.ErrNotExist) {
 			fmt.Println("Creating docker config directory:", dockerConfig)
 			subcommands.DieNotNil(os.Mkdir(dockerConfig, 0o755))
 		}
