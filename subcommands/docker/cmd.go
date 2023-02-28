@@ -29,6 +29,9 @@ func NewCommand() *cobra.Command {
 	}
 	helperPath = subcommands.FindWritableDirInPath(helperPath)
 	dockerConfigFile = dockerConfigPath()
+	if !subcommands.IsWritable(dockerConfigFile) {
+		dockerConfigFile = ""
+	}
 
 	cmd := &cobra.Command{
 		Use:   "configure-docker",
