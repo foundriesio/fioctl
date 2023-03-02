@@ -178,27 +178,7 @@ func showDeviceList(dl *client.DeviceList, showColumns []string) {
 		t.AddLine(row...)
 	}
 	t.Print()
-	if dl.Next != nil {
-		fmt.Print("\nNext page of devices can be viewed with: ")
-		found := false
-		for i := 0; i < len(os.Args); i++ {
-			arg := os.Args[i]
-			if (len(arg) > 2 && arg[:2] == "-p") || (len(arg) > 7 && arg[:7] == "--page=") {
-				fmt.Printf("-p%d ", showPage+1)
-				found = true
-			} else if arg == "-p" || arg == "--page" {
-				fmt.Printf("-p%d ", showPage+1)
-				found = true
-				i++
-			} else {
-				fmt.Print(os.Args[i], " ")
-			}
-		}
-		if !found {
-			fmt.Print("-p", showPage+1)
-		}
-		fmt.Println()
-	}
+	subcommands.ShowPages(showPage, dl.Next)
 }
 
 func doList(cmd *cobra.Command, args []string) {

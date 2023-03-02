@@ -410,6 +410,12 @@ type WaveCreate struct {
 	Targets tuf.Signed `json:"targets"`
 }
 
+type WaveList struct {
+	Waves []Wave  `json:"waves"`
+	Total int     `json:"total"`
+	Next  *string `json:"next"`
+}
+
 type WaveRolloutOptions struct {
 	Group string `json:"group"`
 }
@@ -1649,8 +1655,8 @@ func (a *Api) FactoryCreateWave(factory string, wave *WaveCreate) error {
 	return err
 }
 
-func (a *Api) FactoryListWaves(factory string, limit uint64) ([]Wave, error) {
-	url := a.serverUrl + "/ota/factories/" + factory + "/waves/?limit=" + strconv.FormatUint(limit, 10)
+func (a *Api) FactoryListWaves(factory string, limit uint64, page int) (*WaveList, error) {
+	url := a.serverUrl + "/ota/factories/" + factory + "/waves/?limit=" + strconv.FormatUint(limit, 10) + "&page=" + strconv.Itoa(page)
 	logrus.Debugf("Listing factory waves %s", url)
 
 	body, err := a.Get(url)
@@ -1658,9 +1664,9 @@ func (a *Api) FactoryListWaves(factory string, limit uint64) ([]Wave, error) {
 		return nil, err
 	}
 
-	var resp []Wave
-	err = json.Unmarshal(*body, &resp)
-	return resp, err
+	waves := WaveList{}
+	err = json.Unmarshal(*body, &waves)
+	return &waves, err
 }
 
 func (a *Api) FactoryGetWave(factory string, wave string, showTargets bool) (*Wave, error) {
