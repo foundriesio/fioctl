@@ -103,6 +103,27 @@ func addPaginationFlags(cmd *cobra.Command) {
 	cmd.Flags().IntVarP(&paginationLimit, "limit", "n", 500, "Number of devices to paginate by. Allowed values: "+limitsStr)
 }
 
+func addSortFlag(cmd *cobra.Command, flag, short, help string) {
+	// Allows `--flag` to specify ascending sort order or a regular `--flag=asc`, `--flag=desc`.
+	cmd.Flags().StringP(flag, short, "", help)
+	cmd.Flags().Lookup(flag).NoOptDefVal = "asc"
+}
+
+func appendSortFlagValue(sortBy []string, cmd *cobra.Command, flag string, field string) []string {
+	val, _ := cmd.Flags().GetString(flag)
+	switch val {
+	case "":
+		break
+	case "asc":
+		sortBy = append(sortBy, field)
+	case "desc":
+		sortBy = append(sortBy, "-"+field)
+	default:
+		subcommands.DieNotNil(fmt.Errorf("Only 'asc, desc' values are allowed for %s but received: %s", flag, val))
+	}
+	return sortBy
+}
+
 func init() {
 	var defCols = []string{
 		"name", "target", "status", "apps", "up-to-date", "is-prod",
@@ -128,6 +149,9 @@ func init() {
 	listCmd.Flags().StringVarP(&deviceUuid, "uuid", "", "", "Find device with the given UUID")
 	listCmd.Flags().StringSliceVarP(&showColumns, "columns", "", defCols, "Specify which columns to display")
 	addPaginationFlags(listCmd)
+	addSortFlag(listCmd, "sort-by-name", "", "Sort by name (asc, desc); default sort is by owner and name")
+	addSortFlag(listCmd, "sort-by-last-seen", "", "Sort by last-seen (asc, desc); default sort is by owner and name")
+	listCmd.MarkFlagsMutuallyExclusive("sort-by-name", "sort-by-last-seen")
 }
 
 // We allow pattern matching using filepath.Match type * and ?
@@ -187,6 +211,9 @@ func doList(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 	logrus.Debugf("Listing registered devices for: %s", factory)
 	assertPagination()
+	var sortBy []string
+	sortBy = appendSortFlagValue(sortBy, cmd, "sort-by-last-seen", "last_seen")
+	sortBy = appendSortFlagValue(sortBy, cmd, "sort-by-name", "name")
 
 	name_ilike := ""
 	if len(args) == 1 {
@@ -200,6 +227,7 @@ func doList(cmd *cobra.Command, args []string) {
 		name_ilike,
 		deviceUuid,
 		deviceByTarget,
+		strings.Join(sortBy, ","),
 		showPage,
 		paginationLimit,
 	)
