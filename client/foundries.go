@@ -785,7 +785,7 @@ func (a *Api) DeviceGet(factory, device string) (*Device, error) {
 }
 
 func (a *Api) DeviceList(
-	mine bool, matchTag, byFactory, byGroup, nameIlike, uuid, byTarget string, page, limit int,
+	mine bool, matchTag, byFactory, byGroup, nameIlike, uuid, byTarget, sortBy string, page, limit int,
 ) (*DeviceList, error) {
 	mineInt := 0
 	if mine {
@@ -793,8 +793,8 @@ func (a *Api) DeviceList(
 	}
 	url := a.serverUrl + "/ota/devices/?"
 	url += fmt.Sprintf(
-		"mine=%d&match_tag=%s&name_ilike=%s&factory=%s&uuid=%s&group=%s&target_name=%s&page=%d&limit=%d",
-		mineInt, matchTag, nameIlike, byFactory, uuid, byGroup, byTarget, page, limit)
+		"mine=%d&match_tag=%s&name_ilike=%s&factory=%s&uuid=%s&group=%s&target_name=%s&sortby=%s&page=%d&limit=%d",
+		mineInt, matchTag, nameIlike, byFactory, uuid, byGroup, byTarget, sortBy, page, limit)
 	logrus.Debugf("DeviceList with url: %s", url)
 	return a.DeviceListCont(url)
 }
