@@ -19,6 +19,7 @@ import (
 var (
 	deviceMine          bool
 	deviceByTag         string
+	deviceByTarget      string
 	deviceByGroup       string
 	deviceInactiveHours int
 	deviceUuid          string
@@ -121,6 +122,7 @@ func init() {
 	cmd.AddCommand(listCmd)
 	listCmd.Flags().BoolVarP(&deviceMine, "just-mine", "", false, "Only include devices owned by you")
 	listCmd.Flags().StringVarP(&deviceByTag, "by-tag", "", "", "Only list devices configured with the given tag")
+	listCmd.Flags().StringVarP(&deviceByTarget, "by-target", "", "", "Only list devices updated to the given target name")
 	listCmd.Flags().StringVarP(&deviceByGroup, "by-group", "g", "", "Only list devices belonging to this group (factory is mandatory)")
 	listCmd.Flags().IntVarP(&deviceInactiveHours, "offline-threshold", "", 4, "List the device as 'OFFLINE' if not seen in the last X hours")
 	listCmd.Flags().StringVarP(&deviceUuid, "uuid", "", "", "Find device with the given UUID")
@@ -190,7 +192,17 @@ func doList(cmd *cobra.Command, args []string) {
 	if len(args) == 1 {
 		name_ilike = sqlLikeIfy(args[0])
 	}
-	dl, err := api.DeviceList(deviceMine, deviceByTag, factory, deviceByGroup, name_ilike, deviceUuid, showPage, paginationLimit)
+	dl, err := api.DeviceList(
+		deviceMine,
+		deviceByTag,
+		factory,
+		deviceByGroup,
+		name_ilike,
+		deviceUuid,
+		deviceByTarget,
+		showPage,
+		paginationLimit,
+	)
 	subcommands.DieNotNil(err)
 	showDeviceList(dl, showColumns)
 }
