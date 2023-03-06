@@ -19,10 +19,10 @@ func init() {
 		Short: "Update secret(s) in a factory",
 		Example: `
   # Create or update a secret
-  fioctl secrets set githubtok=foo
+  fioctl secrets update githubtok=foo
 
   # Create or update a secret with value from a file
-  fioctl secrets set ssh-github.key==/tmp/ssh-github.key
+  fioctl secrets update ssh-github.key==/tmp/ssh-github.key
 
   # Delete a secret by setting it to an empty value. eg:
   fioctl secrets update secret_name=`,
