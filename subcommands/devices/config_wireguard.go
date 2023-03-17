@@ -117,7 +117,7 @@ func findVpnAddress(factory string) string {
 
 	ips := factoryIps(factory)
 	for ip := serverIp + 1; ip < serverIp+10000; ip++ {
-		if _, ok := ips[ip]; !ok {
+		if _, ok := ips[ip]; !ok && byte(ip) != 0 {
 			logrus.Debugf("Found unique ip: %d", ip)
 			return fmt.Sprintf("%d.%d.%d.%d", byte(ip>>24), byte(ip>>16), byte(ip>>8), byte(ip))
 		}
