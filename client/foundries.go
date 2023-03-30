@@ -200,11 +200,11 @@ type FactoryUser struct {
 }
 
 type FactoryUserAccessDetails struct {
-	PolisId         string   `json:"polis-id"`
-	Name            string   `json:"name"`
-	Role            string   `json:"role"`
-	Teams           []string `json:"teams"`
-	EffectiveScopes []string `json:"effective-scopes"`
+	PolisId         string               `json:"polis-id"`
+	Name            string               `json:"name"`
+	Role            string               `json:"role"`
+	Teams           []FactoryTeamDetails `json:"teams-ext"`
+	EffectiveScopes []string             `json:"effective-scopes"`
 }
 
 type FactoryTeam struct {
