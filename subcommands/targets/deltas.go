@@ -49,7 +49,7 @@ func findVersions(maxVer int, forTag string, tags []client.TagStatus) (bool, []i
 	for _, status := range tags {
 		if status.Name == byTag {
 			for _, t := range status.Targets {
-				if t.Version < maxVer {
+				if !t.IsOrphan && t.Version < maxVer {
 					versions = append(versions, t.Version)
 				}
 			}
