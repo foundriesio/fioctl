@@ -417,7 +417,8 @@ type WaveList struct {
 }
 
 type WaveRolloutOptions struct {
-	Group string `json:"group"`
+	Group string   `json:"group,omitempty"`
+	Uuids []string `json:"uuids,omitempty"`
 }
 
 type RolloutGroupStatus struct {
