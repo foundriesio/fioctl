@@ -1361,12 +1361,13 @@ func (a *Api) TargetComposeApp(factory string, targetName string, app string) (*
 	}
 }
 
-func (a *Api) TargetDeltasCreate(factory string, toVer int, fromVers []int) (string, string, error) {
+func (a *Api) TargetDeltasCreate(factory string, toVer int, fromVers []int, hwId string) (string, string, error) {
 	url := a.serverUrl + "/ota/factories/" + factory + "/targets/" + strconv.Itoa(toVer) + "/static-deltas/"
 	type payload struct {
-		FromVersions []int `json:"from_versions"`
+		FromVersions []int  `json:"from_versions"`
+		HwId         string `json:"hw_id"`
 	}
-	buf, err := json.Marshal(payload{fromVers})
+	buf, err := json.Marshal(payload{fromVers, hwId})
 	if err != nil {
 		return "", "", err
 	}

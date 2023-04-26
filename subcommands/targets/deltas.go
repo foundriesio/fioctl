@@ -15,6 +15,7 @@ import (
 var (
 	byTag  string
 	dryRun bool
+	hwId   string
 )
 
 func init() {
@@ -42,12 +43,13 @@ number of static deltas to ensure devices will be updated efficiently.`,
 	deltas.Flags().StringVarP(&byTag, "by-tag", "", "", "Find from-versions devices on the given tag")
 	deltas.Flags().BoolVarP(&noTail, "no-tail", "", false, "Don't tail output of CI Job")
 	deltas.Flags().BoolVarP(&dryRun, "dryrun", "", false, "Only show what deltas would be produced")
+	deltas.Flags().StringVarP(&hwId, "hw-id", "", "", "Filter from and to targets by the given hardware ID")
 }
 
 func findVersions(maxVer int, forTag string, tags []client.TagStatus) (bool, []int) {
 	var versions []int
 	for _, status := range tags {
-		if status.Name == byTag {
+		if status.Name == forTag {
 			for _, t := range status.Targets {
 				if !t.IsOrphan && t.Version < maxVer {
 					versions = append(versions, t.Version)
@@ -63,7 +65,11 @@ func doDeltas(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 	toVer, err := strconv.Atoi(args[0])
 	subcommands.DieNotNil(err)
-	logrus.Debugf("Generating static deltas to Target %d in Factory %s", toVer, factory)
+	if len(hwId) > 0 {
+		logrus.Debugf("Generating static deltas to Target %d with hardware ID %s in Factory %s", toVer, hwId, factory)
+	} else {
+		logrus.Debugf("Generating static deltas to Target %d in Factory %s", toVer, factory)
+	}
 
 	var froms []int
 	for _, fromStr := range args[1:] {
@@ -94,7 +100,11 @@ func doDeltas(cmd *cobra.Command, args []string) {
 		subcommands.DieNotNil(errors.New("No targets found to generate deltas for."))
 	}
 	if dryRun {
-		fmt.Println("Dry run: Would generated static deltas for target versions:")
+		if len(hwId) > 0 {
+			fmt.Printf("Dry run: Would be generated static deltas for targets with hardware ID %s and versions:\n", hwId)
+		} else {
+			fmt.Println("Dry run: Would be generated static deltas for target versions:")
+		}
 		for _, v := range froms {
 			fmt.Println("  ", v, "->", toVer)
 		}
@@ -102,7 +112,7 @@ func doDeltas(cmd *cobra.Command, args []string) {
 	}
 	logrus.Debugf("Froms: %v", froms)
 
-	jobServUrl, webUrl, err := api.TargetDeltasCreate(factory, toVer, froms)
+	jobServUrl, webUrl, err := api.TargetDeltasCreate(factory, toVer, froms, hwId)
 	subcommands.DieNotNil(err)
 	fmt.Printf("CI URL: %s\n", webUrl)
 	if !noTail {
