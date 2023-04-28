@@ -417,8 +417,10 @@ type WaveList struct {
 }
 
 type WaveRolloutOptions struct {
-	Group string   `json:"group,omitempty"`
-	Uuids []string `json:"uuids,omitempty"`
+	Group      string   `json:"group,omitempty"`
+	Limit      int      `json:"limit,omitempty"`
+	Percentage int      `json:"percentage,omitempty"`
+	Uuids      []string `json:"uuids,omitempty"`
 }
 
 type RolloutGroupStatus struct {

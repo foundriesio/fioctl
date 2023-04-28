@@ -33,8 +33,14 @@ If you want to roll out to all matching devices in a factory, please, use the "c
 Rollout a wave to all devices in the "us-east" device group:
 $ fioctl waves rollout --group us-east
 
+Rollout a wave to 10 devices in the "us-east" device group:
+$ fioctl waves rollout --group us-east --limit=10
+
 Rollout a wave to 2 specific devices in the "us-east" device group:
 $ fioctl waves rollout --group us-east --uuids=uuid1,uuid2
+
+Rollout a wave to 10% devices in your factory:
+$ fioctl waves rollout --limit=10%
 
 Rollout a wave to specific devices in your factory, device UUIDs provided by a file:
 $ fioctl waves rollout --uuids=@/path/to/file
@@ -45,6 +51,11 @@ $ fioctl waves rollout --uuids=@/path/to/file --limit=10%
 In all of the above examples:
 - When using the "uuids" flag, each device in a list is verified to match wave requirements.
   In addition, if the "group" flag is provided, each device must also belong to that device group.
+- When using the "limit" flag, a list of rolled out devices is auto-selected by the API.
+  The most recently active devices have a higher chance to get into this selection.
+  A device is excluded from the selection, if a wave was already rolled out to it ealier.
+- Using both "uuids" and "limit" flags constrains auto-selection to a given device list.
+  This can be combined with the "group" flag to further constrain it to a given device group.
 - The following characters are supported as a separator for the device list in the "uuids" flag:
   a comma (","), a semicolon (";"), a pipe ("|"), white space, tabs, and line breaks.
   The user is responsible for properly escaping these characters in a shell script.
@@ -52,6 +63,12 @@ In all of the above examples:
 `,
 	}
 	rollout.Flags().StringP("group", "g", "", "A device group to roll out a wave to")
+	rollout.Flags().StringP("limit", "l", "",
+		`A number of devices to roll out a wave to.
+It can be an exact number (e.g. 10), or as a percentage of all matching devices (e.g. 10%).
+An actual number of rolled out devices can be less than the specified value.
+A maximum number of devices rolled out using this flag cannot exceed 10000.`,
+	)
 	rollout.Flags().StringP("uuids", "", "",
 		`A comma-separated list of exact device UUIDs to roll out a wave to.
 Also accepts a filename containing a comma-separated list via "--uuids=@path/to/file.name".
@@ -64,24 +81,24 @@ func doRolloutWave(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 	wave := args[0]
 	group := readGroup(cmd, args)
+	limit, percentage := readLimit(cmd)
 	uuids := readUuids(cmd)
 
-	if len(group) == 0 && len(uuids) == 0 {
+	if len(group) == 0 && len(uuids) == 0 && limit == 0 && percentage == 0 {
 		subcommands.DieNotNil(errors.New(
-			"One of the following flags must be set: group, uuids\n" + cmd.UsageString(),
+			"One of the following flags must be set: group, limit, percentage, uuids\n" + cmd.UsageString(),
 		))
 	}
 
-	selector := "all devices"
-	if len(uuids) > 0 {
-		selector = strconv.Itoa(len(uuids)) + " devices"
-	}
-	if len(group) > 0 {
-		selector += " in " + group
-	}
+	selector := getDebugSelector(group, uuids, limit, percentage)
 	logrus.Debugf("Rolling out a wave %s for %s to %s", wave, factory, selector)
 
-	options := client.WaveRolloutOptions{Group: group, Uuids: uuids}
+	options := client.WaveRolloutOptions{
+		Group:      group,
+		Limit:      limit,
+		Percentage: percentage,
+		Uuids:      uuids,
+	}
 	subcommands.DieNotNil(api.FactoryRolloutWave(factory, wave, options))
 }
 
@@ -140,4 +157,46 @@ func readUuids(cmd *cobra.Command) []string {
 		))
 	}
 	return res
+}
+
+func readLimit(cmd *cobra.Command) (limit int, percentage int) {
+	value, _ := cmd.Flags().GetString("limit")
+	if len(value) > 0 {
+		var err error
+		if value[len(value)-1] == '%' {
+			if percentage, err = strconv.Atoi(value[0 : len(value)-1]); err != nil {
+				subcommands.DieNotNil(fmt.Errorf(
+					`A "limit" must be either a number or a percentage: %s`, value,
+				))
+			}
+		} else {
+			if limit, err = strconv.Atoi(value); err != nil {
+				subcommands.DieNotNil(fmt.Errorf(
+					`A "limit" must be either a number or a percentage: %s`, value,
+				))
+			}
+		}
+	}
+	return
+}
+
+func getDebugSelector(group string, uuids []string, limit, percentage int) string {
+	selector := "all devices"
+	if len(uuids) > 0 {
+		var num = len(uuids)
+		if limit > 0 && limit < num {
+			num = limit
+		} else if percentage > 0 && percentage < 100 {
+			num = num * percentage / 100
+		}
+		selector = strconv.Itoa(num) + " devices"
+	} else if limit > 0 {
+		selector = strconv.Itoa(limit) + " devices"
+	} else if percentage > 0 {
+		selector = strconv.Itoa(percentage) + "% devices"
+	}
+	if len(group) > 0 {
+		selector += " in " + group
+	}
+	return selector
 }
