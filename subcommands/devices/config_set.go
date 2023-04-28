@@ -24,7 +24,7 @@ func init() {
 		Long: `Creates a secure configuration for device encrypting the contents each
 file using the device's public key. The fioconfig daemon running
 on each device will then be able to grab the latest version of the
-device's configuration and apply it.`,
+device's configuration and apply it. The maximum size of a config is 1Mb.`,
 		Example: `  
   # Basic use can be done with command line arguments:
   fioctl device config set my-device npmtok="root" githubtok="1234" readme.md==./readme.md
