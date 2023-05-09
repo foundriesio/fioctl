@@ -421,6 +421,16 @@ type WaveRolloutOptions struct {
 	Limit      int      `json:"limit,omitempty"`
 	Percentage int      `json:"percentage,omitempty"`
 	Uuids      []string `json:"uuids,omitempty"`
+	DryRun     bool     `json:"dry-run"`
+	PrintUuids bool     `json:"return-uuids"`
+	PrintNames bool     `json:"return-names"`
+}
+
+type WaveRolloutResult struct {
+	Wave
+	DeviceNum   int      `json:"device-num"`
+	DeviceUuids []string `json:"device-uuids"`
+	DeviceNames []string `json:"device-names"`
 }
 
 type RolloutGroupStatus struct {
@@ -1692,17 +1702,25 @@ func (a *Api) FactoryGetWave(factory string, wave string, showTargets bool) (*Wa
 	return &resp, err
 }
 
-func (a *Api) FactoryRolloutWave(factory string, wave string, options WaveRolloutOptions) error {
+func (a *Api) FactoryRolloutWave(
+	factory string, wave string, options WaveRolloutOptions,
+) (*WaveRolloutResult, error) {
 	url := a.serverUrl + "/ota/factories/" + factory + "/waves/" + wave + "/rollout/"
 	logrus.Debugf("Rolling out factory wave %s", url)
 
 	data, err := json.Marshal(options)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	_, err = a.Post(url, data)
-	return err
+	body, err := a.Post(url, data)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp WaveRolloutResult
+	err = json.Unmarshal(*body, &resp)
+	return &resp, err
 }
 
 func (a *Api) FactoryCancelWave(factory string, wave string) error {
