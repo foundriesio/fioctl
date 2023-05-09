@@ -74,6 +74,12 @@ A maximum number of devices rolled out using this flag cannot exceed 10000.`,
 Also accepts a filename containing a comma-separated list via "--uuids=@path/to/file.name".
 A maximum number of devices rolled out using this flag cannot exceed 10000.`,
 	)
+	rollout.Flags().BoolP("dry-run", "", false,
+		"Only show what would happen without an actual rollout. Most useful with --print-xxx flags.")
+	rollout.Flags().BoolP("print-uuids", "", false,
+		"Print UUIDs of devices to which a wave was rolled out (would be rolled out with --dry-run).")
+	rollout.Flags().BoolP("print-names", "", false,
+		"Print names of devices to which a wave was rolled out (would be rolled out with --dry-run).")
 	cmd.AddCommand(rollout)
 }
 
@@ -83,8 +89,13 @@ func doRolloutWave(cmd *cobra.Command, args []string) {
 	group := readGroup(cmd, args)
 	limit, percentage := readLimit(cmd)
 	uuids := readUuids(cmd)
+	dryRun, _ := cmd.Flags().GetBool("dry-run")
+	printUuids, _ := cmd.Flags().GetBool("print-uuids")
+	printNames, _ := cmd.Flags().GetBool("print-names")
 
-	if len(group) == 0 && len(uuids) == 0 && limit == 0 && percentage == 0 {
+	isFullRollout := len(uuids) == 0 && limit == 0 && percentage == 0
+
+	if len(group) == 0 && isFullRollout {
 		subcommands.DieNotNil(errors.New(
 			"One of the following flags must be set: group, limit, percentage, uuids\n" + cmd.UsageString(),
 		))
@@ -98,8 +109,52 @@ func doRolloutWave(cmd *cobra.Command, args []string) {
 		Limit:      limit,
 		Percentage: percentage,
 		Uuids:      uuids,
+		DryRun:     dryRun,
+		PrintUuids: printUuids,
+		PrintNames: printNames,
 	}
-	subcommands.DieNotNil(api.FactoryRolloutWave(factory, wave, options))
+	res, err := api.FactoryRolloutWave(factory, wave, options)
+	subcommands.DieNotNil(err)
+
+	if len(group) == 0 {
+		if dryRun {
+			fmt.Printf("A wave would be rolled out to %d devices in your factory.\n", res.DeviceNum)
+		} else {
+			fmt.Printf("A wave is being rolled out to %d devices in your factory.\n", res.DeviceNum)
+		}
+	} else {
+		if dryRun {
+			fmt.Printf("A wave would be rolled out to %d devices in group \"%s\".\n", res.DeviceNum, group)
+			if isFullRollout {
+				fmt.Printf("It would also be rolled out to all new devices in group \"%s\".\n", group)
+			}
+		} else {
+			fmt.Printf("A wave is being rolled out to %d devices in group \"%s\".\n", res.DeviceNum, group)
+			if isFullRollout {
+				fmt.Printf("It will also be rolled out to all new devices in group \"%s\".\n", group)
+			}
+		}
+	}
+	if (printUuids && len(res.DeviceUuids) == 0) || (printNames && len(res.DeviceNames) == 0) {
+		// This can happen when rolling out to a large group without any limit specified.
+		fmt.Println("A full list of these devices exceeds 10000, so it cannot be printed.")
+	} else if printUuids || printNames {
+		fmt.Println("Below is a full list of these devices:")
+		for i := 0; i < res.DeviceNum; i++ {
+			if i > 0 {
+				fmt.Print(", ")
+			}
+			if printUuids {
+				fmt.Print(res.DeviceUuids[i])
+				if printNames {
+					fmt.Printf(" (%s)", res.DeviceNames[i])
+				}
+			} else if printNames {
+				fmt.Print(res.DeviceNames[i])
+			}
+		}
+		fmt.Println("")
+	}
 }
 
 func readGroup(cmd *cobra.Command, args []string) string {
