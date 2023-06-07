@@ -100,11 +100,11 @@ func doShowWaveStatus(cmd *cobra.Command, args []string) {
 			unscheduledMessage += " (Done)"
 		}
 
-		t = subcommands.Tabby(0, "GROUP", "TOTAL", "UPDATED", "NEED UPDATE", "ONLINE", "ROLLOUT AT")
+		t = subcommands.Tabby(0, "GROUP", "TOTAL", "UPDATED", "NEED UPDATE", "SCHEDULED", "ONLINE", "ROLLOUT AT")
 		for _, group := range status.RolloutGroups {
 			t.AddLine(
 				group.Name, group.DevicesTotal, group.DevicesOnWave+group.DevicesOnNewer,
-				group.DevicesOnOlder, group.DevicesOnline, group.RolloutAt)
+				group.DevicesOnOlder, group.DevicesScheduled, group.DevicesOnline, group.RolloutAt)
 		}
 		for _, group := range status.OtherGroups {
 			if group.Name == "" {
@@ -112,7 +112,7 @@ func doShowWaveStatus(cmd *cobra.Command, args []string) {
 			}
 			t.AddLine(
 				group.Name, group.DevicesTotal, group.DevicesOnWave+group.DevicesOnNewer,
-				group.DevicesOnOlder, group.DevicesOnline, unscheduledMessage)
+				group.DevicesOnOlder, group.DevicesScheduled, group.DevicesOnline, unscheduledMessage)
 		}
 		t.Print()
 	}
