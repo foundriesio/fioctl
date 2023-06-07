@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	"github.com/foundriesio/fioctl/client"
 	"github.com/foundriesio/fioctl/subcommands"
 )
 
@@ -92,6 +93,7 @@ func doShowWaveStatus(cmd *cobra.Command, args []string) {
 	t.Print()
 	fmt.Println()
 
+	hasTargets := len(status.RolloutGroups) > 0
 	if len(status.RolloutGroups) > 0 || len(status.OtherGroups) > 0 {
 		unscheduledMessage := "At Wave Completion"
 		if status.Status == "canceled" {
@@ -113,29 +115,41 @@ func doShowWaveStatus(cmd *cobra.Command, args []string) {
 			t.AddLine(
 				group.Name, group.DevicesTotal, group.DevicesOnWave+group.DevicesOnNewer,
 				group.DevicesOnOlder, group.DevicesScheduled, group.DevicesOnline, unscheduledMessage)
+			if len(group.Targets) > 0 {
+				hasTargets = true
+			}
 		}
 		t.Print()
 	}
 
-	if len(status.RolloutGroups) > 0 && status.Status == "active" {
+	if hasTargets && status.Status == "active" {
 		fmt.Println("\nOrphan target versions below are marked with a star (*)")
 		fmt.Println("Wave target version below is marked with an arrow (<-)")
 		for _, group := range status.RolloutGroups {
-			fmt.Printf("\n## Device Group: %s\n", group.Name)
-			t = subcommands.Tabby(1, "TARGET", "DEVICES", "INSTALLING", "DETAILS")
-			for _, tgt := range group.Targets {
-				var mark, details string
-				if tgt.Version == status.Version {
-					mark = "<-"
-				} else if tgt.IsOrphan {
-					mark = "*"
-				}
-				if tgt.Version > 0 {
-					details = fmt.Sprintf("`fioctl targets show %d`", tgt.Version)
-				}
-				t.AddLine(fmt.Sprintf("%-6d%2s", tgt.Version, mark), tgt.Devices, tgt.Reinstalling, details)
+			showGroupStatusTargets(group, status)
+		}
+		for _, group := range status.OtherGroups {
+			if len(group.Targets) > 0 {
+				showGroupStatusTargets(group, status)
 			}
-			t.Print()
 		}
 	}
+}
+
+func showGroupStatusTargets(group client.RolloutGroupStatus, status *client.WaveStatus) {
+	fmt.Printf("\n## Device Group: %s\n", group.Name)
+	t := subcommands.Tabby(1, "TARGET", "DEVICES", "INSTALLING", "DETAILS")
+	for _, tgt := range group.Targets {
+		var mark, details string
+		if tgt.Version == status.Version {
+			mark = "<-"
+		} else if tgt.IsOrphan {
+			mark = "*"
+		}
+		if tgt.Version > 0 {
+			details = fmt.Sprintf("`fioctl targets show %d`", tgt.Version)
+		}
+		t.AddLine(fmt.Sprintf("%-6d%2s", tgt.Version, mark), tgt.Devices, tgt.Reinstalling, details)
+	}
+	t.Print()
 }
