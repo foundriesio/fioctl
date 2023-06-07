@@ -392,6 +392,15 @@ type WaveRolloutGroupRef struct {
 	CreatedBy string `json:"created-by"`
 }
 
+type RolloutHistory struct {
+	GroupName     string `json:"group-name"`
+	RolloutBy     string `json:"rollout-by"`
+	RolloutAt     string `json:"rollout-at"`
+	IsFullGroup   bool   `json:"is-full-group"`
+	IsFactoryWide bool   `json:"is-factory-wide"`
+	DeviceNumber  int    `json:"num-devices"`
+}
+
 type Wave struct {
 	Name          string                         `json:"name"`
 	Version       string                         `json:"version"`
@@ -399,8 +408,8 @@ type Wave struct {
 	Targets       *json.RawMessage               `json:"targets"`
 	Status        string                         `json:"status"`
 	RolloutGroups map[string]WaveRolloutGroupRef `json:"rollout-groups"`
-
-	ChangeMeta ChangeMeta `json:"change-meta"`
+	History       []RolloutHistory               `json:"rollout-history"`
+	ChangeMeta    ChangeMeta                     `json:"change-meta"`
 }
 
 type WaveCreate struct {

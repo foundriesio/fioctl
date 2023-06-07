@@ -2,13 +2,11 @@ package waves
 
 import (
 	"fmt"
-	"sort"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"github.com/foundriesio/fioctl/client"
 	"github.com/foundriesio/fioctl/subcommands"
 )
 
@@ -41,23 +39,27 @@ func doShowWave(cmd *cobra.Command, args []string) {
 	if len(wave.ChangeMeta.CreatedBy) > 0 {
 		fmt.Printf("Created By: \t%s\n", wave.ChangeMeta.CreatedBy)
 	}
-	if len(wave.RolloutGroups) > 0 {
-		groupRefs := sortRolloutGroups(wave.RolloutGroups)
-		firstLine := true
-		for _, ref := range groupRefs {
-			formatLine := "\t\t%s: rollout to device group %s"
-			if firstLine {
-				firstLine = false
-				formatLine = "Rollout At: \t%s: rollout to device group %s"
-			}
-			groupName := ref.GroupName
-			if groupName == "" {
+	if len(wave.History) > 0 {
+		fmt.Println("Rollout history:")
+		for _, rollout := range wave.History {
+			line := fmt.Sprintf("\t%s: rollout to ", rollout.RolloutAt)
+
+			groupName := rollout.GroupName
+			if !rollout.IsFactoryWide && groupName == "" {
 				// A group has been deleted, only a reference still exists - we cannot track down a name
 				groupName = "<deleted group>"
 			}
-			line := fmt.Sprintf(formatLine, ref.CreatedAt, groupName)
-			if len(ref.CreatedBy) > 0 {
-				line += " by " + ref.CreatedBy
+
+			if rollout.IsFactoryWide {
+				line += fmt.Sprintf("%d devices in factory", rollout.DeviceNumber)
+			} else if rollout.IsFullGroup {
+				line += fmt.Sprintf("all devices in group %s", groupName)
+			} else {
+				line += fmt.Sprintf("%d devices in group %s", rollout.DeviceNumber, groupName)
+			}
+
+			if len(rollout.RolloutBy) > 0 {
+				line += " by " + rollout.RolloutBy
 			}
 			fmt.Println(line)
 		}
@@ -74,16 +76,4 @@ func doShowWave(cmd *cobra.Command, args []string) {
 		data, _ := subcommands.MarshalIndent(wave.Targets, "  ", "  ")
 		fmt.Println("  " + string(data))
 	}
-}
-
-func sortRolloutGroups(groupMap map[string]client.WaveRolloutGroupRef) []client.WaveRolloutGroupRef {
-	groupRefs := make([]client.WaveRolloutGroupRef, 0, len(groupMap))
-	for _, ref := range groupMap {
-		groupRefs = append(groupRefs, ref)
-	}
-	sort.Slice(groupRefs, func(i, j int) bool {
-		// Time is in RFC3339 format i.e. with zero padding, so it compares properly
-		return groupRefs[i].CreatedAt < groupRefs[j].CreatedAt
-	})
-	return groupRefs
 }
