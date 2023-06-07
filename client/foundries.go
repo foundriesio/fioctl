@@ -434,14 +434,15 @@ type WaveRolloutResult struct {
 }
 
 type RolloutGroupStatus struct {
-	Name           string         `json:"name"`
-	RolloutAt      string         `json:"rollout-at"`
-	DevicesTotal   int            `json:"devices-total"`
-	DevicesOnline  int            `json:"devices-online"`
-	DevicesOnWave  int            `json:"devices-on-wave-version"`
-	DevicesOnNewer int            `json:"devices-on-newer-version"`
-	DevicesOnOlder int            `json:"devices-on-older-version"`
-	Targets        []TargetStatus `json:"targets"`
+	Name             string         `json:"name"`
+	RolloutAt        string         `json:"rollout-at"`
+	DevicesTotal     int            `json:"devices-total"`
+	DevicesOnline    int            `json:"devices-online"`
+	DevicesOnWave    int            `json:"devices-on-wave-version"`
+	DevicesOnNewer   int            `json:"devices-on-newer-version"`
+	DevicesOnOlder   int            `json:"devices-on-older-version"`
+	DevicesScheduled int            `json:"devices-scheduled-for-update"`
+	Targets          []TargetStatus `json:"targets"`
 }
 
 type WaveStatus struct {
