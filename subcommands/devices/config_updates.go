@@ -32,7 +32,9 @@ currently configured and reporting.`,
 	configCmd.AddCommand(configUpdatesCmd)
 	configUpdatesCmd.Flags().StringP("tag", "", "", "Target tag for device to follow")
 	configUpdatesCmd.Flags().StringP("tags", "", "", "Target tag for device to follow")
+	configUpdatesCmd.Flags().BoolP("inherit-tag", "", false, "Toggle if tag should be inherited from parent")
 	configUpdatesCmd.Flags().StringP("apps", "", "", "comma,separate,list")
+	configUpdatesCmd.Flags().BoolP("inherit-apps", "", false, "Toggle if apps should be inherited from parent")
 	configUpdatesCmd.Flags().BoolP("dryrun", "", false, "Only show what would be changed")
 	configUpdatesCmd.Flags().BoolP("force", "", false, "DANGER: For a config on a device that might result in corruption")
 
@@ -43,7 +45,11 @@ func doConfigUpdates(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 	name := args[0]
 	updateApps, _ := cmd.Flags().GetString("apps")
+	updateAppsGiven := cmd.Flag("apps").Changed
+	inheritApps, _ := cmd.Flags().GetBool("inherit-apps")
 	updateTag, _ := cmd.Flags().GetString("tag")
+	updateTagGiven := cmd.Flag("tag").Changed
+	inheritTag, _ := cmd.Flags().GetBool("inherit-tag")
 	if len(updateTag) == 0 {
 		// check the old, deprecated "tags" option
 		updateTag, _ = cmd.Flags().GetString("tags")
@@ -57,11 +63,15 @@ func doConfigUpdates(cmd *cobra.Command, args []string) {
 	subcommands.DieNotNil(err, "Failed to fetch a device:")
 
 	subcommands.SetUpdatesConfig(&subcommands.SetUpdatesConfigOptions{
-		UpdateApps: updateApps,
-		UpdateTag:  updateTag,
-		IsDryRun:   isDryRun,
-		IsForced:   isForced,
-		Device:     device,
+		UpdateApps:      updateApps,
+		UpdateAppsGiven: updateAppsGiven,
+		InheritApps:     inheritApps,
+		UpdateTag:       updateTag,
+		UpdateTagGiven:  updateTagGiven,
+		InheritTag:      inheritTag,
+		IsDryRun:        isDryRun,
+		IsForced:        isForced,
+		Device:          device,
 		ListFunc: func() (*client.DeviceConfigList, error) {
 			return api.DeviceListConfig(factory, name)
 		},
@@ -69,5 +79,5 @@ func doConfigUpdates(cmd *cobra.Command, args []string) {
 			return api.DevicePatchConfig(factory, name, cfg, force)
 		},
 	},
-		device.Tag, device.DockerApps)
+		device.Tag, device.DockerApps, factory, api)
 }

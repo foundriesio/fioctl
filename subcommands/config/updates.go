@@ -31,7 +31,9 @@ group is currently configured.`,
 	configUpdatesCmd.Flags().StringP("group", "g", "", "Device group to use")
 	configUpdatesCmd.Flags().StringP("tag", "", "", "Tag for devices to follow")
 	configUpdatesCmd.Flags().StringP("tags", "", "", "Tag for devices to follow")
+	configUpdatesCmd.Flags().BoolP("inherit-tag", "", false, "Toggle to switch if tag should be inherited from parent")
 	configUpdatesCmd.Flags().StringP("apps", "", "", "comma,separate,list")
+	configUpdatesCmd.Flags().BoolP("inherit-apps", "", false, "Toggle to switch if apps should be inherited from parent")
 	configUpdatesCmd.Flags().BoolP("dryrun", "", false, "Only show what would be changed")
 	configUpdatesCmd.Flags().BoolP("force", "", false, "DANGER: For a config on a device that might result in corruption")
 	_ = configUpdatesCmd.MarkFlagRequired("group")
@@ -42,7 +44,11 @@ func doConfigUpdates(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 	group, _ := cmd.Flags().GetString("group")
 	updateApps, _ := cmd.Flags().GetString("apps")
+	updateAppsGiven := cmd.Flag("apps").Changed
+	inheritApps, _ := cmd.Flags().GetBool("inherit-apps")
 	updateTag, _ := cmd.Flags().GetString("tag")
+	updateTagGiven := cmd.Flag("tag").Changed
+	inheritTag, _ := cmd.Flags().GetBool("inherit-tag")
 	if len(updateTag) == 0 {
 		// check the old, deprecated "tags" option
 		updateTag, _ = cmd.Flags().GetString("tags")
@@ -51,10 +57,14 @@ func doConfigUpdates(cmd *cobra.Command, args []string) {
 	isForced, _ := cmd.Flags().GetBool("force")
 
 	opts := subcommands.SetUpdatesConfigOptions{
-		UpdateApps: updateApps,
-		UpdateTag:  updateTag,
-		IsDryRun:   isDryRun,
-		IsForced:   isForced,
+		UpdateApps:      updateApps,
+		UpdateAppsGiven: updateAppsGiven,
+		InheritApps:     inheritApps,
+		UpdateTag:       updateTag,
+		UpdateTagGiven:  updateTagGiven,
+		InheritTag:      inheritTag,
+		IsDryRun:        isDryRun,
+		IsForced:        isForced,
 	}
 
 	logrus.Debugf("Configuring group wide device updates for %s group %s", factory, group)
@@ -64,5 +74,5 @@ func doConfigUpdates(cmd *cobra.Command, args []string) {
 	opts.SetFunc = func(cfg client.ConfigCreateRequest, force bool) error {
 		return api.GroupPatchConfig(factory, group, cfg, force)
 	}
-	subcommands.SetUpdatesConfig(&opts, "", nil)
+	subcommands.SetUpdatesConfig(&opts, "", nil, factory, api)
 }

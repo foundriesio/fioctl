@@ -7,12 +7,14 @@ import (
 	"io"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/fatih/color"
 	toml "github.com/pelletier/go-toml"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/exp/slices"
 
 	"github.com/foundriesio/fioctl/client"
 )
@@ -176,16 +178,20 @@ func (o RotateCertOptions) AsConfig() client.ConfigCreateRequest {
 }
 
 type SetUpdatesConfigOptions struct {
-	UpdateTag  string
-	UpdateApps string
-	IsDryRun   bool
-	IsForced   bool
-	Device     *client.Device
-	ListFunc   func() (*client.DeviceConfigList, error)
-	SetFunc    func(client.ConfigCreateRequest, bool) error
+	UpdateTag       string
+	UpdateTagGiven  bool
+	InheritTag      bool
+	UpdateApps      string
+	UpdateAppsGiven bool
+	InheritApps     bool
+	IsDryRun        bool
+	IsForced        bool
+	Device          *client.Device
+	ListFunc        func() (*client.DeviceConfigList, error)
+	SetFunc         func(client.ConfigCreateRequest, bool) error
 }
 
-func SetUpdatesConfig(opts *SetUpdatesConfigOptions, reportedTag string, reportedApps []string) {
+func SetUpdatesConfig(opts *SetUpdatesConfigOptions, reportedTag string, reportedApps []string, factory string, api *client.Api) {
 	DieNotNil(validateUpdateArgs(opts))
 
 	dcl, err := opts.ListFunc()
@@ -196,8 +202,7 @@ func SetUpdatesConfig(opts *SetUpdatesConfigOptions, reportedTag string, reporte
 	if !opts.IsForced {
 		DieNotNil(err, "Invalid FIO toml file (override with --force):")
 	}
-
-	if opts.UpdateApps == "" && opts.UpdateTag == "" {
+	if opts.UpdateApps == "" && opts.UpdateTag == "" && !opts.InheritApps && !opts.InheritTag {
 		if opts.Device != nil {
 			fmt.Println("= Reporting to server with")
 			fmt.Println(" Tag: ", opts.Device.Tag)
@@ -220,22 +225,62 @@ func SetUpdatesConfig(opts *SetUpdatesConfigOptions, reportedTag string, reporte
 	}
 
 	changed := false
-	if opts.UpdateApps != "" && configuredApps != opts.UpdateApps {
-		if strings.TrimSpace(opts.UpdateApps) == "," {
-			opts.UpdateApps = ""
+	if opts.UpdateAppsGiven || opts.InheritApps {
+
+		if opts.UpdateTagGiven && opts.UpdateTag != "" {
+			configuredTag = opts.UpdateTag
 		}
-		fmt.Printf("Changing apps from: [%s] -> [%s]\n", configuredApps, opts.UpdateApps)
-		sota.Set("pacman.docker_apps", opts.UpdateApps)
-		sota.Set("pacman.compose_apps", opts.UpdateApps)
-		changed = true
+		if opts.InheritApps && sota.Has("pacman.compose_apps") {
+			fmt.Printf("Changing apps from: [%s] -> inherit from parent\n", configuredApps)
+			DieNotNil(sota.Delete("pacman.docker_apps"))
+			DieNotNil(sota.Delete("pacman.compose_apps"))
+			changed = true
+		} else if configuredApps != opts.UpdateApps && opts.UpdateAppsGiven {
+			if strings.TrimSpace(opts.UpdateApps) == "," {
+				targets, err := api.TargetsList(factory)
+				DieNotNil(err)
+				version := 0
+				var final_apps []string
+				for _, target := range targets {
+					custom, err := api.TargetCustom(target)
+					DieNotNil(err)
+					set := make(map[string]bool)
+					var apps []string
+					if slices.Contains(custom.Tags, configuredTag) {
+						for app := range custom.ComposeApps {
+							if _, ok := set[app]; !ok {
+								apps = append(apps, app)
+							}
+						}
+						if v, err := strconv.Atoi(custom.Version); err == nil {
+							if v > version {
+								final_apps = apps
+								version = v
+							}
+						}
+					}
+				}
+				opts.UpdateApps = strings.Join(final_apps, ",")
+			}
+			fmt.Printf("Changing apps from: [%s] -> [%s]\n", configuredApps, opts.UpdateApps)
+			sota.Set("pacman.docker_apps", opts.UpdateApps)
+			sota.Set("pacman.compose_apps", opts.UpdateApps)
+			changed = true
+		}
 	}
-	if opts.UpdateTag != "" && configuredTag != opts.UpdateTag {
-		if strings.TrimSpace(opts.UpdateTag) == "," {
-			opts.UpdateTag = ""
+	if opts.UpdateTagGiven || opts.InheritTag {
+		if opts.InheritTag && sota.Has("pacman.tags") {
+			fmt.Printf("Changing tag from: [%s] -> inherit from parent\n", configuredTag)
+			DieNotNil(sota.Delete("pacman.tags"))
+			changed = true
+		} else if configuredTag != opts.UpdateTag {
+			if strings.TrimSpace(opts.UpdateTag) == "," {
+				opts.UpdateTag = ""
+			}
+			fmt.Printf("Changing tag from: %s -> %s\n", configuredTag, opts.UpdateTag)
+			sota.Set("pacman.tags", opts.UpdateTag)
+			changed = true
 		}
-		fmt.Printf("Changing tag from: %s -> %s\n", configuredTag, opts.UpdateTag)
-		sota.Set("pacman.tags", opts.UpdateTag)
-		changed = true
 	}
 
 	if !changed {
