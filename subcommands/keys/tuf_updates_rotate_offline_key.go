@@ -138,10 +138,7 @@ func doTufUpdatesRotateOfflineTargetsKey(cmd *cobra.Command) {
 		subcommands.DieNotNil(errors.New("The --keys option is required to sign the new TUF root."))
 	}
 
-	var (
-		creds, targetsCreds OfflineCreds
-		err                 error
-	)
+	var creds, targetsCreds OfflineCreds
 	if _, err := os.Stat(targetsKeysFile); err == nil {
 		targetsCreds, err = GetOfflineCreds(targetsKeysFile)
 		subcommands.DieNotNil(err)
@@ -157,6 +154,7 @@ func doTufUpdatesRotateOfflineTargetsKey(cmd *cobra.Command) {
 		if keysFile == targetsKeysFile {
 			creds = targetsCreds
 		} else {
+			var err error
 			creds, err = GetOfflineCreds(keysFile)
 			subcommands.DieNotNil(err)
 		}
@@ -185,7 +183,7 @@ func doTufUpdatesRotateOfflineTargetsKey(cmd *cobra.Command) {
 	newProdRoot := genProdTufRoot(newCiRoot)
 
 	fmt.Println("= Re-signing prod targets")
-	newTargetsSigs, err := resignProdTargets(factory, newCiRoot, onlineTargetsId, newCreds)
+	newTargetsSigs, err := resignProdTargets(factory, newKey)
 	subcommands.DieNotNil(err)
 
 	if shouldSign {
@@ -226,27 +224,12 @@ func replaceOfflineTargetsKey(
 	return &kp.signer, creds
 }
 
-func resignProdTargets(
-	factory string, root *client.AtsTufRoot, onlineTargetsId string, creds OfflineCreds,
-) (map[string][]tuf.Signature, error) {
+func resignProdTargets(factory string, signer *TufSigner) (map[string][]tuf.Signature, error) {
 	targetsMap, err := api.ProdTargetsList(factory, false)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to fetch production targets: %w", err)
 	} else if targetsMap == nil {
 		return nil, nil
-	}
-
-	var signers []TufSigner
-	for _, kid := range root.Signed.Roles["targets"].KeyIDs {
-		if kid == onlineTargetsId {
-			continue
-		}
-		pub := root.Signed.Keys[kid].KeyValue.Public
-		signer, err := FindTufSigner(kid, pub, creds)
-		if err != nil {
-			return nil, fmt.Errorf("Failed to find private key for %s: %w", kid, err)
-		}
-		signers = append(signers, *signer)
 	}
 
 	signatureMap := make(map[string][]tuf.Signature)
@@ -255,7 +238,7 @@ func resignProdTargets(
 		if err != nil {
 			return nil, fmt.Errorf("Failed to marshal targets for tag %s: %w", tag, err)
 		}
-		signatures, err := SignTufMeta(bytes, signers...)
+		signatures, err := SignTufMeta(bytes, *signer)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to re-sign targets for tag %s: %w", tag, err)
 		}
