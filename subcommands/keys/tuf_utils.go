@@ -212,44 +212,81 @@ func GetOfflineCreds(credsFile string) (OfflineCreds, error) {
 	return files, nil
 }
 
-func FindTufSigner(keyid, pubkey string, creds OfflineCreds) (*TufSigner, error) {
-	pubkey = strings.TrimSpace(pubkey)
-	for k, v := range creds {
-		if strings.HasSuffix(k, ".pub") {
-			tk := client.AtsKey{}
-			if err := json.Unmarshal(v, &tk); err != nil {
-				return nil, fmt.Errorf("Unable to parse JSON for %s: %w", k, err)
-			}
-			if strings.TrimSpace(tk.KeyValue.Public) == pubkey {
-				pkname := strings.Replace(k, ".pub", ".sec", 1)
-				pkbytes := creds[pkname]
-				tk = client.AtsKey{}
-				if err := json.Unmarshal(pkbytes, &tk); err != nil {
-					return nil, fmt.Errorf("Unable to parse JSON for %s: %w", pkname, err)
-				}
-				keyType, err := parseTufKeyType(tk.KeyType)
-				if err != nil {
-					return nil, fmt.Errorf("Unsupported key type for %s: %s", pkname, tk.KeyType)
-				}
-				pk, err := keyType.ParseKey(tk.KeyValue.Private)
-				if err != nil {
-					return nil, fmt.Errorf("Unable to parse key value for %s: %w", pkname, err)
-				}
-				return &TufSigner{
-					Id:   keyid,
-					Type: keyType,
-					Key:  pk,
-				}, nil
-			}
+func FindOneTufSigner(root *client.AtsTufRoot, creds OfflineCreds, keyids []string) (signer TufSigner, err error) {
+	var signers []TufSigner
+	if signers, err = findTufSigners(root, creds, keyids); err == nil {
+		if len(signers) == 0 {
+			err = fmt.Errorf("Found no active signing key for: %v.", keyids)
+		} else if len(signers) > 1 {
+			err = fmt.Errorf(`Found more than one active signing key for: %v.
+This is an unsupported and insecure way to store private keys.
+Please, provide a keys file which contains a single active signing key.`, keyids)
+		} else {
+			signer = signers[0]
 		}
 	}
-	return nil, fmt.Errorf("Can not find private key for: %s", keyid)
+	return
 }
 
-func findTufRootSigner(root *client.AtsTufRoot, creds OfflineCreds) (*TufSigner, error) {
-	kid := root.Signed.Roles["root"].KeyIDs[0]
-	pub := root.Signed.Keys[kid].KeyValue.Public
-	return FindTufSigner(kid, pub, creds)
+func findTufSigners(root *client.AtsTufRoot, creds OfflineCreds, keyids []string) ([]TufSigner, error) {
+	// Look in creds for each candidate from keyids and return all private keys that match
+	matchPubKeys := make(map[string]client.AtsKey, len(keyids))
+	for _, kid := range keyids {
+		if pk, ok := root.Signed.Keys[kid]; ok {
+			pk.KeyValue.Public = strings.TrimSpace(pk.KeyValue.Public)
+			matchPubKeys[kid] = pk
+		} else {
+			return nil, fmt.Errorf("Unable to find key %s in root.json", kid)
+		}
+	}
+
+	matchSigners := make([]TufSigner, 0, 1) // Normally, we find none or one match
+	for file, bytes := range creds {
+		if !strings.HasSuffix(file, ".pub") {
+			continue
+		}
+
+		var key client.AtsKey
+		if err := json.Unmarshal(bytes, &key); err != nil {
+			return nil, fmt.Errorf("Unable to parse JSON for %s: %w", file, err)
+		}
+		probe := strings.TrimSpace(key.KeyValue.Public)
+
+		var matchId, matchKeyType string
+		for kid, match := range matchPubKeys {
+			if match.KeyValue.Public == probe {
+				matchId = kid
+				matchKeyType = match.KeyType
+				break
+			}
+		}
+		if len(matchId) == 0 {
+			continue
+		}
+
+		file = strings.Replace(file, ".pub", ".sec", 1)
+		bytes = creds[file]
+		if err := json.Unmarshal(bytes, &key); err != nil {
+			return nil, fmt.Errorf("Unable to parse JSON for %s: %w", file, err)
+		}
+		if key.KeyType != matchKeyType {
+			return nil, fmt.Errorf("Mismatch in key type for %s: %s != %s", file, key.KeyType, matchKeyType)
+		}
+		keyType, err := parseTufKeyType(key.KeyType)
+		if err != nil {
+			return nil, fmt.Errorf("Unsupported key type for %s: %s", file, key.KeyType)
+		}
+		signer, err := keyType.ParseKey(key.KeyValue.Private)
+		if err != nil {
+			return nil, fmt.Errorf("Unable to parse key value for %s: %w", file, err)
+		}
+		matchSigners = append(matchSigners, TufSigner{
+			Id:   matchId,
+			Type: keyType,
+			Key:  signer,
+		})
+	}
+	return matchSigners, nil
 }
 
 func removeUnusedTufKeys(root *client.AtsTufRoot) {
@@ -325,13 +362,13 @@ func genProdTufRoot(ciRoot *client.AtsTufRoot) (prodRoot *client.AtsTufRoot) {
 
 func signNewTufRoot(curCiRoot, newCiRoot, newProdRoot *client.AtsTufRoot, creds OfflineCreds) {
 	// Always sign with new root key; sign with old root key if it was rotated.
-	oldKey, err := findTufRootSigner(curCiRoot, creds)
+	oldKey, err := FindOneTufSigner(curCiRoot, creds, curCiRoot.Signed.Roles["root"].KeyIDs)
 	subcommands.DieNotNil(err)
-	newKey, err := findTufRootSigner(newCiRoot, creds)
+	newKey, err := FindOneTufSigner(newCiRoot, creds, newCiRoot.Signed.Roles["root"].KeyIDs)
 	subcommands.DieNotNil(err)
-	signers := []TufSigner{*newKey}
+	signers := []TufSigner{newKey}
 	if oldKey.Id != newKey.Id {
-		signers = append(signers, *oldKey)
+		signers = append(signers, oldKey)
 	}
 	fmt.Println("= Signing new TUF root")
 	subcommands.DieNotNil(signTufRoot(newCiRoot, signers...))

@@ -176,25 +176,24 @@ func signTargets(meta []byte, factory string, offlineKeys keys.OfflineCreds) []t
 	onlinePub, err := api.TufTargetsOnlineKey(factory)
 	subcommands.DieNotNil(err, "Failed to fetch online targets public key")
 
-	signers := make([]keys.TufSigner, 0)
-	for _, kid := range root.Signed.Roles["targets"].KeyIDs {
+	targetsKids := root.Signed.Roles["targets"].KeyIDs
+	signerKids := make([]string, 0, len(targetsKids)-1)
+	for _, kid := range targetsKids {
 		pub := root.Signed.Keys[kid].KeyValue.Public
 		if pub == onlinePub.KeyValue.Public {
 			continue
 		}
-		signer, err := keys.FindTufSigner(kid, pub, offlineKeys)
-		if err != nil {
-			subcommands.DieNotNil(err, fmt.Sprintf("Failed to find private key for %s", kid))
-		}
-		signers = append(signers, *signer)
+		signerKids = append(signerKids, kid)
 	}
 
-	if len(signers) == 0 {
+	if len(signerKids) == 0 {
 		subcommands.DieNotNil(fmt.Errorf(`Root role is not configured to sign targets offline.
 Please, run "fioctl keys rotate-targets" in order to create offline targets keys.`))
 	}
 
-	signatures, err := keys.SignTufMeta(meta, signers...)
+	signer, err := keys.FindOneTufSigner(root, offlineKeys, signerKids)
+	subcommands.DieNotNil(err)
+	signatures, err := keys.SignTufMeta(meta, signer)
 	subcommands.DieNotNil(err, "Failed to sign new targets")
 	return signatures
 }
