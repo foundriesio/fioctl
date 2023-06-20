@@ -188,7 +188,7 @@ func signTargets(meta []byte, factory string, offlineKeys keys.OfflineCreds) []t
 
 	if len(signerKids) == 0 {
 		subcommands.DieNotNil(fmt.Errorf(`Root role is not configured to sign targets offline.
-Please, run "fioctl keys rotate-targets" in order to create offline targets keys.`))
+Please, run "fioctl keys tuf rotate-offline-key --role=targets" in order to create offline targets keys.`))
 	}
 
 	signer, err := keys.FindOneTufSigner(root, offlineKeys, signerKids)
