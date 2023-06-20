@@ -172,11 +172,11 @@ func AssertWritable(path string) {
 	f.Close()
 }
 
-func IsSliceSetEqual(first, second []string) bool {
+func IsSliceSetEqual[T comparable](first, second []T) bool {
 	// Verify that two slices are equal as sets in just 3 O(1) iterations.
 	// firstMap[key] = false	<- key present in first;
 	// firstMap[key] = true		<- key present in both first and second.
-	firstMap := make(map[string]bool, len(first))
+	firstMap := make(map[T]bool, len(first))
 	for _, val := range first {
 		firstMap[val] = false
 	}
@@ -192,6 +192,16 @@ func IsSliceSetEqual(first, second []string) bool {
 		}
 	}
 	return true
+}
+
+func SliceRemove[T comparable](in []T, item T) (out []T) {
+	out = make([]T, 0, len(in))
+	for _, elem := range in {
+		if item != elem {
+			out = append(out, elem)
+		}
+	}
+	return
 }
 
 type MutuallyExclusiveFlags struct {
