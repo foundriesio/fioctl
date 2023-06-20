@@ -199,10 +199,14 @@ func doTufUpdatesRotateOfflineTargetsKey(cmd *cobra.Command) {
 func replaceOfflineRootKey(
 	root *client.AtsTufRoot, creds OfflineCreds, keyType TufKeyType,
 ) (*TufSigner, OfflineCreds) {
+	oldKey, err := FindOneTufSigner(root, creds, root.Signed.Roles["root"].KeyIDs)
+	subcommands.DieNotNil(err)
+	newKids := subcommands.SliceRemove(root.Signed.Roles["root"].KeyIDs, oldKey.Id)
+
 	kp := genTufKeyPair(keyType)
 	root.Signed.Keys[kp.signer.Id] = kp.atsPub
 	root.Signed.Expires = time.Now().AddDate(1, 0, 0).UTC().Round(time.Second) // 1 year validity
-	root.Signed.Roles["root"].KeyIDs = []string{kp.signer.Id}
+	root.Signed.Roles["root"].KeyIDs = append(newKids, kp.signer.Id)
 
 	base := "tufrepo/keys/fioctl-root-" + kp.signer.Id
 	creds[base+".pub"] = kp.atsPubBytes
@@ -213,9 +217,14 @@ func replaceOfflineRootKey(
 func replaceOfflineTargetsKey(
 	root *client.AtsTufRoot, onlineTargetsId string, creds OfflineCreds, keyType TufKeyType,
 ) (*TufSigner, OfflineCreds) {
+	oldKey, err := FindOneTufSigner(root, creds,
+		subcommands.SliceRemove(root.Signed.Roles["targets"].KeyIDs, onlineTargetsId))
+	subcommands.DieNotNil(err)
+	newKids := subcommands.SliceRemove(root.Signed.Roles["targets"].KeyIDs, oldKey.Id)
+
 	kp := genTufKeyPair(keyType)
 	root.Signed.Keys[kp.signer.Id] = kp.atsPub
-	root.Signed.Roles["targets"].KeyIDs = []string{onlineTargetsId, kp.signer.Id}
+	root.Signed.Roles["targets"].KeyIDs = append(newKids, kp.signer.Id)
 	root.Signed.Roles["targets"].Threshold = 1
 
 	base := "tufrepo/keys/fioctl-targets-" + kp.signer.Id
