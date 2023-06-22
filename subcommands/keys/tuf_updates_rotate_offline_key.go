@@ -198,7 +198,7 @@ func doTufUpdatesRotateOfflineTargetsKey(cmd *cobra.Command) {
 
 func replaceOfflineRootKey(
 	root *client.AtsTufRoot, creds OfflineCreds, keyType TufKeyType,
-) (*TufSigner, OfflineCreds) {
+) (TufSigner, OfflineCreds) {
 	oldKey, err := FindOneTufSigner(root, creds, root.Signed.Roles["root"].KeyIDs)
 	subcommands.DieNotNil(err)
 	newKids := subcommands.SliceRemove(root.Signed.Roles["root"].KeyIDs, oldKey.Id)
@@ -211,12 +211,12 @@ func replaceOfflineRootKey(
 	base := "tufrepo/keys/fioctl-root-" + kp.signer.Id
 	creds[base+".pub"] = kp.atsPubBytes
 	creds[base+".sec"] = kp.atsPrivBytes
-	return &kp.signer, creds
+	return kp.signer, creds
 }
 
 func replaceOfflineTargetsKey(
 	root *client.AtsTufRoot, onlineTargetsId string, creds OfflineCreds, keyType TufKeyType,
-) (*TufSigner, OfflineCreds) {
+) (TufSigner, OfflineCreds) {
 	oldKey, err := FindOneTufSigner(root, creds,
 		subcommands.SliceRemove(root.Signed.Roles["targets"].KeyIDs, onlineTargetsId))
 	subcommands.DieNotNil(err)
@@ -230,10 +230,10 @@ func replaceOfflineTargetsKey(
 	base := "tufrepo/keys/fioctl-targets-" + kp.signer.Id
 	creds[base+".pub"] = kp.atsPubBytes
 	creds[base+".sec"] = kp.atsPrivBytes
-	return &kp.signer, creds
+	return kp.signer, creds
 }
 
-func resignProdTargets(factory string, signer *TufSigner) (map[string][]tuf.Signature, error) {
+func resignProdTargets(factory string, signer TufSigner) (map[string][]tuf.Signature, error) {
 	targetsMap, err := api.ProdTargetsList(factory, false)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to fetch production targets: %w", err)
@@ -247,7 +247,7 @@ func resignProdTargets(factory string, signer *TufSigner) (map[string][]tuf.Sign
 		if err != nil {
 			return nil, fmt.Errorf("Failed to marshal targets for tag %s: %w", tag, err)
 		}
-		signatures, err := SignTufMeta(bytes, *signer)
+		signatures, err := SignTufMeta(bytes, signer)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to re-sign targets for tag %s: %w", tag, err)
 		}
