@@ -21,10 +21,11 @@ import (
 )
 
 type Config struct {
-	Factory           string
-	Token             string
-	ClientCredentials OAuthConfig
-	ExtraHeaders      map[string]string
+	Factory            string
+	Token              string
+	ClientCredentials  OAuthConfig
+	ExtraHeaders       map[string]string
+	InsecureSkipVerify bool
 }
 
 type Api struct {
@@ -514,6 +515,10 @@ func (d Device) Online(inactiveHoursThreshold int) bool {
 }
 
 func NewApiClient(serverUrl string, config Config, caCertPath string, version string) *Api {
+	tlsCfg := &tls.Config{
+		InsecureSkipVerify: config.InsecureSkipVerify,
+	}
+	http.DefaultTransport.(*http.Transport).TLSClientConfig = tlsCfg
 	if len(caCertPath) > 0 {
 		rootCAs, _ := x509.SystemCertPool()
 		if rootCAs == nil {
@@ -528,11 +533,7 @@ func NewApiClient(serverUrl string, config Config, caCertPath string, version st
 		if ok := rootCAs.AppendCertsFromPEM(certs); !ok {
 			logrus.Warning("No certs appended, using system certs only")
 		}
-
-		http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{
-			RootCAs: rootCAs,
-		}
-
+		tlsCfg.RootCAs = rootCAs
 	}
 	api := Api{
 		serverUrl: strings.TrimRight(serverUrl, "/"),

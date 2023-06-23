@@ -38,6 +38,9 @@ func Login(cmd *cobra.Command) *client.Api {
 	if len(url) == 0 {
 		url = "https://api.foundries.io"
 	}
+	if viper.GetBool("server.insecure_skip_verify") {
+		Config.InsecureSkipVerify = true
+	}
 	if len(Config.Token) > 0 {
 		if cmd.Flags().Lookup("factory") != nil && len(viper.GetString("factory")) == 0 {
 			DieNotNil(fmt.Errorf("Required flag \"factory\" not set"))
