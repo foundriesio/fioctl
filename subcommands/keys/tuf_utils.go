@@ -22,6 +22,8 @@ import (
 	"github.com/foundriesio/fioctl/subcommands"
 )
 
+var errFoundNoKey = errors.New("Found no active signing key")
+
 type OfflineCreds map[string][]byte
 
 type TufSigner struct {
@@ -216,7 +218,7 @@ func FindOneTufSigner(root *client.AtsTufRoot, creds OfflineCreds, keyids []stri
 	var signers []TufSigner
 	if signers, err = findTufSigners(root, creds, keyids); err == nil {
 		if len(signers) == 0 {
-			err = fmt.Errorf("Found no active signing key for: %v.", keyids)
+			err = fmt.Errorf("%w for: %v.", errFoundNoKey, keyids)
 		} else if len(signers) > 1 {
 			err = fmt.Errorf(`Found more than one active signing key for: %v.
 This is an unsupported and insecure way to store private keys.
@@ -361,15 +363,26 @@ func genProdTufRoot(ciRoot *client.AtsTufRoot) (prodRoot *client.AtsTufRoot) {
 }
 
 func signNewTufRoot(curCiRoot, newCiRoot, newProdRoot *client.AtsTufRoot, creds OfflineCreds) {
-	// Always sign with new root key; sign with old root key if it was rotated.
-	oldKey, err := FindOneTufSigner(curCiRoot, creds, curCiRoot.Signed.Roles["root"].KeyIDs)
-	subcommands.DieNotNil(err)
-	newKey, err := FindOneTufSigner(newCiRoot, creds, newCiRoot.Signed.Roles["root"].KeyIDs)
-	subcommands.DieNotNil(err)
-	signers := []TufSigner{newKey}
-	if oldKey.Id != newKey.Id {
-		signers = append(signers, oldKey)
+	// Find new and old keys that match; at least one of them must be found.
+	signers := make([]TufSigner, 0, 2)
+	newKey, newErr := FindOneTufSigner(newCiRoot, creds, newCiRoot.Signed.Roles["root"].KeyIDs)
+	if !errors.Is(newErr, errFoundNoKey) {
+		subcommands.DieNotNil(newErr)
+		signers = append(signers, newKey)
 	}
+	oldKey, oldErr := FindOneTufSigner(curCiRoot, creds, curCiRoot.Signed.Roles["root"].KeyIDs)
+	if !errors.Is(oldErr, errFoundNoKey) {
+		subcommands.DieNotNil(oldErr)
+		if len(signers) == 0 || oldKey.Id != newKey.Id {
+			signers = append(signers, oldKey)
+		}
+	}
+
+	// At this point either oldKey or newKey was found, or both newErr and oldErr are errFoundNoKey
+	if len(signers) == 0 {
+		subcommands.DieNotNil(fmt.Errorf("%s\n%s", oldErr, newErr))
+	}
+
 	fmt.Println("= Signing new TUF root")
 	subcommands.DieNotNil(signTufRoot(newCiRoot, signers...))
 	subcommands.DieNotNil(signTufRoot(newProdRoot, signers...))
