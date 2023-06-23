@@ -112,6 +112,9 @@ func SaveOauthConfig(c client.OAuthConfig) {
 	if len(c.DefaultOrg) > 0 {
 		cfg["factory"] = c.DefaultOrg
 	}
+	cfg["server"] = map[string]interface{}{
+		"url": viper.GetString("server.url"),
+	}
 	buf, err = yaml.Marshal(cfg)
 	DieNotNil(err, "Unable to marshall oauth config:")
 	DieNotNil(os.WriteFile(name, buf, os.FileMode(0644)), "Unable to update config: ")

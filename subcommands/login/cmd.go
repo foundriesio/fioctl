@@ -9,6 +9,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 
 	"github.com/foundriesio/fioctl/client"
 	"github.com/foundriesio/fioctl/subcommands"
@@ -45,6 +46,12 @@ func doLogin(cmd *cobra.Command, args []string) {
 	u, err := url.Parse(authURL)
 	subcommands.DieNotNil(err)
 	subcommands.Config.ClientCredentials.URL = authURL
+
+	if authURL != client.OauthURL {
+		apiUrl := "https://" + u.Host
+		logrus.Debugf("Configuring REST API based on oauth url to: %s", apiUrl)
+		viper.Set("server.url", apiUrl)
+	}
 
 	creds := client.NewClientCredentials(subcommands.Config.ClientCredentials)
 	if creds.Config.ClientId == "" || creds.Config.ClientSecret == "" {
