@@ -242,6 +242,16 @@ Please, provide a keys file which contains a single active signing key.`, keyids
 	return
 }
 
+func checkNoTufSigner(root *client.AtsTufRoot, creds OfflineCreds, keyids []string) (err error) {
+	var signers []TufSigner
+	if signers, err = findTufSigners(root, creds, keyids); err == nil {
+		if len(signers) > 0 {
+			err = errors.New("It is not allowed to store more than one active signing key into one file")
+		}
+	}
+	return
+}
+
 func findTufSigners(root *client.AtsTufRoot, creds OfflineCreds, keyids []string) ([]TufSigner, error) {
 	// Look in creds for each candidate from keyids and return all private keys that match
 	matchPubKeys := make(map[string]client.AtsKey, len(keyids))
