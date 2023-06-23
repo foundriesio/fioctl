@@ -113,7 +113,8 @@ func SaveOauthConfig(c client.OAuthConfig) {
 		cfg["factory"] = c.DefaultOrg
 	}
 	cfg["server"] = map[string]interface{}{
-		"url": viper.GetString("server.url"),
+		"insecure_skip_verify": viper.GetBool("server.insecure_skip_verify"),
+		"url":                  viper.GetString("server.url"),
 	}
 	buf, err = yaml.Marshal(cfg)
 	DieNotNil(err, "Unable to marshall oauth config:")

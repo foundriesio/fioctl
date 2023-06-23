@@ -1,6 +1,7 @@
 package client
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -28,7 +29,8 @@ type OAuthConfig struct {
 }
 
 type ClientCredentials struct {
-	Config OAuthConfig
+	Config      OAuthConfig
+	InsecureSSL bool
 }
 
 type Org struct {
@@ -71,7 +73,14 @@ func (c *ClientCredentials) updateConfig(r OAuthResponse) {
 
 // Perform a POST request.
 func (c *ClientCredentials) post(uri string, data url.Values) (*[]byte, error) {
-	res, err := http.PostForm(uri, data)
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: c.InsecureSSL,
+			},
+		},
+	}
+	res, err := client.PostForm(uri, data)
 	if err != nil {
 		return nil, err
 	}
@@ -176,5 +185,5 @@ func NewClientCredentials(c OAuthConfig) ClientCredentials {
 	if len(c.URL) == 0 {
 		c.URL = OauthURL
 	}
-	return ClientCredentials{c}
+	return ClientCredentials{c, false}
 }
