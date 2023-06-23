@@ -3,6 +3,7 @@ package login
 import (
 	"bufio"
 	"fmt"
+	"net/url"
 	"os"
 	"strings"
 
@@ -13,7 +14,10 @@ import (
 	"github.com/foundriesio/fioctl/subcommands"
 )
 
-var refreshToken bool
+var (
+	refreshToken bool
+	authURL      string
+)
 
 func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
@@ -22,6 +26,7 @@ func NewCommand() *cobra.Command {
 		Run:   doLogin,
 	}
 	cmd.Flags().BoolVarP(&refreshToken, "refresh-access-token", "", false, "Refresh your current oauth2 access token. This is used when a token's scopes have been updated in app.foundries.io")
+	cmd.Flags().StringVarP(&authURL, "oauth-url", "", client.OauthURL, "OAuth URL to authenticate with")
 	return cmd
 }
 
@@ -37,9 +42,14 @@ func doLogin(cmd *cobra.Command, args []string) {
 		return
 	}
 
+	u, err := url.Parse(authURL)
+	subcommands.DieNotNil(err)
+	subcommands.Config.ClientCredentials.URL = authURL
+
 	creds := client.NewClientCredentials(subcommands.Config.ClientCredentials)
 	if creds.Config.ClientId == "" || creds.Config.ClientSecret == "" {
-		creds.Config.ClientId, creds.Config.ClientSecret = promptForCreds()
+		credsUrl := fmt.Sprintf("https://%s/settings/credentials/", u.Host)
+		creds.Config.ClientId, creds.Config.ClientSecret = promptForCreds(credsUrl)
 	}
 
 	if creds.Config.ClientId == "" || creds.Config.ClientSecret == "" {
@@ -63,13 +73,13 @@ func doLogin(cmd *cobra.Command, args []string) {
 	fmt.Println("You are now logged in to Foundries.io services.")
 }
 
-func promptForCreds() (string, string) {
+func promptForCreds(credsUrl string) (string, string) {
 	logrus.Debug("Reading client ID/secret from stdin")
 
 	scanner := bufio.NewScanner(os.Stdin)
 
 	fmt.Print("Please visit:\n\n")
-	fmt.Print("  https://app.foundries.io/settings/credentials/\n\n")
+	fmt.Printf("  %s\n\n", credsUrl)
 	fmt.Print("and create a new \"Application Credential\" to provide inputs below.\n\n")
 	fmt.Print("Client ID: ")
 	scanner.Scan()
