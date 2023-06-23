@@ -34,7 +34,7 @@ func Login(cmd *cobra.Command) *client.Api {
 	ca := os.Getenv("CACERT")
 	DieNotNil(viper.BindPFlags(cmd.Flags()))
 	Config.Token = viper.GetString("token")
-	url := os.Getenv("API_URL")
+	url := viper.GetString("server.url")
 	if len(url) == 0 {
 		url = "https://api.foundries.io"
 	}
