@@ -55,6 +55,9 @@ func Login(cmd *cobra.Command) *client.Api {
 		DieNotNil(fmt.Errorf("Required flag \"factory\" not set"))
 	}
 	creds := client.NewClientCredentials(Config.ClientCredentials)
+	if viper.GetBool("server.insecure_skip_verify") {
+		creds.InsecureSSL = true
+	}
 
 	expired, err := creds.IsExpired()
 	DieNotNil(err)
@@ -84,6 +87,7 @@ func SaveOauthConfig(c client.OAuthConfig) {
 	viper.Set("clientcredentials.token_type", c.TokenType)
 	viper.Set("clientcredentials.expires_in", c.ExpiresIn)
 	viper.Set("clientcredentials.created", c.Created)
+	viper.Set("clientcredentials.url", c.URL)
 
 	// viper.WriteConfig isn't so great for this. It doesn't just write
 	// these values but any other flags that were present when this runs.

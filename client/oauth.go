@@ -13,7 +13,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const URI string = "https://app.foundries.io/oauth"
+const OauthURL string = "https://app.foundries.io/oauth"
 
 type OAuthConfig struct {
 	ClientId     string  `mapstructure:"client_id"`
@@ -24,11 +24,11 @@ type OAuthConfig struct {
 	ExpiresIn    float64 `mapstructure:"expires_in"`
 	Created      string
 	DefaultOrg   string
+	URL          string
 }
 
 type ClientCredentials struct {
 	Config OAuthConfig
-	URL    string
 }
 
 type Org struct {
@@ -113,7 +113,7 @@ func (c *ClientCredentials) HasRefreshToken() bool {
 func (c *ClientCredentials) Refresh() error {
 	logrus.Debug("Refreshing client_credentials oauth token")
 
-	u, err := buildUrl(c.URL, "token")
+	u, err := buildUrl(c.Config.URL, "token")
 	if err != nil {
 		return err
 	}
@@ -145,7 +145,7 @@ func (c *ClientCredentials) Refresh() error {
 func (c *ClientCredentials) Get() error {
 	logrus.Debug("Getting oauth token via client_credentials grant")
 
-	u, err := buildUrl(c.URL, "token")
+	u, err := buildUrl(c.Config.URL, "token")
 	if err != nil {
 		return err
 	}
@@ -173,5 +173,8 @@ func (c *ClientCredentials) Get() error {
 }
 
 func NewClientCredentials(c OAuthConfig) ClientCredentials {
-	return ClientCredentials{c, URI}
+	if len(c.URL) == 0 {
+		c.URL = OauthURL
+	}
+	return ClientCredentials{c}
 }
