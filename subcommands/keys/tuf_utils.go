@@ -139,6 +139,18 @@ func signTufRoot(root *client.AtsTufRoot, signers ...TufSigner) error {
 	if err != nil {
 		return err
 	}
+	for _, oldSig := range root.Signatures {
+		found := false
+		for _, newSig := range signatures {
+			if oldSig.KeyID == newSig.KeyID {
+				found = true
+				break
+			}
+		}
+		if !found {
+			signatures = append(signatures, oldSig)
+		}
+	}
 	root.Signatures = signatures
 	return nil
 }
