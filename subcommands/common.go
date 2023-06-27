@@ -34,9 +34,12 @@ func Login(cmd *cobra.Command) *client.Api {
 	ca := os.Getenv("CACERT")
 	DieNotNil(viper.BindPFlags(cmd.Flags()))
 	Config.Token = viper.GetString("token")
-	url := os.Getenv("API_URL")
+	url := viper.GetString("server.url")
 	if len(url) == 0 {
 		url = "https://api.foundries.io"
+	}
+	if viper.GetBool("server.insecure_skip_verify") {
+		Config.InsecureSkipVerify = true
 	}
 	if len(Config.Token) > 0 {
 		if cmd.Flags().Lookup("factory") != nil && len(viper.GetString("factory")) == 0 {
@@ -52,6 +55,9 @@ func Login(cmd *cobra.Command) *client.Api {
 		DieNotNil(fmt.Errorf("Required flag \"factory\" not set"))
 	}
 	creds := client.NewClientCredentials(Config.ClientCredentials)
+	if viper.GetBool("server.insecure_skip_verify") {
+		creds.InsecureSSL = true
+	}
 
 	expired, err := creds.IsExpired()
 	DieNotNil(err)
@@ -81,6 +87,7 @@ func SaveOauthConfig(c client.OAuthConfig) {
 	viper.Set("clientcredentials.token_type", c.TokenType)
 	viper.Set("clientcredentials.expires_in", c.ExpiresIn)
 	viper.Set("clientcredentials.created", c.Created)
+	viper.Set("clientcredentials.url", c.URL)
 
 	// viper.WriteConfig isn't so great for this. It doesn't just write
 	// these values but any other flags that were present when this runs.
@@ -104,6 +111,10 @@ func SaveOauthConfig(c client.OAuthConfig) {
 	cfg["clientcredentials"] = val
 	if len(c.DefaultOrg) > 0 {
 		cfg["factory"] = c.DefaultOrg
+	}
+	cfg["server"] = map[string]interface{}{
+		"insecure_skip_verify": viper.GetBool("server.insecure_skip_verify"),
+		"url":                  viper.GetString("server.url"),
 	}
 	buf, err = yaml.Marshal(cfg)
 	DieNotNil(err, "Unable to marshall oauth config:")

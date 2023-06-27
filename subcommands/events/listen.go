@@ -27,27 +27,31 @@ reference implementation of queue listener.`,
 	})
 }
 
-func subscriptionName(credsFile string) string {
+func subscriptionName(credsFile string) (string, string) {
 	buf, err := os.ReadFile(credsFile)
 	subcommands.DieNotNil(err)
 	var config map[string]string
 	err = json.Unmarshal(buf, &config)
 	subcommands.DieNotNil(err)
-	val, ok := config["fio-subscription-name"]
+	name, ok := config["fio-subscription-name"]
 	if !ok {
 		subcommands.DieNotNil(errors.New("Could not find \"fio-subscription-name\" attribute in credentials file"))
 	}
-	return val
+	proj, ok := config["project_id"]
+	if !ok {
+		subcommands.DieNotNil(errors.New("Could not find \"project_id\" attribute in credentials file"))
+	}
+	return proj, name
 }
 
 func doListen(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 	logrus.Debugf("Listening to events for: %s", factory)
 
-	name := subscriptionName(args[1])
+	proj, name := subscriptionName(args[1])
 
 	ctx, cancel := context.WithCancel(cmd.Context())
-	client, err := pubsub.NewClient(ctx, "osf-prod", option.WithCredentialsFile(args[1]))
+	client, err := pubsub.NewClient(ctx, proj, option.WithCredentialsFile(args[1]))
 	subcommands.DieNotNil(err)
 
 	c := make(chan os.Signal, 1)
