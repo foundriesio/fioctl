@@ -10,7 +10,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	canonical "github.com/docker/go/canonical/json"
 	tuf "github.com/theupdateframework/notary/tuf/data"
 
 	"github.com/foundriesio/fioctl/client"
@@ -183,7 +182,7 @@ func doTufUpdatesRotateOfflineTargetsKey(cmd *cobra.Command) {
 	newProdRoot := genProdTufRoot(newCiRoot)
 
 	fmt.Println("= Re-signing prod targets")
-	newTargetsSigs, err := resignProdTargets(factory, newKey)
+	newTargetsSigs, err := signProdTargets(factory, newKey)
 	subcommands.DieNotNil(err)
 
 	if shouldSign {
@@ -231,29 +230,6 @@ func replaceOfflineTargetsKey(
 	creds[base+".pub"] = kp.atsPubBytes
 	creds[base+".sec"] = kp.atsPrivBytes
 	return kp.signer, creds
-}
-
-func resignProdTargets(factory string, signer TufSigner) (map[string][]tuf.Signature, error) {
-	targetsMap, err := api.ProdTargetsList(factory, false)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to fetch production targets: %w", err)
-	} else if targetsMap == nil {
-		return nil, nil
-	}
-
-	signatureMap := make(map[string][]tuf.Signature)
-	for tag, targets := range targetsMap {
-		bytes, err := canonical.MarshalCanonical(targets.Signed)
-		if err != nil {
-			return nil, fmt.Errorf("Failed to marshal targets for tag %s: %w", tag, err)
-		}
-		signatures, err := SignTufMeta(bytes, signer)
-		if err != nil {
-			return nil, fmt.Errorf("Failed to re-sign targets for tag %s: %w", tag, err)
-		}
-		signatureMap[tag] = signatures
-	}
-	return signatureMap, nil
 }
 
 func handleTufRootUpdatesUpload(tmpKeysFile, keysFile string, err error) {
