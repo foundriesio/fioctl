@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"golang.org/x/exp/slices"
 
 	"github.com/foundriesio/fioctl/client"
 	"github.com/foundriesio/fioctl/subcommands"
@@ -31,6 +33,7 @@ There are 3 use cases when this command comes handy:
 	signCmd.Flags().StringP("keys", "k", "", "Path to <tuf-targets-keys.tgz> used to sign TUF targets.")
 	_ = signCmd.MarkFlagFilename("keys")
 	_ = signCmd.MarkFlagRequired("keys")
+	signCmd.Flags().StringP("tags", "", "", "A comma-separated list of tags to sign; default: all tags.")
 	tufUpdatesCmd.AddCommand(signCmd)
 }
 
@@ -38,6 +41,8 @@ func doTufUpdatesSignProdTargets(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 	txid, _ := cmd.Flags().GetString("txid")
 	keysFile, _ := cmd.Flags().GetString("keys")
+	tagsStr, _ := cmd.Flags().GetString("tags")
+	tags := strings.Split(tagsStr, ",")
 
 	creds, err := GetOfflineCreds(keysFile)
 	subcommands.DieNotNil(err)
@@ -66,7 +71,11 @@ For example, add a new offline TUF targets key, before signing production target
 	subcommands.DieNotNil(err)
 
 	fmt.Println("= Signing prod targets")
-	newTargetsSigs, err := signProdTargets(factory, signer, nil)
+	newTargetsSigs, err := signProdTargets(factory, signer,
+		func(tag string, targets client.AtsTufTargets) bool {
+			return !slices.Contains(tags, tag)
+		},
+	)
 	subcommands.DieNotNil(err)
 
 	fmt.Println("= Uploading new signatures")
