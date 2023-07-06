@@ -66,7 +66,7 @@ For example, add a new offline TUF targets key, before signing production target
 	subcommands.DieNotNil(err)
 
 	fmt.Println("= Signing prod targets")
-	newTargetsSigs, err := signProdTargets(factory, signer)
+	newTargetsSigs, err := signProdTargets(factory, signer, nil)
 	subcommands.DieNotNil(err)
 
 	fmt.Println("= Uploading new signatures")

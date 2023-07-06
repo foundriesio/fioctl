@@ -25,8 +25,9 @@ func init() {
 The new offline signing key will be used in both CI and production TUF root.
 
 When you rotate the TUF targets offline signing key:
-- if there are production targets in your factory, they are re-signed using the new key.
-- if there is an active wave in your factory, the TUF targets rotation is not allowed.`,
+- If there are production targets in your factory, they are re-signed using the new key.
+  This only applies to those production targets that were signed by a key you rotate.
+- If there is an active wave in your factory, the TUF targets rotation is not allowed.`,
 		Example: `
 - Rotate offline TUF root key and re-sign the new TUF root with both old and new keys:
   fioctl keys tuf updates rotate-offline-key \
@@ -182,7 +183,20 @@ func doTufUpdatesRotateOfflineTargetsKey(cmd *cobra.Command) {
 	newProdRoot := genProdTufRoot(newCiRoot)
 
 	fmt.Println("= Re-signing prod targets")
-	newTargetsSigs, err := signProdTargets(factory, newKey)
+	// Seaching for old key in curCiRoot supports several rotations in one transaction.
+	oldestKey, err := FindOneTufSigner(curCiRoot, targetsCreds,
+		subcommands.SliceRemove(curCiRoot.Signed.Roles["targets"].KeyIDs, onlineTargetsId))
+	subcommands.DieNotNil(err)
+	newTargetsSigs, err := signProdTargets(factory, newKey,
+		func(tag string, targets client.AtsTufTargets) bool {
+			for _, sig := range targets.Signatures {
+				if sig.KeyID == oldestKey.Id {
+					return false
+				}
+			}
+			return true
+		},
+	)
 	subcommands.DieNotNil(err)
 
 	if shouldSign {
