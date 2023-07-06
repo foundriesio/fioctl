@@ -116,6 +116,10 @@ func getConfigDir() string {
 }
 
 func initConfig() {
+	cfgFileFromEnv := os.Getenv("FIOCTL_CONFIG")
+	if len(cfgFileFromEnv) > 0 {
+		cfgFile = cfgFileFromEnv
+	}
 	if cfgFile != "" {
 		// Use config file from the flag.
 		viper.SetConfigFile(cfgFile)
