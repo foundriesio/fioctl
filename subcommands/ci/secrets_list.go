@@ -1,4 +1,4 @@
-package secrets
+package ci
 
 import (
 	"fmt"
@@ -13,7 +13,7 @@ import (
 )
 
 func init() {
-	cmd.AddCommand(&cobra.Command{
+	secretsCmd.AddCommand(&cobra.Command{
 		Use:   "list",
 		Short: "List secret credentials configured in the factory",
 		Run:   doList,

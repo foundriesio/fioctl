@@ -1,4 +1,4 @@
-package secrets
+package ci
 
 import (
 	"fmt"
@@ -14,18 +14,18 @@ import (
 )
 
 func init() {
-	cmd.AddCommand(&cobra.Command{
+	secretsCmd.AddCommand(&cobra.Command{
 		Use:   "update secret_name=secret_val...",
 		Short: "Update secret(s) in a factory",
 		Example: `
   # Create or update a secret
-  fioctl secrets update githubtok=foo
+  fioctl ci secrets update githubtok=foo
 
   # Create or update a secret with value from a file
-  fioctl secrets update ssh-github.key==/tmp/ssh-github.key
+  fioctl ci secrets update ssh-github.key==/tmp/ssh-github.key
 
   # Delete a secret by setting it to an empty value. eg:
-  fioctl secrets update secret_name=`,
+  fioctl ci secrets update secret_name=`,
 		Run:  doUpdate,
 		Args: cobra.MinimumNArgs(1),
 	})

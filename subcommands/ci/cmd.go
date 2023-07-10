@@ -16,5 +16,19 @@ func NewCommand() *cobra.Command {
 			api = subcommands.Login(cmd)
 		},
 	}
+	cmd.AddCommand(secretsCmd)
 	return cmd
+}
+
+var secretsCmd = &cobra.Command{
+	Use:   "secrets",
+	Short: "Manage secret crendentials configured in a factory",
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		api = subcommands.Login(cmd)
+	},
+}
+
+func NewSecretsCommand() *cobra.Command {
+	subcommands.RequireFactory(secretsCmd)
+	return secretsCmd
 }
