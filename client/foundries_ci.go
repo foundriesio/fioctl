@@ -45,3 +45,33 @@ func (a *Api) CiWorkersList() ([]Worker, error) {
 	}
 	return workers, nil
 }
+
+type CiRun struct {
+	Created string `json:"created"`
+	HostTag string `json:"host_tag"`
+	Project string `json:"project"`
+	Build   int    `json:"build"`
+	Run     string `json:"run"`
+}
+
+type CiRunHealth struct {
+	Queued  []CiRun            `json:"QUEUED"`
+	Running map[string][]CiRun `json:"RUNNING"`
+}
+
+func (a *Api) CiRunHealth() (*CiRunHealth, error) {
+	url := a.serverUrl + "/health/runs/"
+	logrus.Debugf("Getting run health %s", url)
+	body, err := a.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	type response struct {
+		Data struct {
+			Health *CiRunHealth `json:"health"`
+		} `json:"data"`
+	}
+
+	var resp response
+	return resp.Data.Health, json.Unmarshal(*body, &resp)
+}
