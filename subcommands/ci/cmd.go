@@ -8,14 +8,15 @@ import (
 
 var api *client.Api
 
+var cmd = &cobra.Command{
+	Use:   "ci",
+	Short: "Commands that interact with the FoundriesFactory CI server",
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		api = subcommands.Login(cmd)
+	},
+}
+
 func NewCommand() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "ci",
-		Short: "Commands that interact with the FoundriesFactory CI server",
-		PersistentPreRun: func(cmd *cobra.Command, args []string) {
-			api = subcommands.Login(cmd)
-		},
-	}
 	cmd.AddCommand(secretsCmd)
 	return cmd
 }
