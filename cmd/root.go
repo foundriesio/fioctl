@@ -14,6 +14,7 @@ import (
 
 	"github.com/foundriesio/fioctl/client"
 	"github.com/foundriesio/fioctl/subcommands"
+	"github.com/foundriesio/fioctl/subcommands/ci"
 	cfgcmd "github.com/foundriesio/fioctl/subcommands/config"
 	"github.com/foundriesio/fioctl/subcommands/devices"
 	"github.com/foundriesio/fioctl/subcommands/docker"
@@ -77,6 +78,7 @@ func init() {
 	rootCmd.AddCommand(completionCmd)
 
 	rootCmd.AddCommand(cfgcmd.NewCommand())
+	rootCmd.AddCommand(ci.NewCommand())
 	rootCmd.AddCommand(devices.NewCommand())
 	rootCmd.AddCommand(docker.NewCommand())
 	rootCmd.AddCommand(git.NewCommand())
