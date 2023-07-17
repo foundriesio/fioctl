@@ -42,7 +42,10 @@ func doTufUpdatesSignProdTargets(cmd *cobra.Command, args []string) {
 	txid, _ := cmd.Flags().GetString("txid")
 	keysFile, _ := cmd.Flags().GetString("keys")
 	tagsStr, _ := cmd.Flags().GetString("tags")
-	tags := strings.Split(tagsStr, ",")
+	var tags []string
+	if tagsStr != "" {
+		tags = strings.Split(tagsStr, ",")
+	}
 
 	creds, err := GetOfflineCreds(keysFile)
 	subcommands.DieNotNil(err)
@@ -73,7 +76,7 @@ For example, add a new offline TUF targets key, before signing production target
 	fmt.Println("= Signing prod targets")
 	newTargetsSigs, err := signProdTargets(factory, signer,
 		func(tag string, targets client.AtsTufTargets) bool {
-			return !slices.Contains(tags, tag)
+			return tags != nil && !slices.Contains(tags, tag)
 		},
 	)
 	subcommands.DieNotNil(err)
