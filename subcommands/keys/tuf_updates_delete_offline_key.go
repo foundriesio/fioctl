@@ -72,7 +72,7 @@ func doTufUpdatesDeleteOfflineKey(cmd *cobra.Command, args []string) {
 
 	updates, err := api.TufRootUpdatesGet(factory)
 	subcommands.DieNotNil(err)
-	_, newCiRoot := checkTufRootUpdatesStatus(updates, true)
+	_, newCiRoot, newProdRoot := checkTufRootUpdatesStatus(updates, true)
 
 	var (
 		roleToUpdate *tuf.RootRole
@@ -99,6 +99,7 @@ func doTufUpdatesDeleteOfflineKey(cmd *cobra.Command, args []string) {
 		panic(fmt.Errorf("Unexpected role name: %s", roleName))
 	}
 
+	fmt.Println("= Delete keyid:", keyId)
 	if keyId == "" {
 		oldKey, err := FindOneTufSigner(newCiRoot, creds, validKeyIds)
 		subcommands.DieNotNil(err)
@@ -109,11 +110,7 @@ func doTufUpdatesDeleteOfflineKey(cmd *cobra.Command, args []string) {
 		))
 	}
 	roleToUpdate.KeyIDs = subcommands.SliceRemove(roleToUpdate.KeyIDs, keyId)
-
-	fmt.Println("= Delete keyid:", keyId)
-	newCiRoot.Signatures = make([]tuf.Signature, 0)
-	removeUnusedTufKeys(newCiRoot)
-	newProdRoot := genProdTufRoot(newCiRoot)
+	newCiRoot, newProdRoot = finalizeTufRootChanges(newCiRoot, newProdRoot)
 
 	fmt.Println("= Uploading new TUF root")
 	subcommands.DieNotNil(api.TufRootUpdatesPut(factory, txid, newCiRoot, newProdRoot, nil))

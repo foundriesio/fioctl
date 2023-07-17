@@ -47,10 +47,11 @@ func doResignRoot(cmd *cobra.Command, args []string) {
 	updates, err := api.TufRootUpdatesGet(factory)
 	subcommands.DieNotNil(err)
 
-	curCiRoot, newCiRoot := checkTufRootUpdatesStatus(updates, true)
+	curCiRoot, newCiRoot, newProdRoot := checkTufRootUpdatesStatus(updates, true)
 	newCiRoot.Signed.Expires = time.Now().AddDate(1, 0, 0).UTC().Round(time.Second) // 1 year validity
-	newProdRoot := genProdTufRoot(newCiRoot)
+	newCiRoot, newProdRoot = finalizeTufRootChanges(newCiRoot, newProdRoot)
 	signNewTufRoot(curCiRoot, newCiRoot, newProdRoot, creds)
+
 	fmt.Println("= Uploading new TUF root")
 	subcommands.DieNotNil(api.TufRootUpdatesPut(factory, "", newCiRoot, newProdRoot, nil))
 

@@ -336,7 +336,7 @@ func removeUnusedTufKeys(root *client.AtsTufRoot) {
 }
 
 func checkTufRootUpdatesStatus(updates client.TufRootUpdates, forUpdate bool) (
-	curCiRoot, newCiRoot *client.AtsTufRoot,
+	curCiRoot, newCiRoot, newProdRoot *client.AtsTufRoot,
 ) {
 	switch updates.Status {
 	case client.TufRootUpdatesStatusNone:
@@ -364,10 +364,17 @@ Please, run 'fioctl keys tuf updates init' to start over.`))
 	if curCiRoot == nil {
 		subcommands.DieNotNil(errors.New("Current TUF CI root not set. Please, report a bug."))
 	}
-	if updates.Updated != nil && updates.Updated.CiRoot != "" {
-		subcommands.DieNotNil(
-			json.Unmarshal([]byte(updates.Updated.CiRoot), &newCiRoot), "Updated CI root",
-		)
+	if updates.Updated != nil {
+		if updates.Updated.CiRoot != "" {
+			subcommands.DieNotNil(
+				json.Unmarshal([]byte(updates.Updated.CiRoot), &newCiRoot), "Updated CI root",
+			)
+		}
+		if updates.Updated.ProdRoot != "" {
+			subcommands.DieNotNil(
+				json.Unmarshal([]byte(updates.Updated.ProdRoot), &newProdRoot), "Updated prod root",
+			)
+		}
 	}
 	if newCiRoot == nil && updates.Status != client.TufRootUpdatesStatusNone {
 		subcommands.DieNotNil(errors.New("Updated TUF CI root not set. Please, report a bug."))
@@ -381,6 +388,18 @@ func genProdTufRoot(ciRoot *client.AtsTufRoot) (prodRoot *client.AtsTufRoot) {
 	subcommands.DieNotNil(err)
 	subcommands.DieNotNil(json.Unmarshal(body, &prodRoot))
 	prodRoot.Signed.Roles["targets"].Threshold = 2
+	return
+}
+
+func finalizeTufRootChanges(ciRoot, prodRoot *client.AtsTufRoot) (newCiRoot, newProdRoot *client.AtsTufRoot) {
+	// This function must be called after any changes to the TUF root signed body
+	newCiRoot = ciRoot
+	newCiRoot.Signatures = make([]tuf.Signature, 0)
+	removeUnusedTufKeys(newCiRoot)
+	newProdRoot = genProdTufRoot(newCiRoot)
+	if prodRoot != nil {
+		newProdRoot.Signed.Roles["targets"].Threshold = prodRoot.Signed.Roles["targets"].Threshold
+	}
 	return
 }
 
