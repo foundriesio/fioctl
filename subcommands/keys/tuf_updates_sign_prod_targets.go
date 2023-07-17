@@ -1,7 +1,6 @@
 package keys
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -53,13 +52,7 @@ func doTufUpdatesSignProdTargets(cmd *cobra.Command, args []string) {
 	updates, err := api.TufRootUpdatesGet(factory)
 	subcommands.DieNotNil(err)
 
-	var newCiRoot, newProdRoot *client.AtsTufRoot
-	_, newCiRoot = checkTufRootUpdatesStatus(updates, true)
-	if updates.Updated.ProdRoot != "" {
-		subcommands.DieNotNil(
-			json.Unmarshal([]byte(updates.Updated.ProdRoot), &newProdRoot), "Updated prod root",
-		)
-	}
+	_, newCiRoot, newProdRoot := checkTufRootUpdatesStatus(updates, true)
 	if newProdRoot == nil {
 		subcommands.DieNotNil(errors.New(`Please, make changes to your Factory TUF root.
 For example, add a new offline TUF targets key, before signing production targets with it.`))

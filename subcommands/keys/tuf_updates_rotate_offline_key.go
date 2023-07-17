@@ -10,8 +10,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	tuf "github.com/theupdateframework/notary/tuf/data"
-
 	"github.com/foundriesio/fioctl/client"
 	"github.com/foundriesio/fioctl/subcommands"
 )
@@ -96,16 +94,14 @@ func doTufUpdatesRotateOfflineRootKey(cmd *cobra.Command) {
 	updates, err = api.TufRootUpdatesGet(factory)
 	subcommands.DieNotNil(err)
 
-	curCiRoot, newCiRoot := checkTufRootUpdatesStatus(updates, true)
+	curCiRoot, newCiRoot, newProdRoot := checkTufRootUpdatesStatus(updates, true)
 
 	// A rotation is pretty easy:
 	// 1. change the who's listed as the root key
 	// 2. sign the new root.json with both the old and new root
 	newKey, newCreds := replaceOfflineRootKey(newCiRoot, creds, keyType)
 	fmt.Println("= New root keyid:", newKey.Id)
-	newCiRoot.Signatures = make([]tuf.Signature, 0)
-	removeUnusedTufKeys(newCiRoot)
-	newProdRoot := genProdTufRoot(newCiRoot)
+	newCiRoot, newProdRoot = finalizeTufRootChanges(newCiRoot, newProdRoot)
 
 	if shouldSign {
 		signNewTufRoot(curCiRoot, newCiRoot, newProdRoot, newCreds)
@@ -163,7 +159,7 @@ func doTufUpdatesRotateOfflineTargetsKey(cmd *cobra.Command) {
 	updates, err := api.TufRootUpdatesGet(factory)
 	subcommands.DieNotNil(err)
 
-	curCiRoot, newCiRoot := checkTufRootUpdatesStatus(updates, true)
+	curCiRoot, newCiRoot, newProdRoot := checkTufRootUpdatesStatus(updates, true)
 
 	// Target "rotation" works like this:
 	// 1. Find the "online target key" - this the key used by CI, so we don't
@@ -178,9 +174,7 @@ func doTufUpdatesRotateOfflineTargetsKey(cmd *cobra.Command) {
 	subcommands.DieNotNil(err)
 	newKey, newCreds := replaceOfflineTargetsKey(newCiRoot, onlineTargetsId, targetsCreds, keyType)
 	fmt.Println("= New target keyid:", newKey.Id)
-	newCiRoot.Signatures = make([]tuf.Signature, 0)
-	removeUnusedTufKeys(newCiRoot)
-	newProdRoot := genProdTufRoot(newCiRoot)
+	newCiRoot, newProdRoot = finalizeTufRootChanges(newCiRoot, newProdRoot)
 
 	fmt.Println("= Re-signing prod targets")
 	// Seaching for old key in curCiRoot supports several rotations in one transaction.

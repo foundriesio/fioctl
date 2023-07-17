@@ -9,8 +9,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	tuf "github.com/theupdateframework/notary/tuf/data"
-
 	"github.com/foundriesio/fioctl/client"
 	"github.com/foundriesio/fioctl/subcommands"
 )
@@ -69,7 +67,7 @@ func doTufUpdatesAddOfflineKey(cmd *cobra.Command, args []string) {
 	updates, err := api.TufRootUpdatesGet(factory)
 	subcommands.DieNotNil(err)
 
-	_, newCiRoot := checkTufRootUpdatesStatus(updates, true)
+	_, newCiRoot, newProdRoot := checkTufRootUpdatesStatus(updates, true)
 
 	switch roleName {
 	case tufRoleNameRoot:
@@ -83,10 +81,7 @@ func doTufUpdatesAddOfflineKey(cmd *cobra.Command, args []string) {
 	default:
 		panic(fmt.Errorf("Unexpected role name: %s", roleName))
 	}
-
-	newCiRoot.Signatures = make([]tuf.Signature, 0)
-	removeUnusedTufKeys(newCiRoot)
-	newProdRoot := genProdTufRoot(newCiRoot)
+	newCiRoot, newProdRoot = finalizeTufRootChanges(newCiRoot, newProdRoot)
 
 	fmt.Println("= Uploading new TUF root")
 	tmpFile := saveTempTufCreds(keysFile, creds)

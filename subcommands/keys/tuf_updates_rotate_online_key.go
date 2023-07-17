@@ -62,7 +62,7 @@ func doTufUpdatesRotateOnlineKey(cmd *cobra.Command, args []string) {
 	// Preliminary check to give a more verbose error message before requesting to generate new keys
 	updates, err := api.TufRootUpdatesGet(factory)
 	subcommands.DieNotNil(err)
-	_, _ = checkTufRootUpdatesStatus(updates, true)
+	_, _, _ = checkTufRootUpdatesStatus(updates, true)
 
 	fmt.Println("= Generating new online TUF keys")
 	subcommands.DieNotNil(api.TufRootUpdatesGenerateOnlineKeys(
@@ -82,8 +82,8 @@ func doTufUpdatesRotateOnlineKey(cmd *cobra.Command, args []string) {
 		creds, err := GetOfflineCreds(keysFile)
 		subcommands.DieNotNil(err)
 
-		curCiRoot, newCiRoot := checkTufRootUpdatesStatus(updates, true)
-		newProdRoot := genProdTufRoot(newCiRoot)
+		curCiRoot, newCiRoot, newProdRoot := checkTufRootUpdatesStatus(updates, true)
+		newCiRoot, newProdRoot = finalizeTufRootChanges(newCiRoot, newProdRoot)
 		signNewTufRoot(curCiRoot, newCiRoot, newProdRoot, creds)
 
 		fmt.Println("= Uploading new TUF root")

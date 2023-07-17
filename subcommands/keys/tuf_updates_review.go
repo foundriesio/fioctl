@@ -42,18 +42,13 @@ func doTufUpdatesReview(cmd *cobra.Command, args []string) {
 	updates, err := api.TufRootUpdatesGet(factory)
 	subcommands.DieNotNil(err)
 
-	oldCiRoot, newCiRoot := checkTufRootUpdatesStatus(updates, false)
+	oldCiRoot, newCiRoot, newProdRoot := checkTufRootUpdatesStatus(updates, false)
 
 	if showRaw || showDiff {
 		if updates.Status == client.TufRootUpdatesStatusNone {
 			subcommands.DieNotNil(errors.New("There are no TUF root updates in progress."))
 		}
-		var newProdRoot, rootToShow *client.AtsTufRoot
-		if updates.Updated.ProdRoot != "" {
-			subcommands.DieNotNil(
-				json.Unmarshal([]byte(updates.Updated.ProdRoot), &newProdRoot), "Updated prod root",
-			)
-		}
+		var rootToShow *client.AtsTufRoot
 		if newProdRoot == nil {
 			// No effective changes yet, but we know how the prod root would look like
 			newProdRoot = genProdTufRoot(newCiRoot)
