@@ -10,7 +10,7 @@ import (
 )
 
 // ota-tuf serializes root.json differently from Notary. The key representation
-// and signing algoritms differ slightly. These Ats* structs provide an
+// and signing algorithms differ slightly. These Ats* structs provide an
 // an implementation compatible with ota-tuf and libaktualizr.
 type AtsKeyVal struct {
 	Public  string `json:"public,omitempty"`
