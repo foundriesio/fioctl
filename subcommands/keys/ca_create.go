@@ -3,13 +3,13 @@ package keys
 import (
 	"fmt"
 	"os"
-	"os/exec"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
 	"github.com/foundriesio/fioctl/subcommands"
+	"github.com/foundriesio/fioctl/x509"
 )
 
 var (
@@ -70,12 +70,10 @@ func writeFile(filename, contents string, mode os.FileMode) {
 	}
 }
 
-func run(name string, arg ...string) string {
-	cmd := exec.Command(name, arg...)
-	cmd.Stderr = os.Stderr
-	out, err := cmd.Output()
+func getDeviceCaCommonName(factory string) string {
+	user, err := api.UserAccessDetails(factory, "self")
 	subcommands.DieNotNil(err)
-	return string(out)
+	return "fio-" + user.PolisId
 }
 
 func doCreateCA(cmd *cobra.Command, args []string) {
@@ -97,42 +95,34 @@ func doCreateCA(cmd *cobra.Command, args []string) {
 	resp, err := api.FactoryCreateCA(factory)
 	subcommands.DieNotNil(err)
 
-	writeFile("ca-csr", resp.CaCsr, 0400)
-	writeFile("tls-csr", resp.TlsCsr, 0400)
-	writeFile("create_ca", *resp.CreateCaScript, 0700)
-	writeFile("create_device_ca", *resp.CreateDeviceCaScript, 0700)
-	writeFile("sign_ca_csr", *resp.SignCaScript, 0700)
-	writeFile("sign_tls_csr", *resp.SignTlsScript, 0700)
+	writeFile(x509.OnlineCaCsrFile, resp.CaCsr, 0400)
+	writeFile(x509.TlsCsrFile, resp.TlsCsr, 0400)
+	writeFile(x509.CreateCaScript, *resp.CreateCaScript, 0700)
+	writeFile(x509.CreateDeviceCaScript, *resp.CreateDeviceCaScript, 0700)
+	writeFile(x509.SignCaScript, *resp.SignCaScript, 0700)
+	writeFile(x509.SignTlsScript, *resp.SignTlsScript, 0700)
 
 	fmt.Println("Creating offline root CA for Factory")
-	run("./create_ca")
+	resp.RootCrt = x509.CreateFactoryCa(factory)
 
 	fmt.Println("Signing Foundries TLS CSR")
-	resp.TlsCrt = run("./sign_tls_csr", "tls-csr")
-	writeFile("tls-crt", resp.TlsCrt, 0400)
+	resp.TlsCrt = x509.SignTlsCsr(resp.TlsCsr)
+	writeFile(x509.TlsCertFile, resp.TlsCrt, 0400)
 
 	if createOnlineCA {
 		fmt.Println("Signing Foundries CSR for online use")
-		resp.CaCrt = run("./sign_ca_csr", "ca-csr")
-		writeFile("online-crt", resp.CaCrt, 0400)
+		resp.CaCrt = x509.SignCaCsr(resp.CaCsr)
+		writeFile(x509.OnlineCaCertFile, resp.CaCrt, 0400)
 	}
+
 	if createLocalCA {
 		fmt.Println("Creating local device CA")
 		if len(resp.CaCrt) > 0 {
 			resp.CaCrt += "\n"
 		}
-		run("./create_device_ca", "local-ca.key", "local-ca.pem")
-		buf, err := os.ReadFile("local-ca.pem")
-		if err != nil {
-			fmt.Println("ERROR:", err)
-			os.Exit(1)
-		}
-		resp.CaCrt += string(buf)
+		commonName := getDeviceCaCommonName(factory)
+		resp.CaCrt += x509.CreateDeviceCa(commonName, factory)
 	}
-
-	buf, err := os.ReadFile("factory_ca.pem")
-	subcommands.DieNotNil(err)
-	resp.RootCrt = string(buf)
 
 	fmt.Println("Uploading signed certs to Foundries")
 	subcommands.DieNotNil(api.FactoryPatchCA(factory, resp))

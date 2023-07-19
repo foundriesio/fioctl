@@ -1,14 +1,13 @@
 package el2g
 
 import (
-	"bytes"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 
 	"github.com/foundriesio/fioctl/client"
 	"github.com/foundriesio/fioctl/subcommands"
+	"github.com/foundriesio/fioctl/x509"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -42,31 +41,20 @@ func doDeviceGateway(cmd *cobra.Command, args []string) {
 	ca, err := api.FactoryGetCA(factory)
 	subcommands.DieNotNil(err)
 
-	tmpfile, err := os.CreateTemp("", "el2g-*.csr")
-	subcommands.DieNotNil(err)
-	defer os.Remove(tmpfile.Name())
-
 	fmt.Println("Requesting CSR from EdgeLock 2Go")
 	csr, err := api.El2gCreateDg(factory)
 	subcommands.DieNotNil(err)
 
 	fmt.Println("Signing CSR")
-	_, err = tmpfile.Write([]byte(csr.Value))
-	subcommands.DieNotNil(err)
-	sign := exec.Command("./sign_ca_csr", tmpfile.Name())
-	sign.Dir = pkiDir
-	var out bytes.Buffer
-	sign.Stdout = &out
-	sign.Stderr = os.Stderr
-	subcommands.DieNotNil(sign.Run())
+	generatedCa := x509.SignEl2GoCsr(csr.Value)
 
 	fmt.Println("Uploading signed certificate")
-	errPrefix := "Unable to upload certificate:\n" + out.String()
-	subcommands.DieNotNil(api.El2gUploadDgCert(factory, csr.Id, ca.RootCrt, out.String()), errPrefix)
+	errPrefix := "Unable to upload certificate:\n" + generatedCa
+	subcommands.DieNotNil(api.El2gUploadDgCert(factory, csr.Id, ca.RootCrt, generatedCa), errPrefix)
 
 	fmt.Println("Updating factory allowed CA's with")
-	fmt.Println(out.String())
-	newCa := ca.CaCrt + "\n" + out.String()
+	fmt.Println(generatedCa)
+	newCa := ca.CaCrt + "\n" + generatedCa
 	certs := client.CaCerts{CaCrt: newCa}
 	subcommands.DieNotNil(api.FactoryPatchCA(factory, certs))
 }
