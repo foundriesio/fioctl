@@ -53,7 +53,7 @@ In all of the above examples:
   In addition, if the "group" flag is provided, each device must also belong to that device group.
 - When using the "limit" flag, a list of rolled out devices is auto-selected by the API.
   The most recently active devices have a higher chance to get into this selection.
-  A device is excluded from the selection, if a wave was already rolled out to it ealier.
+  A device is excluded from the selection, if a wave was already rolled out to it earlier.
 - Using both "uuids" and "limit" flags constrains auto-selection to a given device list.
   This can be combined with the "group" flag to further constrain it to a given device group.
 - The following characters are supported as a separator for the device list in the "uuids" flag:

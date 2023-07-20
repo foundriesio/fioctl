@@ -28,7 +28,7 @@ func init() {
 		Short: "Compose and add Targets to Factory's  TUF targets metadata",
 		Run:   doAdd,
 		Long: `
-Compose new Targets out of the latest Targets tagged with the specified source tag and the specified via the command arguments eiter OSTree commit hashes or App URIs.
+Compose new Targets out of the latest Targets tagged with the specified source tag and the specified via the command arguments either OSTree commit hashes or App URIs.
 
 fioctl targets add --type <ostree | app> --tags <comma,separate,list of Target tags> --src-tag <source Target tag> [--targets-creator <something about Targets originator>]\ 
 	<hardware ID> <ostree commit hash> [<hardware ID> <ostree commit hash>]  (for ostree type)

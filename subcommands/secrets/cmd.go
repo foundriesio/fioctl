@@ -11,7 +11,7 @@ var api *client.Api
 
 var cmd = &cobra.Command{
 	Use:   "secrets",
-	Short: "Manage secret crendentials configured in a factory",
+	Short: "Manage secret credentials configured in a factory",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		api = subcommands.Login(cmd)
 	},
