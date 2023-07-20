@@ -126,6 +126,14 @@ func doShow(cmd *cobra.Command, args []string) {
 	}
 	if device.ActiveConfig != nil {
 		fmt.Println("Active Config:")
+		if len(device.ActiveConfig.CreatedBy) > 0 {
+			user, err := api.UserAccessDetails(factory, device.ActiveConfig.CreatedBy)
+			if err != nil {
+				device.ActiveConfig.CreatedBy = fmt.Sprintf("%s / ?", device.ActiveConfig.CreatedBy)
+			} else {
+				device.ActiveConfig.CreatedBy = fmt.Sprintf("%s / %s", user.PolisId, user.Name)
+			}
+		}
 		subcommands.PrintConfig(device.ActiveConfig, true, false, "\t")
 	}
 	if len(device.PublicKey) > 0 {

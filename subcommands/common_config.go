@@ -71,10 +71,19 @@ func SetConfig(opts *SetConfigOptions) {
 }
 
 type LogConfigsOptions struct {
+	UserLookup    map[string]client.FactoryUser
 	Limit         int
 	ShowAppliedAt bool
 	ListFunc      func() (*client.DeviceConfigList, error)
 	ListContFunc  func(string) (*client.DeviceConfigList, error)
+}
+
+func (opts *LogConfigsOptions) GetUsersLookupById(api *client.Api, factory string) {
+	list, err := api.UsersList(factory)
+	DieNotNil(err)
+	for _, user := range list {
+		opts.UserLookup[user.PolisId] = user
+	}
 }
 
 func LogConfigs(opts *LogConfigsOptions) {
@@ -93,6 +102,13 @@ func LogConfigs(opts *LogConfigsOptions) {
 		}
 		DieNotNil(err)
 		for _, cfg := range dcl.Configs {
+			if len(cfg.CreatedBy) > 0 {
+				if v, ok := opts.UserLookup[cfg.CreatedBy]; ok {
+					cfg.CreatedBy = fmt.Sprintf("%s / %s", v.PolisId, v.Name)
+				} else {
+					cfg.CreatedBy = fmt.Sprintf("%s / ?", cfg.CreatedBy)
+				}
+			}
 			PrintConfig(&cfg, opts.ShowAppliedAt, true, "")
 			if listLimit -= 1; listLimit == 0 {
 				return
@@ -128,6 +144,9 @@ func PrintConfig(cfg *client.DeviceConfig, showAppliedAt, highlightFirstLine boo
 		firstLine.Printf(indent+"Created At:    %s\n", cfg.CreatedAt)
 	} else {
 		printf("Created At:    %s\n", cfg.CreatedAt)
+	}
+	if len(cfg.CreatedBy) > 0 {
+		printf("Created By:    %s\n", cfg.CreatedBy)
 	}
 	if showAppliedAt {
 		printf("Applied At:    %s\n", cfg.AppliedAt)

@@ -50,6 +50,7 @@ type ConfigCreateRequest struct {
 type DeviceConfig struct {
 	CreatedAt string       `json:"created-at"`
 	AppliedAt string       `json:"applied-at"` // This is not present in factory config
+	CreatedBy string       `json:"created-by"`
 	Reason    string       `json:"reason"`
 	Files     []ConfigFile `json:"files"`
 }
