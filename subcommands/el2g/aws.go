@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"runtime"
 
 	"github.com/foundriesio/fioctl/subcommands"
 	"github.com/spf13/cobra"
@@ -62,6 +63,9 @@ func doAwsIOT(cmd *cobra.Command, args []string) {
 }
 
 func run(args ...string) map[string]string {
+	if runtime.GOOS == "windows" && args[0] == "/usr/bin/env" {
+		args = args[1:]
+	}
 	cmd := exec.Command(args[0], args[1:]...)
 	var out bytes.Buffer
 	cmd.Stdout = &out
