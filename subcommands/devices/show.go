@@ -49,6 +49,9 @@ func doShow(cmd *cobra.Command, args []string) {
 	fmt.Printf("Up to date:\t%v\n", device.UpToDate)
 	fmt.Printf("Target:\t\t%s / sha256(%s)\n", device.TargetName, device.OstreeHash)
 	fmt.Printf("Ostree Hash:\t%s\n", device.OstreeHash)
+	if len(device.LmpVer) > 0 {
+		fmt.Printf("LmP Version:\t%s\n", device.LmpVer)
+	}
 	fmt.Printf("Created At:\t%s\n", device.ChangeMeta.CreatedAt)
 	if len(device.ChangeMeta.CreatedBy) > 0 {
 		fmt.Printf("Created By:\t%s\n", device.ChangeMeta.CreatedBy)

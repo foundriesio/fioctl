@@ -147,6 +147,7 @@ type Device struct {
 	Group         *DeviceGroup     `json:"group"`        // Returned in Get API
 	LastSeen      string           `json:"last-seen"`
 	OstreeHash    string           `json:"ostree-hash"`
+	LmpVer        string           `json:"lmp-ver,omitempty"`
 	DockerApps    []string         `json:"docker-apps,omitempty"`
 	Tag           string           `json:"tag,omitempty"`
 	Network       *NetInfo         `json:"network-info,omitempty"`
