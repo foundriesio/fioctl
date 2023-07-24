@@ -127,6 +127,9 @@ func doShow(cmd *cobra.Command, args []string) {
 			parts := strings.Split(target.OrigUri, "/")
 			fmt.Printf("\tOrigin Target: %s\n", parts[len(parts)-1])
 		}
+		if len(target.LmpVer) > 0 {
+			fmt.Printf("\tLmP Version:   %s\n", target.LmpVer)
+		}
 		fmt.Println()
 		fmt.Println("\tSource:")
 		if len(target.LmpManifestSha) > 0 {

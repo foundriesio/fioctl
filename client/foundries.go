@@ -291,6 +291,7 @@ type TufCustom struct {
 	OrigUri        string                `json:"origUri,omitempty"`
 	CreatedAt      string                `json:"createdAt,omitempty"`
 	UpdatedAt      string                `json:"updatedAt,omitempty"`
+	LmpVer         string                `json:"lmp-ver,omitempty"`
 }
 
 type Target struct {
