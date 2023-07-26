@@ -1716,6 +1716,19 @@ func (a *Api) FactoryGetWave(factory string, wave string, showTargets bool) (*Wa
 	return &resp, err
 }
 
+func (a *Api) FactorySignWave(factory string, wave string, signatures []tuf.Signature) error {
+	url := a.serverUrl + "/ota/factories/" + factory + "/waves/" + wave + "/sign/"
+	logrus.Debugf("Signing factory wave %s", url)
+
+	data, err := json.Marshal(map[string][]tuf.Signature{"signatures": signatures})
+	if err != nil {
+		return err
+	}
+
+	_, err = a.Post(url, data)
+	return err
+}
+
 func (a *Api) FactoryRolloutWave(
 	factory string, wave string, options WaveRolloutOptions,
 ) (*WaveRolloutResult, error) {
