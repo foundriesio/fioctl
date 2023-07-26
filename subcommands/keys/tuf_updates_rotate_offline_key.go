@@ -224,14 +224,18 @@ func replaceOfflineRootKey(
 func replaceOfflineTargetsKey(
 	root *client.AtsTufRoot, onlineTargetsId string, creds OfflineCreds, keyType TufKeyType,
 ) (TufSigner, OfflineCreds) {
-	oldKey, err := FindOneTufSigner(root, creds,
-		subcommands.SliceRemove(root.Signed.Roles["targets"].KeyIDs, onlineTargetsId))
-	subcommands.DieNotNil(err)
-	newKids := subcommands.SliceRemove(root.Signed.Roles["targets"].KeyIDs, oldKey.Id)
+	// Support first key rotation (no offline targets key yet) for backward-compatibility.
+	oldKids := root.Signed.Roles["targets"].KeyIDs
+	oldOfflineKids := subcommands.SliceRemove(oldKids, onlineTargetsId)
+	if len(oldOfflineKids) > 0 {
+		oldKey, err := FindOneTufSigner(root, creds, oldOfflineKids)
+		subcommands.DieNotNil(err)
+		oldKids = subcommands.SliceRemove(oldKids, oldKey.Id)
+	}
 
 	kp := genTufKeyPair(keyType)
 	root.Signed.Keys[kp.signer.Id] = kp.atsPub
-	root.Signed.Roles["targets"].KeyIDs = append(newKids, kp.signer.Id)
+	root.Signed.Roles["targets"].KeyIDs = append(oldKids, kp.signer.Id)
 	root.Signed.Roles["targets"].Threshold = 1
 
 	base := "tufrepo/keys/fioctl-targets-" + kp.signer.Id
