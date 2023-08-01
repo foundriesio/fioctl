@@ -1,13 +1,21 @@
 package version
 
 import (
+	"bytes"
+	"crypto/hmac"
+	"crypto/sha512"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"hash"
+	"io"
+	"net/http"
 	"os"
 	"runtime"
+	"strings"
 
 	"github.com/hashicorp/go-version"
+	"github.com/sirupsen/logrus"
 	tuf "github.com/theupdateframework/go-tuf/client"
 	"github.com/theupdateframework/go-tuf/data"
 )
@@ -89,6 +97,72 @@ func (f *FioctlUpdateFinder) FindLatest() (*FioctlUpdate, error) {
 		}
 	}
 	return update, nil
+}
+
+type progressBar struct {
+	total   int64
+	written int64
+	sha     hash.Hash
+	buff    bytes.Buffer
+}
+
+func (p *progressBar) Write(buff []byte) (n int, err error) {
+	if _, err = p.sha.Write(buff); err != nil {
+		return 0, err
+	}
+	n, err = p.buff.Write(buff)
+	p.written += int64(n)
+	// Print 20 dashes total
+	dashes := 100 * p.written / p.total / 5
+	spaces := 20 - dashes
+	progress := strings.Repeat("*", int(dashes)) + strings.Repeat(" ", int(spaces))
+	fmt.Printf("[%s] %d%%\r", progress, dashes*5)
+	return
+}
+
+func (u FioctlUpdate) Do() error {
+	exe, err := os.Executable()
+	if err != nil {
+		return fmt.Errorf("unable to find path to self: %w", err)
+	}
+	st, err := os.Stat(exe)
+	if err != nil {
+		return err
+	}
+	logrus.Debugf("Path to self is: %s", exe)
+	fmt.Println("Downloading update:", u.Uri)
+	res, err := http.Get(u.Uri)
+	if err != nil {
+		return err
+	}
+	if res.StatusCode == 200 && res.ContentLength != u.len {
+		return fmt.Errorf("target size mismatch: %d != %d", res.ContentLength, u.len)
+	}
+	defer res.Body.Close()
+	pb := &progressBar{
+		total: u.len,
+		sha:   sha512.New(),
+		buff:  bytes.Buffer{},
+	}
+	if _, err := io.Copy(pb, io.LimitReader(res.Body, u.len)); err != nil {
+		return fmt.Errorf("unable to read response. HTTP_%d: %w", res.StatusCode, err)
+	}
+	fmt.Println()
+	if res.StatusCode != 200 {
+		return fmt.Errorf("unable to download %s. HTTP_%d: %s", u.Uri, res.StatusCode, pb.buff.String())
+	}
+	fmt.Println("Validating the checksum is", u.Sha512)
+	sha := pb.sha.Sum(nil)
+	if !hmac.Equal(sha, u.Sha512) {
+		return fmt.Errorf("download has incorrect sha: %x != %s", sha, u.Sha512)
+	}
+
+	fmt.Println("Saving new version to", exe)
+	tmp := exe + ".tmp"
+	if err = os.WriteFile(tmp, pb.buff.Bytes(), st.Mode()); err != nil {
+		return err
+	}
+	return os.Rename(tmp, exe)
 }
 
 type jsonFilesStore struct {
