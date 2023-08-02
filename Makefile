@@ -1,4 +1,5 @@
 COMMIT:=$(shell git describe HEAD)$(shell git diff --quiet || echo '+dirty')
+COMMIT:="0.1"
 
 # Use linker flags to provide commit info
 LDFLAGS=-ldflags "-X=github.com/foundriesio/fioctl/subcommands/version.Commit=$(COMMIT)"
