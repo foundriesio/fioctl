@@ -41,13 +41,13 @@ for p in $PLATFORMS ; do
 	echo "= Downloading ${url}"
 	wget -O staged/targets/${artifact}_${version} ${url}
 
-	./tuf add --custom "${custom}" "${artifact}_${version}"
+	./tuf add --expires=180 --custom "${custom}" "${artifact}_${version}"
 done
 
 echo "updating snapshots"
-./tuf snapshot
+./tuf snapshot --expires=180
 echo "updating timestamps"
-./tuf timestamp
+./tuf timestamp --expires=7
 echo "updating ./repostory"
 ./tuf commit
 
