@@ -1,0 +1,54 @@
+#!/bin/bash
+
+set -e
+
+if [ $# -ne 1 ] ; then
+	echo "Usage: $0 <release>"
+	exit 1
+fi
+version=$1
+
+if [ -z "${TUF_TARGETS_PASSPHRASE}" ] ; then
+	echo "set the environment variable TUF_TARGETS_PASSPHRASE before running"
+	exit 1
+fi
+if [ -z "${TUF_SNAPSHOT_PASSPHRASE}" ] ; then
+	echo "set the environment variable TUF_SNAPSHOT_PASSPHRASE before running"
+	exit 1
+fi
+if [ -z "${TUF_TIMESTAMP_PASSPHRASE}" ] ; then
+	echo "set the environment variable TUF_TIMESTAMP_PASSPHRASE before running"
+	exit 1
+fi
+
+URLBASE="https://github.com/foundriesio/fioctl/releases/download/${version}"
+PLATFORMS="
+	darwin/amd64
+	darwin/arm64
+	linux/amd64
+	linux/arm64
+	windows/amd64
+"
+for p in $PLATFORMS ; do
+	artifact="fioctl-$(echo $p | sed 's/\//-/g')"
+	if [ "${p}" = "windows/amd64" ] ; then
+		artifact="${artifact}.exe"
+	fi
+
+	url="${URLBASE}/${artifact}"
+	custom="{\"platform\": \"$p\", \"version\": \"$version\", \"uri\": \"$url\"}"
+
+	echo "= Downloading ${url}"
+	wget -O staged/targets/${artifact}_${version} ${url}
+
+	./tuf add --custom "${custom}" "${artifact}_${version}"
+done
+
+echo "updating snapshots"
+./tuf snapshot
+echo "updating timestamps"
+./tuf timestamp
+echo "updating ./repostory"
+./tuf commit
+
+echo "now check changes in ./repository and then commit and push"
