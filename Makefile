@@ -1,4 +1,4 @@
-COMMIT:=$(shell git describe HEAD)$(shell git diff --quiet || echo '+dirty')
+COMMIT?=$(shell git describe HEAD)$(shell git diff --quiet || echo '+dirty')
 
 # Use linker flags to provide commit info and create a PIE
 LDFLAGS=-buildmode=pie -ldflags "-X=github.com/foundriesio/fioctl/subcommands/version.Commit=$(COMMIT)"
