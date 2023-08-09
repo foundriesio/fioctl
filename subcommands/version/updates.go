@@ -158,11 +158,7 @@ func (u FioctlUpdate) Do() error {
 	}
 
 	fmt.Println("Saving new version to", exe)
-	tmp := exe + ".tmp"
-	if err = os.WriteFile(tmp, pb.buff.Bytes(), st.Mode()); err != nil {
-		return err
-	}
-	return os.Rename(tmp, exe)
+	return updateSelf(exe, pb.buff.Bytes(), st.Mode())
 }
 
 type jsonFilesStore struct {
