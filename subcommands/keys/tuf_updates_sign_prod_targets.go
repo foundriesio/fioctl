@@ -21,6 +21,7 @@ func init() {
 New signatures are staged for commit along with TUF root modifications.
 
 There are 3 use cases when this command comes handy:
+
 - You want to sign your Factory's production targets with a newly added offline TUF Targets key.
 - You increase the TUF targets signature threshold
   and need to sign your production targets with an additional key.

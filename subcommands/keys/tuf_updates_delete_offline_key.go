@@ -20,11 +20,13 @@ func init() {
 		Long: `Stage deletion of the offline TUF signing key for the Factory.
 
 There are two ways to delete the offline TUF signing key:
+
 - If you own the keys file - you can delete your key by providing your keys file.
   Fioctl will search through your keys file for an appropriate key to delete.
 - You can also provide an exact key ID to delete.
 
 When you delete the TUF targets offline signing key:
+
 - if there are production targets in your factory, corresponding signatures are also deleted.
   if any production targets lack enough signatures - you need to sign them using the "sign-prod-targets" command.
 - if there is an active wave in your factory, the TUF targets key deletion is not allowed.`,
