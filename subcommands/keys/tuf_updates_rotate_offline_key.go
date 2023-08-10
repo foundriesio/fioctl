@@ -23,6 +23,7 @@ func init() {
 The new offline signing key will be used in both CI and production TUF root.
 
 When you rotate the TUF targets offline signing key:
+
 - If there are production targets in your factory, they are re-signed using the new key.
   This only applies to those production targets that were signed by a key you rotate.
 - If there is an active wave in your factory, the TUF targets rotation is not allowed.`,
