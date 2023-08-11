@@ -90,28 +90,21 @@ func doTufUpdatesAddOfflineKey(cmd *cobra.Command, args []string) {
 }
 
 func addOfflineRootKey(root *client.AtsTufRoot, creds OfflineCreds, keyType TufKeyType) {
-	subcommands.DieNotNil(checkNoTufSigner(root, creds, root.Signed.Roles["root"].KeyIDs))
+	oldKids := root.Signed.Roles["root"].KeyIDs
+	subcommands.DieNotNil(checkNoTufSigner(root, creds, oldKids))
 
 	kp := genTufKeyPair(keyType)
-	root.Signed.Keys[kp.signer.Id] = kp.atsPub
-	root.Signed.Roles["root"].KeyIDs = append(root.Signed.Roles["root"].KeyIDs, kp.signer.Id)
-
-	base := "tufrepo/keys/fioctl-root-" + kp.signer.Id
-	creds[base+".pub"] = kp.atsPubBytes
-	creds[base+".sec"] = kp.atsPrivBytes
+	addOfflineTufKey(root, "root", kp, oldKids, creds)
 	fmt.Println("= New root keyid:", kp.signer.Id)
 }
 
 func addOfflineTargetsKey(root *client.AtsTufRoot, creds OfflineCreds, keyType TufKeyType, onlineTargetsId string) {
-	subcommands.DieNotNil(checkNoTufSigner(root, creds,
-		subcommands.SliceRemove(root.Signed.Roles["targets"].KeyIDs, onlineTargetsId)))
+	oldKids := root.Signed.Roles["targets"].KeyIDs
+	if len(oldKids) > 1 {
+		subcommands.DieNotNil(checkNoTufSigner(root, creds, subcommands.SliceRemove(oldKids, onlineTargetsId)))
+	}
 
 	kp := genTufKeyPair(keyType)
-	root.Signed.Keys[kp.signer.Id] = kp.atsPub
-	root.Signed.Roles["targets"].KeyIDs = append(root.Signed.Roles["targets"].KeyIDs, kp.signer.Id)
-
-	base := "tufrepo/keys/fioctl-targets-" + kp.signer.Id
-	creds[base+".pub"] = kp.atsPubBytes
-	creds[base+".sec"] = kp.atsPrivBytes
+	addOfflineTufKey(root, "targets", kp, oldKids, creds)
 	fmt.Println("= New targets keyid:", kp.signer.Id)
 }
