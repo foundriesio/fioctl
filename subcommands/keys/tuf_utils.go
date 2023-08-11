@@ -14,8 +14,10 @@ import (
 	"io"
 	"os"
 	"strings"
+	"time"
 
 	canonical "github.com/docker/go/canonical/json"
+	"github.com/spf13/viper"
 	tuf "github.com/theupdateframework/notary/tuf/data"
 
 	"github.com/foundriesio/fioctl/client"
@@ -321,6 +323,17 @@ func addOfflineTufKey(
 	creds[base+".sec"] = key.atsPrivBytes
 	root.Signed.Keys[key.signer.Id] = key.atsPub
 	root.Signed.Roles[role].KeyIDs = append(oldKids, key.signer.Id)
+
+	factory := viper.GetString("factory")
+	user, err := api.UserAccessDetails(factory, "self")
+	subcommands.DieNotNil(err)
+	if root.Signed.KeyOwners == nil {
+		root.Signed.KeyOwners = make(map[string]client.RootKeyOwner)
+	}
+	root.Signed.KeyOwners[key.signer.Id] = client.RootKeyOwner{
+		PolisId:   user.PolisId,
+		CreatedAt: time.Unix(time.Now().Unix(), 0).UTC(), // Strip millis
+	}
 }
 
 func removeUnusedTufKeys(root *client.AtsTufRoot) {
