@@ -38,7 +38,7 @@ func doVersion(cmd *cobra.Command, args []string) {
 		}
 		if err := update.Do(); err != nil {
 			if os.IsPermission(err) {
-				DieNotNil(fmt.Errorf("there was a permission error while updating fioctl. Please run again with 'sudo': %w", err))
+				DieNotNil(fmt.Errorf("there was a permission error while updating fioctl: %w. Please run again as an admin or root.", err))
 			} else {
 				DieNotNil(err)
 			}
