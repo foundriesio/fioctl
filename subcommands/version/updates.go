@@ -1,7 +1,6 @@
 package version
 
 import (
-	"bytes"
 	"crypto/hmac"
 	"crypto/sha512"
 	"encoding/json"
@@ -103,14 +102,13 @@ type progressBar struct {
 	total   int64
 	written int64
 	sha     hash.Hash
-	buff    bytes.Buffer
 }
 
 func (p *progressBar) Write(buff []byte) (n int, err error) {
-	if _, err = p.sha.Write(buff); err != nil {
+	n, err = p.sha.Write(buff)
+	if err != nil {
 		return 0, err
 	}
-	n, err = p.buff.Write(buff)
 	p.written += int64(n)
 	// Print 20 dashes total
 	dashes := 100 * p.written / p.total / 5
@@ -139,26 +137,37 @@ func (u FioctlUpdate) Do() error {
 		return fmt.Errorf("target size mismatch: %d != %d", res.ContentLength, u.len)
 	}
 	defer res.Body.Close()
+	reader := io.LimitReader(res.Body, u.len)
+	if res.StatusCode != 200 {
+		if msg, err := io.ReadAll(reader); err != nil {
+			return fmt.Errorf("unable to download %s. HTTP_%d", u.Uri, res.StatusCode)
+		} else {
+			return fmt.Errorf("unable to download %s. HTTP_%d: %s", u.Uri, res.StatusCode, string(msg))
+		}
+	}
+
+	tmpExe := exe + ".tmp"
+	f, err := os.OpenFile(tmpExe, os.O_RDWR|os.O_CREATE, st.Mode())
+	if err != nil {
+		return fmt.Errorf("unable to save new version: %w", err)
+	}
+
 	pb := &progressBar{
 		total: u.len,
 		sha:   sha512.New(),
-		buff:  bytes.Buffer{},
 	}
-	if _, err := io.Copy(pb, io.LimitReader(res.Body, u.len)); err != nil {
-		return fmt.Errorf("unable to read response. HTTP_%d: %w", res.StatusCode, err)
+	tr := io.TeeReader(reader, pb)
+	if _, err := io.Copy(f, tr); err != nil {
+		return fmt.Errorf("unable to save new version: %w", err)
 	}
-	fmt.Println()
-	if res.StatusCode != 200 {
-		return fmt.Errorf("unable to download %s. HTTP_%d: %s", u.Uri, res.StatusCode, pb.buff.String())
-	}
-	fmt.Println("Validating the checksum is", u.Sha512)
+	_ = f.Close()
 	sha := pb.sha.Sum(nil)
 	if !hmac.Equal(sha, u.Sha512) {
 		return fmt.Errorf("download has incorrect sha: %x != %s", sha, u.Sha512)
 	}
 
 	fmt.Println("Saving new version to", exe)
-	return updateSelf(exe, pb.buff.Bytes(), st.Mode())
+	return replaceSelf(exe, tmpExe)
 }
 
 type jsonFilesStore struct {

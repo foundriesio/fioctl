@@ -5,7 +5,6 @@ package version
 
 import (
 	"fmt"
-	"io/fs"
 	"os"
 	"os/exec"
 	"strings"
@@ -21,24 +20,20 @@ import (
 //  4. Create a detached process
 //     5 a) fioctl exits
 //     5 b) child hack deletes original copy
-func updateSelf(exe string, buff []byte, mode fs.FileMode) error {
-	newFile := strings.Replace(exe, ".exe", "-new.exe", 1)
-	oldFile := strings.Replace(exe, ".exe", "-old.exe", 1)
+func replaceSelf(curExe, newExe string) error {
+	oldExe := strings.Replace(curExe, ".exe", "-old.exe", 1)
 
-	if err := os.WriteFile(newFile, buff, mode); err != nil {
+	if err := os.Rename(curExe, oldExe); err != nil {
 		return err
 	}
-	if err := os.Rename(exe, oldFile); err != nil {
-		return err
-	}
-	if err := os.Rename(newFile, exe); err != nil {
+	if err := os.Rename(newExe, curExe); err != nil {
 		msg := "unable to update to the new fioctl binary. "
 		msg += "The old version is located at %s. "
-		msg += "The new version is located at %s. "
-		return fmt.Errorf(msg, oldFile, newFile, err)
+		msg += "The new version is located at %s. %w"
+		return fmt.Errorf(msg, oldExe, newExe, err)
 	}
 
-	delSelfArgs := []string{"cmd.exe", "/C", "start", "/b", "timeout", "1", "&&", "del", oldFile}
+	delSelfArgs := []string{"cmd.exe", "/C", "timeout 1 && del " + oldExe}
 	cmd := exec.Command(delSelfArgs[0], delSelfArgs[1:]...)
 	devnull, _ := os.OpenFile(os.DevNull, os.O_WRONLY, 0755)
 	cmd.Stdout = devnull
