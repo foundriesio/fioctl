@@ -26,12 +26,19 @@ type RootChangeReason struct {
 	Message   string    `json:"message"`
 	Timestamp time.Time `json:"timestamp"`
 }
+
+type RootKeyOwner struct {
+	PolisId   string    `json:"polis-id"`
+	CreatedAt time.Time `json:"created-at"`
+}
+
 type AtsRootMeta struct {
 	tuf.SignedCommon
 	Consistent bool                           `json:"consistent_snapshot"`
 	Keys       map[string]AtsKey              `json:"keys"`
 	Roles      map[tuf.RoleName]*tuf.RootRole `json:"roles"`
 	Reason     *RootChangeReason              `json:"x-changelog,omitempty"`
+	KeyOwners  map[string]RootKeyOwner        `json:"x-key-owners,omitempty"`
 }
 
 type AtsTufRoot struct {
