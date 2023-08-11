@@ -163,6 +163,7 @@ func (u FioctlUpdate) Do() error {
 	_ = f.Close()
 	sha := pb.sha.Sum(nil)
 	if !hmac.Equal(sha, u.Sha512) {
+		_ = os.Remove(tmpExe)
 		return fmt.Errorf("download has incorrect sha: %x != %s", sha, u.Sha512)
 	}
 
