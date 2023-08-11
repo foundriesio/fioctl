@@ -1,7 +1,7 @@
 COMMIT:=$(shell git describe HEAD)$(shell git diff --quiet || echo '+dirty')
 
-# Use linker flags to provide commit info and create a PIE
-LDFLAGS=-buildmode=pie -ldflags "-X=github.com/foundriesio/fioctl/subcommands/version.Commit=$(COMMIT)"
+# Use linker flags to provide commit info
+LDFLAGS=-ldflags "-X=github.com/foundriesio/fioctl/subcommands/version.Commit=$(COMMIT)"
 
 linter:=$(shell which golangci-lint 2>/dev/null || echo $(HOME)/go/bin/golangci-lint)
 
