@@ -207,18 +207,14 @@ func doTufUpdatesRotateOfflineTargetsKey(cmd *cobra.Command) {
 func replaceOfflineRootKey(
 	root *client.AtsTufRoot, creds OfflineCreds, keyType TufKeyType,
 ) (TufSigner, OfflineCreds) {
-	oldKey, err := FindOneTufSigner(root, creds, root.Signed.Roles["root"].KeyIDs)
+	oldKids := root.Signed.Roles["root"].KeyIDs
+	oldKey, err := FindOneTufSigner(root, creds, oldKids)
 	subcommands.DieNotNil(err)
-	newKids := subcommands.SliceRemove(root.Signed.Roles["root"].KeyIDs, oldKey.Id)
+	oldKids = subcommands.SliceRemove(oldKids, oldKey.Id)
 
 	kp := genTufKeyPair(keyType)
-	root.Signed.Keys[kp.signer.Id] = kp.atsPub
+	addOfflineTufKey(root, "root", kp, oldKids, creds)
 	root.Signed.Expires = time.Now().AddDate(1, 0, 0).UTC().Round(time.Second) // 1 year validity
-	root.Signed.Roles["root"].KeyIDs = append(newKids, kp.signer.Id)
-
-	base := "tufrepo/keys/fioctl-root-" + kp.signer.Id
-	creds[base+".pub"] = kp.atsPubBytes
-	creds[base+".sec"] = kp.atsPrivBytes
 	return kp.signer, creds
 }
 
@@ -227,21 +223,14 @@ func replaceOfflineTargetsKey(
 ) (TufSigner, OfflineCreds) {
 	// Support first key rotation (no offline targets key yet) for backward-compatibility.
 	oldKids := root.Signed.Roles["targets"].KeyIDs
-	oldOfflineKids := subcommands.SliceRemove(oldKids, onlineTargetsId)
-	if len(oldOfflineKids) > 0 {
-		oldKey, err := FindOneTufSigner(root, creds, oldOfflineKids)
+	if len(oldKids) > 1 {
+		oldKey, err := FindOneTufSigner(root, creds, subcommands.SliceRemove(oldKids, onlineTargetsId))
 		subcommands.DieNotNil(err)
 		oldKids = subcommands.SliceRemove(oldKids, oldKey.Id)
 	}
 
 	kp := genTufKeyPair(keyType)
-	root.Signed.Keys[kp.signer.Id] = kp.atsPub
-	root.Signed.Roles["targets"].KeyIDs = append(oldKids, kp.signer.Id)
-	root.Signed.Roles["targets"].Threshold = 1
-
-	base := "tufrepo/keys/fioctl-targets-" + kp.signer.Id
-	creds[base+".pub"] = kp.atsPubBytes
-	creds[base+".sec"] = kp.atsPrivBytes
+	addOfflineTufKey(root, "targets", kp, oldKids, creds)
 	return kp.signer, creds
 }
 

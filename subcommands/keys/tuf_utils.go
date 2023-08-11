@@ -313,6 +313,16 @@ func findTufSigners(root *client.AtsTufRoot, creds OfflineCreds, keyids []string
 	return matchSigners, nil
 }
 
+func addOfflineTufKey(
+	root *client.AtsTufRoot, role tuf.RoleName, key TufKeyPair, oldKids []string, creds OfflineCreds,
+) {
+	base := fmt.Sprintf("tufrepo/keys/fioctl-%s-%s", role, key.signer.Id)
+	creds[base+".pub"] = key.atsPubBytes
+	creds[base+".sec"] = key.atsPrivBytes
+	root.Signed.Keys[key.signer.Id] = key.atsPub
+	root.Signed.Roles[role].KeyIDs = append(oldKids, key.signer.Id)
+}
+
 func removeUnusedTufKeys(root *client.AtsTufRoot) {
 	var inuse []string
 	for _, role := range root.Signed.Roles {
