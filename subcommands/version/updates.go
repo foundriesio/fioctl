@@ -158,6 +158,7 @@ func (u FioctlUpdate) Do() error {
 	}
 	tr := io.TeeReader(reader, pb)
 	if _, err := io.Copy(f, tr); err != nil {
+		_ = os.Remove(tmpExe)
 		return fmt.Errorf("unable to save new version: %w", err)
 	}
 	_ = f.Close()
