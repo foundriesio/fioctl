@@ -12,15 +12,12 @@ git config user.name github-actions
 git config user.email github-actions@github.com
 
 if ! ${tuf_bin} status --valid-at "`date --rfc-3339=seconds -d '+48 hour' | sed 's/ /T/'`" timestamp ; then
-		echo "refreshing timestamp metadata"
-		${tuf_bin} timestamp --expires=7
-		${tuf_bin} commit
-fi
+	echo "refreshing timestamp metadata"
+	${tuf_bin} timestamp --expires=7
+	${tuf_bin} commit
 
-git add repository/*
-if [ -z "$(git status --porcelain)" ] ; then
-	echo "metadata does not need refreshing"
-else
+	git add repository/*
+
 	echo "committing changes to metadata"
 	git commit -m "updated by github action"
 	git push
