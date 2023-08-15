@@ -1,4 +1,7 @@
 bin/*
+keys/*
+staged/*
+repository/targets
 
 ### IDE
 .idea
