@@ -1,0 +1,27 @@
+name: Refresh timestamp metadata
+on:
+  schedule:
+    # every 8 hours
+    - cron: '0 */8 * * *'
+  workflow_dispatch:
+    branches: [ main ]
+
+jobs:
+  resign:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          ref: tuf-metadata
+      - name: Setup signing key
+        env:
+          TIMESTAMP_JSON: ${{ secrets.TUF_TIMESTAMP_JSON }}
+        run: |
+          mkdir keys
+          echo "$TIMESTAMP_JSON" > keys/timestamp.json
+      - name: Sign
+        env:
+          TUF_TIMESTAMP_PASSPHRASE: ${{ secrets.TUF_TIMESTAMP_PASSPHRASE}}
+        run: |
+          ./refresh-metadata.sh
