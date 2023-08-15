@@ -11,9 +11,9 @@ chmod +x ${tuf_bin}
 git config user.name github-actions
 git config user.email github-actions@github.com
 
-if ! ${tuf_bin} status --valid-at "`date --rfc-3339=seconds -d '+24 hour' | sed 's/ /T/'`" timestamp ; then
+if ! ${tuf_bin} status --valid-at "`date --rfc-3339=seconds -d '+48 hour' | sed 's/ /T/'`" timestamp ; then
 		echo "refreshing timestamp metadata"
-		${tuf_bin} timestamp
+		${tuf_bin} timestamp --expires=7
 		${tuf_bin} commit
 fi
 
