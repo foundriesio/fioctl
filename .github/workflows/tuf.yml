@@ -4,10 +4,16 @@ on:
     # every 8 hours
     - cron: '0 */8 * * *'
   workflow_dispatch:
-    branches: [ main ]
+    inputs:
+      branches:
+        description: The branch to run on
+        required: false
+        default: 'main'
+        type: string
 
 jobs:
   resign:
+    if: github.repository == 'foundriesio/fioctl'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
