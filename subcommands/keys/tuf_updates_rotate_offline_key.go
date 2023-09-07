@@ -178,10 +178,13 @@ func doTufUpdatesRotateOfflineTargetsKey(cmd *cobra.Command) {
 	newCiRoot, newProdRoot = finalizeTufRootChanges(newCiRoot, newProdRoot)
 
 	fmt.Println("= Re-signing prod targets")
-	// Seaching for old key in curCiRoot supports several rotations in one transaction.
-	oldestKey, err := FindOneTufSigner(curCiRoot, targetsCreds,
-		subcommands.SliceRemove(curCiRoot.Signed.Roles["targets"].KeyIDs, onlineTargetsId))
-	subcommands.DieNotNil(err)
+	var oldestKey TufSigner
+	if len(curCiRoot.Signed.Roles["targets"].KeyIDs) > 1 {
+		// Seaching for old key in curCiRoot supports several rotations in one transaction.
+		oldestKey, err = FindOneTufSigner(curCiRoot, targetsCreds,
+			subcommands.SliceRemove(curCiRoot.Signed.Roles["targets"].KeyIDs, onlineTargetsId))
+		subcommands.DieNotNil(err)
+	}
 	newTargetsSigs, err := signProdTargets(factory, newKey,
 		func(tag string, targets client.AtsTufTargets) bool {
 			for _, sig := range targets.Signatures {
