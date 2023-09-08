@@ -1628,7 +1628,7 @@ func (a *Api) UsersList(factory string) ([]FactoryUser, error) {
 }
 
 func (a *Api) UserAccessDetails(factory string, user_id string) (*FactoryUserAccessDetails, error) {
-	url := a.serverUrl + "/ota/factories/" + factory + "/users/" + user_id
+	url := a.serverUrl + "/ota/factories/" + factory + "/users/" + user_id + "/"
 	body, err := a.Get(url)
 	if err != nil {
 		return nil, err
