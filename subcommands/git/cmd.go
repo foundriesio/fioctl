@@ -8,6 +8,7 @@ import (
 	"os/user"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/foundriesio/fioctl/subcommands"
 	"github.com/sirupsen/logrus"
@@ -73,8 +74,10 @@ func doGitCreds(cmd *cobra.Command, args []string) {
 	helperName := "fio"
 	dst := filepath.Join(helperPath, GIT_CREDS_HELPER)
 	if runtime.GOOS == "windows" {
+		// To get around edge cases with git on Windows we use the absolute path
+		// So for example the following path will be used: C:/Program\\ Files/Git/bin/git-credential-fio.exe
 		dst += ".exe"
-		helperName += ".exe"
+		helperName = strings.ReplaceAll(filepath.ToSlash(dst), " ", "\\ ")
 	}
 
 	if len(sudoer) > 0 {
