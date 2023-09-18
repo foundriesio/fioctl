@@ -1,4 +1,7 @@
-//go:build !windows
+//go:build bashpki
+
+// A reference implementation for those who want to customize their PKI.
+// This is turned off in vanilla Fioctl builds, and can be enabled in a fork.
 
 package x509
 

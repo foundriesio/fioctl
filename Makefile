@@ -33,6 +33,7 @@ has-linter:
 
 linter-check: has-linter
 	$(linter) run ${EXTRA_LINTER_FLAGS}
+	$(linter) run --build-tags bashpki ${EXTRA_LINTER_FLAGS}
 
 linter: has-linter
 	$(linter) run --fix ${EXTRA_LINTER_FLAGS}
