@@ -1,4 +1,6 @@
-//go:build windows
+//go:build go1.15 && !bashpki
+
+// The crypto/ecdsa and crypto/elliptic were introduced in Golang 1.15.
 
 package x509
 
