@@ -1,7 +1,8 @@
 COMMIT?=$(shell git describe HEAD)$(shell git diff --quiet || echo '+dirty')
 
 # Use linker flags to provide commit info
-COMMON_LDFLAGS=-X=github.com/foundriesio/fioctl/subcommands/version.Commit=$(COMMIT)
+VERSION_LDFLAGS=-X=github.com/foundriesio/fioctl/subcommands/version.Commit=$(COMMIT)
+COMMON_LDFLAGS=-v -linkmode=external $(VERSION_LDFLAGS)
 TARGET_LDFLAGS=
 
 linter:=$(shell which golangci-lint 2>/dev/null || echo $(HOME)/go/bin/golangci-lint)
