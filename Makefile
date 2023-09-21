@@ -4,6 +4,7 @@ COMMIT?=$(shell git describe HEAD)$(shell git diff --quiet || echo '+dirty')
 LDFLAGS=-ldflags "-X=github.com/foundriesio/fioctl/subcommands/version.Commit=$(COMMIT)"
 
 linter:=$(shell which golangci-lint 2>/dev/null || echo $(HOME)/go/bin/golangci-lint)
+builder:=$(shell which xgo 2>/dev/null || echo $(HOME)/go/bin/xgo)
 
 build: fioctl-linux-amd64 fioctl-linux-arm64 fioctl-windows-amd64 fioctl-darwin-amd64 fioctl-darwin-arm64
 	@true
@@ -13,16 +14,16 @@ fioctl-static:
 
 fioctl-linux-amd64:
 fioctl-linux-arm64:
-fioctl-linux-armv7:
+fioctl-linux-arm-7:
 fioctl-windows-amd64:
 fioctl-darwin-amd64:
 fioctl-darwin-arm64:
 fioctl-%:
-	CGO_ENABLED=0 \
-	GOOS=$(shell echo $* | cut -f1 -d\- ) \
-	GOARCH=$(shell echo $* | cut -f2 -d\-) \
-		go build $(LDFLAGS) -o bin/$@ main.go
-	@if [ "$@" = "fioctl-windows-amd64" ]; then mv bin/$@ bin/$@.exe; fi
+	@test -x $(builder) || (echo "Please install xgo toolchain $(HOME)/go/bin: go install github.com/crazy-max/xgo@v0.30.0")
+	$(eval GOOS:=$(shell echo $* | cut -f1 -d\- ))
+	$(eval GOARCH:=$(shell echo $* | cut -f2- -d\-))
+	$(builder) --targets=$(GOOS)/$(GOARCH) -out bin/fioctl $(LDFLAGS) .
+	# This creates files as root, use `sudo chown --reference bin bin/fioctl-*` if you wish them under your user.
 
 format:
 	@gofmt -l  -w ./
