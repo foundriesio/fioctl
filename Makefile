@@ -2,7 +2,7 @@ COMMIT?=$(shell git describe HEAD)$(shell git diff --quiet || echo '+dirty')
 
 # Use linker flags to provide commit info
 VERSION_LDFLAGS=-X=github.com/foundriesio/fioctl/subcommands/version.Commit=$(COMMIT)
-COMMON_LDFLAGS=-v -linkmode=external $(VERSION_LDFLAGS)
+COMMON_LDFLAGS=-v -s -w -linkmode=external $(VERSION_LDFLAGS)
 
 linter:=$(shell which golangci-lint 2>/dev/null || echo $(HOME)/go/bin/golangci-lint)
 builder:=$(shell which xgo 2>/dev/null || echo $(HOME)/go/bin/xgo)
@@ -24,7 +24,7 @@ fioctl-%:
 	$(eval GOOS:=$(shell echo $* | cut -f1 -d\- ))
 	$(eval GOARCH:=$(shell echo $* | cut -f2- -d\-))
 	$(eval TARGET_GOTAGS:=netgo,osusergo)
-	$(eval TARGET_LDFLAGS:=$(if $(shell test $(GOOS) = linux && echo "ok"),'-extldflags=-static',))
+	$(eval TARGET_LDFLAGS:=$(if $(shell test $(GOOS) = linux && echo "ok"),'-extldflags=-static -O1',))
 	$(eval TARGET_LDFLAGS:=$(if $(shell test $(GOOS) = windows && echo "ok"),'-extldflags=-static',$(TARGET_LDFLAGS)))
 	$(eval COMBINED_LDFLAGS=$(COMMON_LDFLAGS) $(TARGET_LDFLAGS))
 	$(builder) --targets=$(GOOS)/$(GOARCH) -out bin/fioctl --tags=$(TARGET_GOTAGS) --ldflags "$(COMBINED_LDFLAGS)" .
