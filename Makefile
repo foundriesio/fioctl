@@ -1,7 +1,8 @@
 COMMIT?=$(shell git describe HEAD)$(shell git diff --quiet || echo '+dirty')
 
 # Use linker flags to provide commit info
-LDFLAGS=-ldflags "-X=github.com/foundriesio/fioctl/subcommands/version.Commit=$(COMMIT)"
+COMMON_LDFLAGS=-X=github.com/foundriesio/fioctl/subcommands/version.Commit=$(COMMIT)
+TARGET_LDFLAGS=
 
 linter:=$(shell which golangci-lint 2>/dev/null || echo $(HOME)/go/bin/golangci-lint)
 builder:=$(shell which xgo 2>/dev/null || echo $(HOME)/go/bin/xgo)
@@ -22,7 +23,8 @@ fioctl-%:
 	@test -x $(builder) || (echo "Please install xgo toolchain $(HOME)/go/bin: go install github.com/crazy-max/xgo@v0.30.0")
 	$(eval GOOS:=$(shell echo $* | cut -f1 -d\- ))
 	$(eval GOARCH:=$(shell echo $* | cut -f2- -d\-))
-	$(builder) --targets=$(GOOS)/$(GOARCH) -out bin/fioctl $(LDFLAGS) .
+	$(eval COMBINED_LDFLAGS=$(COMMON_LDFLAGS) $(TARGET_LDFLAGS))
+	$(builder) --targets=$(GOOS)/$(GOARCH) -out bin/fioctl --ldflags "$(COMBINED_LDFLAGS)" .
 	# This creates files as root, use `sudo chown --reference bin bin/fioctl-*` if you wish them under your user.
 
 format:
