@@ -24,8 +24,12 @@ fioctl-%:
 	$(eval GOOS:=$(shell echo $* | cut -f1 -d\- ))
 	$(eval GOARCH:=$(shell echo $* | cut -f2- -d\-))
 	$(eval TARGET_GOTAGS:=netgo,osusergo)
+	$(eval TARGET_GOTAGS_EXT:=netgo,osusergo,static_build)
+	$(eval TARGET_GOTAGS:=$(if $(shell test $* = linux-amd64 && echo "ok"),$(TARGET_GOTAGS_EXT),$(TARGET_GOTAGS)))
 	$(eval TARGET_LDFLAGS:=$(if $(shell test $(GOOS) = linux && echo "ok"),'-extldflags=-static -O1',))
 	$(eval TARGET_LDFLAGS:=$(if $(shell test $(GOOS) = windows && echo "ok"),'-extldflags=-static',$(TARGET_LDFLAGS)))
+	# static PIE is not yet supported on Arm by GCC
+	$(eval TARGET_LDFLAGS:=$(if $(shell test $* = linux-amd64 && echo "ok"),-buildmode=pie '-extldflags=-static-pie -O1',$(TARGET_LDFLAGS)))
 	$(eval COMBINED_LDFLAGS=$(COMMON_LDFLAGS) $(TARGET_LDFLAGS))
 	$(builder) --targets=$(GOOS)/$(GOARCH) -out bin/fioctl --tags=$(TARGET_GOTAGS) --ldflags "$(COMBINED_LDFLAGS)" .
 	# This creates files as root, use `sudo chown --reference bin bin/fioctl-*` if you wish them under your user.
