@@ -17,25 +17,26 @@ func run(name string, arg ...string) string {
 	return string(out)
 }
 
-func CreateFactoryCa(ou string) string {
+func CreateFactoryCa(storage KeyStorage, ou string) string {
+	storage.setEnvVariables()
 	run("./" + CreateCaScript)
 	return string(readFile(FactoryCaCertFile))
 }
 
-func CreateDeviceCa(cn string, ou string) string {
+func CreateDeviceCa(_ KeyStorage, cn string, ou string) string {
 	run("./"+CreateDeviceCaScript, DeviceCaKeyFile, DeviceCaCertFile)
 	return string(readFile(DeviceCaCertFile))
 }
 
-func SignTlsCsr(csrPem string) string {
+func SignTlsCsr(_ KeyStorage, csrPem string) string {
 	return run("./"+SignTlsScript, TlsCsrFile)
 }
 
-func SignCaCsr(csrPem string) string {
+func SignCaCsr(_ KeyStorage, csrPem string) string {
 	return run("./"+SignCaScript, OnlineCaCsrFile)
 }
 
-func SignEl2GoCsr(csrPem string) string {
+func SignEl2GoCsr(_ KeyStorage, csrPem string) string {
 	tmpFile, err := os.CreateTemp("", "el2g-*.csr")
 	subcommands.DieNotNil(err)
 	defer os.Remove(tmpFile.Name())
@@ -44,3 +45,21 @@ func SignEl2GoCsr(csrPem string) string {
 	subcommands.DieNotNil(err)
 	return run("./"+SignCaScript, tmpFile.Name())
 }
+
+type KeyStorage interface {
+	setEnvVariables()
+}
+
+type KeyStorageHsm struct {
+	Hsm HsmInfo
+}
+
+func (s *KeyStorageHsm) setEnvVariables() {
+	os.Setenv("HSM_MODULE", s.Hsm.Module)
+	os.Setenv("HSM_PIN", s.Hsm.Pin)
+	os.Setenv("HSM_TOKEN_LABEL", s.Hsm.TokenLabel)
+}
+
+type KeyStorageFiles struct{}
+
+func (s *KeyStorageFiles) setEnvVariables() {}

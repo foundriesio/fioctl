@@ -46,7 +46,7 @@ func doDeviceGateway(cmd *cobra.Command, args []string) {
 	subcommands.DieNotNil(err)
 
 	fmt.Println("Signing CSR")
-	generatedCa := x509.SignEl2GoCsr(csr.Value)
+	generatedCa := x509.SignEl2GoCsr(&x509.KeyStorageFiles{}, csr.Value)
 
 	fmt.Println("Uploading signed certificate")
 	errPrefix := "Unable to upload certificate:\n" + generatedCa

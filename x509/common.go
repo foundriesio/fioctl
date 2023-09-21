@@ -20,7 +20,16 @@ const (
 	CreateDeviceCaScript string = "create_device_ca"
 	SignCaScript         string = "sign_ca_csr"
 	SignTlsScript        string = "sign_tls_csr"
+
+	FactoryCaKeyPkcs11Id    string = "\x01"
+	FactoryCaKeyPkcs11Label string = "root-ca"
 )
+
+type HsmInfo struct {
+	Module     string
+	Pin        string
+	TokenLabel string
+}
 
 func readFile(filename string) string {
 	data, err := os.ReadFile(filename)

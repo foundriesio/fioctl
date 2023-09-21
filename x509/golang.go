@@ -31,7 +31,7 @@ func genRandomSerialNumber() *big.Int {
 	return serial
 }
 
-func genAndSaveKey(fn string) *ecdsa.PrivateKey {
+func genAndSaveKeyToFile(fn string) (*ecdsa.PrivateKey, *ecdsa.PublicKey) {
 	priv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	subcommands.DieNotNil(err)
 
@@ -43,10 +43,10 @@ func genAndSaveKey(fn string) *ecdsa.PrivateKey {
 	factoryKeyBytes := pem.EncodeToMemory(keyBlock)
 	err = os.WriteFile(fn, factoryKeyBytes, 0600)
 	subcommands.DieNotNil(err)
-	return priv
+	return priv, &priv.PublicKey
 }
 
-func genCertificate(crtTemplate *x509.Certificate, caCrt *x509.Certificate, pub any, signerKey *ecdsa.PrivateKey) string {
+func genCertificate(crtTemplate *x509.Certificate, caCrt *x509.Certificate, pub any, signerKey any) string {
 	certRaw, err := x509.CreateCertificate(rand.Reader, crtTemplate, caCrt, pub, signerKey)
 	subcommands.DieNotNil(err)
 
@@ -112,8 +112,8 @@ func marshalSubject(cn string, ou string) pkix.Name {
 	return pkix.Name{ExtraNames: pkixAttrTypeValue}
 }
 
-func CreateFactoryCa(ou string) string {
-	priv := genAndSaveKey(FactoryCaKeyFile)
+func CreateFactoryCa(storage KeyStorage, ou string) string {
+	priv, pub := storage.genAndSaveFactoryCaKey()
 	crtTemplate := x509.Certificate{
 		SerialNumber: genRandomSerialNumber(),
 		Subject:      marshalSubject("Factory-CA", ou),
@@ -125,15 +125,14 @@ func CreateFactoryCa(ou string) string {
 		KeyUsage:              x509.KeyUsageCertSign,
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},
 	}
-	factoryCaString := genCertificate(&crtTemplate, &crtTemplate, &priv.PublicKey, priv)
+	factoryCaString := genCertificate(&crtTemplate, &crtTemplate, pub, priv)
 	writeFile(FactoryCaCertFile, factoryCaString, 0400)
 	return factoryCaString
 }
-
-func CreateDeviceCa(cn string, ou string) string {
-	factoryKey := parsePemPrivateKey(readFile(FactoryCaKeyFile))
+func CreateDeviceCa(storage KeyStorage, cn string, ou string) string {
+	factoryKey := storage.getFactoryCaKey()
 	factoryCa := parsePemCertificate(readFile(FactoryCaCertFile))
-	priv := genAndSaveKey(DeviceCaKeyFile)
+	_, pub := genAndSaveKeyToFile(DeviceCaKeyFile)
 	crtTemplate := x509.Certificate{
 		SerialNumber: genRandomSerialNumber(),
 		Subject:      marshalSubject(cn, ou),
@@ -146,14 +145,14 @@ func CreateDeviceCa(cn string, ou string) string {
 		MaxPathLenZero:        true,
 		KeyUsage:              x509.KeyUsageCertSign,
 	}
-	crtPem := genCertificate(&crtTemplate, factoryCa, &priv.PublicKey, factoryKey)
+	crtPem := genCertificate(&crtTemplate, factoryCa, pub, factoryKey)
 	writeFile(DeviceCaCertFile, crtPem, 0400)
 	return crtPem
 }
 
-func SignTlsCsr(csrPem string) string {
+func SignTlsCsr(storage KeyStorage, csrPem string) string {
 	csr := parsePemCertificateRequest(csrPem)
-	factoryKey := parsePemPrivateKey(readFile(FactoryCaKeyFile))
+	factoryKey := storage.getFactoryCaKey()
 	factoryCa := parsePemCertificate(readFile(FactoryCaCertFile))
 	crtTemplate := x509.Certificate{
 		SerialNumber: genRandomSerialNumber(),
@@ -171,9 +170,9 @@ func SignTlsCsr(csrPem string) string {
 	return crtPem
 }
 
-func SignCaCsr(csrPem string) string {
+func SignCaCsr(storage KeyStorage, csrPem string) string {
 	csr := parsePemCertificateRequest(csrPem)
-	factoryKey := parsePemPrivateKey(readFile(FactoryCaKeyFile))
+	factoryKey := storage.getFactoryCaKey()
 	factoryCa := parsePemCertificate(readFile(FactoryCaCertFile))
 	crtTemplate := x509.Certificate{
 		SerialNumber: genRandomSerialNumber(),
@@ -191,6 +190,21 @@ func SignCaCsr(csrPem string) string {
 	return crtPem
 }
 
-func SignEl2GoCsr(csrPem string) string {
-	return SignCaCsr(csrPem)
+func SignEl2GoCsr(storage KeyStorage, csrPem string) string {
+	return SignCaCsr(storage, csrPem)
+}
+
+type KeyStorage interface {
+	genAndSaveFactoryCaKey() (any, any)
+	getFactoryCaKey() any
+}
+
+type KeyStorageFiles struct{}
+
+func (s *KeyStorageFiles) genAndSaveFactoryCaKey() (any, any) {
+	return genAndSaveKeyToFile(FactoryCaKeyFile)
+}
+
+func (s *KeyStorageFiles) getFactoryCaKey() any {
+	return parsePemPrivateKey(readFile(FactoryCaKeyFile))
 }

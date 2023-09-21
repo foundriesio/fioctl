@@ -15,9 +15,7 @@ import (
 var (
 	createOnlineCA bool
 	createLocalCA  bool
-	hsmModule      string
-	hsmPin         string
-	hsmTokenLabel  string
+	hsm            x509.HsmInfo
 )
 
 func init() {
@@ -58,9 +56,9 @@ This is optional.`,
 	caCmd.AddCommand(cmd)
 	cmd.Flags().BoolVarP(&createOnlineCA, "online-ca", "", true, "Create an online CA owned by Foundries that works with lmp-device-register")
 	cmd.Flags().BoolVarP(&createLocalCA, "local-ca", "", true, "Create a local CA that you can use for signing your own device certificates")
-	cmd.Flags().StringVarP(&hsmModule, "hsm-module", "", "", "Create key on an PKCS#11 compatible HSM using this module")
-	cmd.Flags().StringVarP(&hsmPin, "hsm-pin", "", "", "The PKCS#11 PIN to set up on the HSM, if using one")
-	cmd.Flags().StringVarP(&hsmTokenLabel, "hsm-token-label", "", "device-gateway-root", "The label of the HSM token created for this")
+	cmd.Flags().StringVarP(&hsm.Module, "hsm-module", "", "", "Create key on an PKCS#11 compatible HSM using this module")
+	cmd.Flags().StringVarP(&hsm.Pin, "hsm-pin", "", "", "The PKCS#11 PIN to set up on the HSM, if using one")
+	cmd.Flags().StringVarP(&hsm.TokenLabel, "hsm-token-label", "", "device-gateway-root", "The label of the HSM token created for this")
 }
 
 func writeFile(filename, contents string, mode os.FileMode) {
@@ -77,19 +75,20 @@ func getDeviceCaCommonName(factory string) string {
 }
 
 func doCreateCA(cmd *cobra.Command, args []string) {
+	var storage x509.KeyStorage
 	factory := viper.GetString("factory")
 	certsDir := args[0]
 	logrus.Debugf("Create CA for %s under %s", factory, certsDir)
 	subcommands.DieNotNil(os.Chdir(certsDir))
 
-	if len(hsmModule) > 0 {
-		if len(hsmPin) == 0 {
+	if len(hsm.Module) > 0 {
+		if len(hsm.Pin) == 0 {
 			fmt.Println("ERROR: --hsm-pin is required with --hsm-module")
 			os.Exit(1)
 		}
-		os.Setenv("HSM_MODULE", hsmModule)
-		os.Setenv("HSM_PIN", hsmPin)
-		os.Setenv("HSM_TOKEN_LABEL", hsmTokenLabel)
+		storage = &x509.KeyStorageHsm{Hsm: hsm}
+	} else {
+		storage = &x509.KeyStorageFiles{}
 	}
 
 	resp, err := api.FactoryCreateCA(factory)
@@ -103,15 +102,15 @@ func doCreateCA(cmd *cobra.Command, args []string) {
 	writeFile(x509.SignTlsScript, *resp.SignTlsScript, 0700)
 
 	fmt.Println("Creating offline root CA for Factory")
-	resp.RootCrt = x509.CreateFactoryCa(factory)
+	resp.RootCrt = x509.CreateFactoryCa(storage, factory)
 
 	fmt.Println("Signing Foundries TLS CSR")
-	resp.TlsCrt = x509.SignTlsCsr(resp.TlsCsr)
+	resp.TlsCrt = x509.SignTlsCsr(storage, resp.TlsCsr)
 	writeFile(x509.TlsCertFile, resp.TlsCrt, 0400)
 
 	if createOnlineCA {
 		fmt.Println("Signing Foundries CSR for online use")
-		resp.CaCrt = x509.SignCaCsr(resp.CaCsr)
+		resp.CaCrt = x509.SignCaCsr(storage, resp.CaCsr)
 		writeFile(x509.OnlineCaCertFile, resp.CaCrt, 0400)
 	}
 
@@ -121,7 +120,7 @@ func doCreateCA(cmd *cobra.Command, args []string) {
 			resp.CaCrt += "\n"
 		}
 		commonName := getDeviceCaCommonName(factory)
-		resp.CaCrt += x509.CreateDeviceCa(commonName, factory)
+		resp.CaCrt += x509.CreateDeviceCa(storage, commonName, factory)
 	}
 
 	fmt.Println("Uploading signed certs to Foundries")
