@@ -2,6 +2,8 @@ package el2g
 
 import (
 	"fmt"
+	"math/big"
+	"strings"
 
 	"github.com/cheynewallace/tabby"
 	"github.com/foundriesio/fioctl/subcommands"
@@ -43,8 +45,13 @@ func init() {
 #  $ ssscli se05x uid | grep "Unique ID:" | cut -d: -f2
 #  ssscli se05x uid | grep "Unique ID:" | cut -d: -f2
 #  04005001eee3ba1ee96e60047e57da0f6880
-# This ID is hexadecimal and must be prefixed in the CLI with 0x. For example:
+# This ID is hexadecimal and must be prefixed in the CLI with 0x0 (0x + 36 digits). 
+# For example:
 fioctl el2g devices add 935389312472 0x04005001eee3ba1ee96e60047e57da0f6880
+
+# A base-10 decimal ID(42 digits) may be used as well. To do the equivalent of
+# the example above in decimal:
+fioctl el2g devices add 935389312472 348555492004256518532939906410866457667712
 
 # Add a production device with an SE051 HSM (product ID: 935414457472)
 fioctl el2g devices add --production 935414457472 0x04005001eee3ba1ee96e60047e57da0f6880
@@ -77,6 +84,7 @@ func doList(cmd *cobra.Command, args []string) {
 func doShow(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 	deviceId := args[0]
+	verifyDeviceId(deviceId)
 
 	info, err := api.El2gProductInfo(factory, deviceId)
 	subcommands.DieNotNil(err)
@@ -113,6 +121,7 @@ func doAdd(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 	prodId := args[0]
 	deviceId := args[1]
+	verifyDeviceId(deviceId)
 	subcommands.DieNotNil(api.El2gAddDevice(factory, prodId, deviceId, production))
 }
 
@@ -120,5 +129,29 @@ func doDelete(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 	prodId := args[0]
 	deviceId := args[1]
+	verifyDeviceId(deviceId)
 	subcommands.DieNotNil(api.El2gDeleteDevice(factory, prodId, deviceId, production))
+}
+
+func verifyDeviceId(id string) {
+	msg := "device IDs must be either 36 digit hex including a 0x0 prefix or 42 digit base-10 value. %s"
+	if strings.HasPrefix(id, "0x") {
+		if len(id) != 38 {
+			detail := fmt.Sprintf("Invalid hexadecimal length: %d", len(id))
+			subcommands.DieNotNil(fmt.Errorf(msg, detail))
+		}
+		n := new(big.Int)
+		if _, ok := n.SetString(id[2:], 16); !ok {
+			subcommands.DieNotNil(fmt.Errorf(msg, "Invalid base 16 conversion to big int"))
+		}
+	} else {
+		if len(id) != 42 {
+			detail := fmt.Sprintf("Invalid decimal length: %d", len(id))
+			subcommands.DieNotNil(fmt.Errorf(msg, detail))
+		}
+		n := new(big.Int)
+		if _, ok := n.SetString(id, 10); !ok {
+			subcommands.DieNotNil(fmt.Errorf(msg, "Invalid base 10 conversion to big int"))
+		}
+	}
 }
