@@ -1,3 +1,27 @@
 run:
   deadline: 5m
   allow-parallel-runners: true
+
+linters:
+  enable:
+    - dupl
+    - errcheck
+    - exportloopref
+    - goconst
+    - gocyclo
+    - gofmt
+    - goimports
+    - gosimple
+    - govet
+    - ineffassign
+    - misspell
+    - staticcheck
+    - typecheck
+    - unconvert
+    - unparam
+    - unused
+    #FIXME: Required fix the errors to allow enable the following checks
+    #- lll
+    #- nakedret
+    #- revive
+>>>>>>> 91f987b (linter: Add lint config with extra checks which are commonly used)
