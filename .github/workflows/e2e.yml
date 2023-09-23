@@ -1,0 +1,28 @@
+name: E2E Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    name: "End-to-end Tests"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '~1.19'
+
+      - name: Clone the code
+        uses: actions/checkout@v3
+
+      - name: Build Binary
+        run: |
+          make fioctl-linux-amd64
+          GOBIN=$(go env GOPATH)/bin
+          mv ./bin/fioctl-linux-amd64 $GOBIN/fioctl
+          chmod +x $GOBIN/fioctl
+
+      - name: Run E2E tests
+        run: make test-e2e

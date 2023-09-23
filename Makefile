@@ -38,3 +38,6 @@ container-init:
 container-build:
 	docker run --rm -ti -v $(shell pwd):/fioctl fioctl-build make build
 
+.PHONY: test-e2e
+test-e2e:  ## Run e2e tests
+	go test -v ./test/e2e/not_logged/
