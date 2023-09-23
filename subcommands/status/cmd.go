@@ -15,6 +15,8 @@ var api *client.Api
 
 var inactiveThreshold int
 
+const untagged = "(Untagged)"
+
 func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "status",
@@ -48,7 +50,7 @@ func showStatus(cmd *cobra.Command, args []string) {
 				name += " (wave)"
 			} else if len(name) == 0 {
 				// Prod devices can be untagged, although they cannot fetch updates
-				name = "(Untagged)"
+				name = untagged
 			}
 			t.AddLine(name, tag.LatestTarget, tag.DevicesTotal, tag.DevicesOnLatest,
 				tag.DevicesOnOrphan, tag.DevicesOnline)
@@ -63,7 +65,7 @@ func showStatus(cmd *cobra.Command, args []string) {
 		name := tag.Name
 		if len(name) == 0 {
 			// Test devices can be untagged and can even fetch updates
-			name = "(Untagged)"
+			name = untagged
 		}
 		t.AddLine(name, tag.LatestTarget, tag.DevicesTotal, tag.DevicesOnLatest, tag.DevicesOnline)
 	}
@@ -80,7 +82,7 @@ func printTargetStatus(tagPrefix string, tagStatus []client.TagStatus) {
 		name := tag.Name
 		if len(name) == 0 {
 			// These are untagged devices:
-			name = "(Untagged)"
+			name = untagged
 		}
 		fmt.Printf("\n## %s Tag: %s\n", tagPrefix, name)
 		t := subcommands.Tabby(1, "TARGET", "DEVICES", "INSTALLING", "DETAILS")

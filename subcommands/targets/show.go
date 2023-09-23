@@ -25,6 +25,9 @@ type formats map[string]string
 
 var sbomFormats formats
 
+const table = "table"
+const application_spdx = "application/application_spdx.json"
+
 func init() {
 	showCmd := &cobra.Command{
 		Use:   "show <version>",
@@ -83,14 +86,14 @@ func init() {
 	}
 
 	sbomFormats = make(formats, 4)
-	sbomFormats["table"] = "table"
-	sbomFormats["spdx"] = "application/spdx.json"
+	sbomFormats[table] = table
+	sbomFormats["spdx"] = application_spdx
 	sbomFormats["cyclonedx"] = "application/cyclone.json"
 	sbomFormats["csv"] = "text/csv"
 	allowed := "table, spdx, cyclonedx, or csv"
 
 	showCmd.AddCommand(sbomCmd)
-	sbomCmd.Flags().String("format", "table", "The format to download/display. Must be one of "+allowed)
+	sbomCmd.Flags().String("format", table, "The format to download/display. Must be one of "+allowed)
 	sbomCmd.Flags().String("download", "", "Download SBOM(s) to a directory")
 }
 
@@ -340,12 +343,12 @@ func getSbomTargetName(factory, prodTag, version string) string {
 
 func displaySbom(factory, targetName, path, format string) {
 	contentType := format
-	if format == "table" {
-		contentType = "application/spdx.json"
+	if format == table {
+		contentType = application_spdx
 	}
 	data, err := api.SbomDownload(factory, targetName, path, contentType)
 	subcommands.DieNotNil(err)
-	if format == "table" {
+	if format == table {
 		// special handling for default
 		var doc client.SpdxDocument
 		subcommands.DieNotNil(json.Unmarshal(data, &doc))
@@ -367,8 +370,8 @@ func doDownloadSboms(factory, targetName, downloadPath, format string, args []st
 		subcommands.DieNotNil(fmt.Errorf("download path is not a directory: %s", downloadPath))
 	}
 
-	if format == "table" {
-		format = "application/spdx.json"
+	if format == table {
+		format = application_spdx
 	}
 
 	filter := ""
