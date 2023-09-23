@@ -24,4 +24,3 @@ linters:
     #- lll
     #- nakedret
     #- revive
->>>>>>> 91f987b (linter: Add lint config with extra checks which are commonly used)

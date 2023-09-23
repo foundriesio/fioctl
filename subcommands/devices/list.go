@@ -68,25 +68,27 @@ func ownerFormatter(d *client.Device) string {
 }
 
 var Columns = map[string]column{
-	"name":           {func(d *client.Device) string { return d.Name }},
-	"uuid":           {func(d *client.Device) string { return d.Uuid }},
-	"factory":        {func(d *client.Device) string { return d.Factory }},
-	"owner":          {ownerFormatter},
-	"device-group":   {func(d *client.Device) string { return d.GroupName }},
-	"target":         {func(d *client.Device) string { return d.TargetName }},
-	"status":         {statusFormatter},
-	"apps":           {func(d *client.Device) string { return strings.Join(d.DockerApps, ",") }},
-	"up-to-date":     {func(d *client.Device) string { return fmt.Sprintf("%v", d.UpToDate) }},
-	"tag":            {func(d *client.Device) string { return d.Tag }},
-	"created-at":     {func(d *client.Device) string { return d.ChangeMeta.CreatedAt }},
-	"created-by":     {func(d *client.Device) string { return d.ChangeMeta.CreatedBy }},
-	"updated-at":     {func(d *client.Device) string { return d.ChangeMeta.UpdatedAt }},
-	"updated-by":     {func(d *client.Device) string { return d.ChangeMeta.UpdatedBy }},
-	"last-seen":      {func(d *client.Device) string { return d.LastSeen }},
-	"ostree-hash":    {func(d *client.Device) string { return d.OstreeHash }},
-	"current-update": {func(d *client.Device) string { return d.CurrentUpdate }},
-	"is-prod":        {func(d *client.Device) string { return fmt.Sprintf("%v", d.IsProd) }},
-	"is-wave":        {func(d *client.Device) string { return fmt.Sprintf("%v", d.IsWave) }},
+	"name":         {func(d *client.Device) string { return d.Name }},
+	"uuid":         {func(d *client.Device) string { return d.Uuid }},
+	"factory":      {func(d *client.Device) string { return d.Factory }},
+	"owner":        {ownerFormatter},
+	"device-group": {func(d *client.Device) string { return d.GroupName }},
+	"target":       {func(d *client.Device) string { return d.TargetName }},
+	"status":       {statusFormatter},
+	"apps":         {func(d *client.Device) string { return strings.Join(d.DockerApps, ",") }},
+	"up-to-date":   {func(d *client.Device) string { return fmt.Sprintf("%v", d.UpToDate) }},
+	"tag":          {func(d *client.Device) string { return d.Tag }},
+	"created-at":   {func(d *client.Device) string { return d.ChangeMeta.CreatedAt }},
+	"created-by":   {func(d *client.Device) string { return d.ChangeMeta.CreatedBy }},
+	"updated-at":   {func(d *client.Device) string { return d.ChangeMeta.UpdatedAt }},
+	"updated-by":   {func(d *client.Device) string { return d.ChangeMeta.UpdatedBy }},
+	"last-seen":    {func(d *client.Device) string { return d.LastSeen }},
+	"ostree-hash":  {func(d *client.Device) string { return d.OstreeHash }},
+	// TODO: Check if we can fix
+	//nolint:misspell
+	"curent-update": {func(d *client.Device) string { return d.CurrentUpdate }},
+	"is-prod":       {func(d *client.Device) string { return fmt.Sprintf("%v", d.IsProd) }},
+	"is-wave":       {func(d *client.Device) string { return fmt.Sprintf("%v", d.IsWave) }},
 }
 
 func addPaginationFlags(cmd *cobra.Command) {
