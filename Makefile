@@ -3,8 +3,6 @@ COMMIT?=$(shell git describe HEAD)$(shell git diff --quiet || echo '+dirty')
 # Use linker flags to provide commit info
 LDFLAGS=-ldflags "-X=github.com/foundriesio/fioctl/subcommands/version.Commit=$(COMMIT)"
 
-linter:=$(shell which golangci-lint 2>/dev/null || echo $(HOME)/go/bin/golangci-lint)
-
 build: fioctl-linux-amd64 fioctl-linux-arm64 fioctl-windows-amd64 fioctl-darwin-amd64 fioctl-darwin-arm64
 	@true
 
@@ -24,12 +22,27 @@ fioctl-%:
 		go build $(LDFLAGS) -o bin/$@ main.go
 	@if [ "$@" = "fioctl-windows-amd64" ]; then mv bin/$@ bin/$@.exe; fi
 
+GOLANGCI_LINT = $(shell pwd)/bin/golangci-lint
+golangci-lint:
+	@[ -f $(GOLANGCI_LINT) ] || { \
+	set -e ;\
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell dirname $(GOLANGCI_LINT)) v1.54.2 ;\
+	}
+
+.PHONY: lint
+lint: golangci-lint  ## Run linter
+	$(GOLANGCI_LINT) run --timeout=5m
+
+.PHONY: lint-fix
+lint-fix: golangci-lint ## Run golangci-lint linter and perform fixes
+	$(GOLANGCI_LINT) run --fix
+
 format:
 	@gofmt -l  -w ./
 check:
 	@test -z $(shell gofmt -l ./ | tee /dev/stderr) || echo "[WARN] Fix formatting issues with 'make format'"
 	@test -x $(linter) || (echo "Please install linter from https://github.com/golangci/golangci-lint/releases/tag/v1.51.2 to $(HOME)/go/bin")
-	$(linter) run
+	make lint
 
 # Use the image for Dockerfile.build to build and install the tool.
 container-init:

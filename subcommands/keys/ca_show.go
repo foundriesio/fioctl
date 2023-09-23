@@ -169,6 +169,9 @@ func prettyPrint(cert string) {
 		case *ecdsa.PublicKey:
 			fmt.Println("\t\tNIST CURVE:", pub.Curve.Params().Name)
 			fmt.Print("\t\t\t")
+
+			//FIXME: Fix deprecation and remove the nolint
+			//nolint: staticcheck: SA1019: elliptic.Marshal has been deprecated since Go 1.21: for ECDH, use the crypto/ecdh package. This function returns an encoding equivalent to that of PublicKey.Bytes in crypto/ecdh. (staticcheck)
 			for idx, b := range elliptic.Marshal(pub.Curve, pub.X, pub.Y) {
 				fmt.Printf("%02x:", b)
 				if (idx+1)%15 == 0 {
