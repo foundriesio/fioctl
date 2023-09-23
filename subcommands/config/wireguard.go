@@ -5,6 +5,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/fatih/color"
+
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -59,7 +61,7 @@ func (w *WireguardServerConfig) Unmarshall(configVal string) {
 		} else if k == "enabled" {
 			w.Enabled = v != "0"
 		} else {
-			fmt.Println("ERROR: Unexpected client config key: ", k)
+			color.Red(fmt.Sprintf("ERROR: Unexpected client config key: %s", k))
 			os.Exit(1)
 		}
 	}

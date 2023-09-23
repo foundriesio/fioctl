@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/fatih/color"
+
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -25,7 +27,7 @@ func doDelete(cmd *cobra.Command, args []string) {
 	for _, name := range args {
 		fmt.Printf("Deleting %s .. ", name)
 		if err := api.DeviceDelete(factory, name); err != nil {
-			fmt.Printf("failed\n%s", err)
+			color.Red(fmt.Sprintf("failed\n%s", err))
 			os.Exit(1)
 		} else {
 			fmt.Printf("ok\n")

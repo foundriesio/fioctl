@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/fatih/color"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -63,12 +64,13 @@ func Execute() {
 	}
 
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
+		color.Red(fmt.Sprint(err))
 		os.Exit(1)
 	}
 }
 
 func init() {
+	logrus.SetFormatter(&logrus.TextFormatter{DisableTimestamp: true})
 	cobra.OnInitialize(initConfig)
 
 	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file (default is $HOME/.config/fioctl.yaml)")
@@ -103,12 +105,12 @@ func init() {
 func getConfigDir() string {
 	config, err := homedir.Expand("~/.config")
 	if err != nil {
-		fmt.Println(err)
+		color.Red(fmt.Sprint(err))
 		os.Exit(1)
 	}
 	if _, err := os.Stat(config); errors.Is(err, fs.ErrNotExist) {
 		if err := os.Mkdir(config, 0755); err != nil {
-			fmt.Println(err)
+			color.Red(fmt.Sprint(err))
 			os.Exit(1)
 		}
 	}
@@ -137,7 +139,7 @@ func initConfig() {
 			logrus.Debug("Config file not found")
 		} else {
 			// Config file was found but another error was produced
-			fmt.Println("ERROR: ", err)
+			color.Red("ERROR: ", err)
 			os.Exit(1)
 		}
 	}

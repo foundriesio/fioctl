@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/fatih/color"
+
 	"github.com/cheynewallace/tabby"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -54,7 +56,7 @@ func ownerFormatter(d *client.Device) string {
 	logrus.Debugf("Looking up user %s in factory %s", d.Owner, d.Factory)
 	users, err := api.UsersList(d.Factory)
 	if err != nil {
-		logrus.Errorf("Unable to look up users: %s", err)
+		color.Red(fmt.Sprintf("Unable to look up users: %s", err))
 		return "???"
 	}
 	id := "<not in factory: " + d.Factory + ">"
@@ -185,7 +187,7 @@ func showDeviceList(dl *client.DeviceList, showColumns []string) {
 	var cols = make([]interface{}, len(showColumns))
 	for idx, c := range showColumns {
 		if _, ok := Columns[c]; !ok {
-			fmt.Println("ERROR: Invalid column name:", c)
+			color.Red("ERROR: Invalid column name:", c)
 			os.Exit(1)
 		}
 		cols[idx] = strings.ToUpper(c)

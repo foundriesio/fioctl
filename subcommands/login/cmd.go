@@ -7,6 +7,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/fatih/color"
+
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -69,7 +71,7 @@ func doLogin(cmd *cobra.Command, args []string) {
 	}
 
 	if creds.Config.ClientId == "" || creds.Config.ClientSecret == "" {
-		fmt.Println("Cannot execute login without client ID or client secret.")
+		color.Red("Cannot execute login without client ID or client secret.")
 		os.Exit(1)
 	}
 
@@ -106,7 +108,7 @@ func promptForCreds(credsUrl string) (string, string) {
 	clientSecret := strings.Trim(scanner.Text(), " ")
 
 	if clientId == "" || clientSecret == "" {
-		fmt.Println("Client ID and client credentials are both required.")
+		color.Red("ERROR: Client ID and client credentials are both required.")
 		os.Exit(1)
 	}
 

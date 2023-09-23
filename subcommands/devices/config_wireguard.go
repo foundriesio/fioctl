@@ -7,6 +7,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/fatih/color"
+
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -54,7 +56,7 @@ func (w *WireguardClientConfig) Unmarshall(configVal string) {
 		} else if k == "pubkey" {
 			w.PublicKey = strings.TrimSpace(parts[1])
 		} else {
-			fmt.Println("ERROR: Unexpected client config key: ", k)
+			color.Red(fmt.Sprintf("ERROR: Unexpected client config key: %s ", k))
 			os.Exit(1)
 		}
 	}
@@ -94,7 +96,7 @@ func factoryIps(factory string) map[uint32]bool {
 	for _, item := range ipList {
 		ip, err := ipToUint32(item.Ip)
 		if err != nil {
-			logrus.Errorf("Unable to compute VPN Address for %s - %s", item.Name, item.Ip)
+			color.Red(fmt.Sprintf("Unable to compute VPN Address for %s - %s", item.Name, item.Ip))
 		} else {
 			ips[ip] = true
 		}
@@ -105,13 +107,13 @@ func factoryIps(factory string) map[uint32]bool {
 func findVpnAddress(factory string) string {
 	wsc := config.LoadWireguardServerConfig(factory, api)
 	if len(wsc.VpnAddress) == 0 || !wsc.Enabled {
-		fmt.Println("ERROR: A wireguard server has not been configured for this factory")
+		color.Red("ERROR: A wireguard server has not been configured for this factory")
 		os.Exit(1)
 	}
 	logrus.Debugf("VPN server address is: %s", wsc.VpnAddress)
 	serverIp, err := ipToUint32(wsc.VpnAddress)
 	if err != nil {
-		fmt.Println("ERROR: Wireguard server has an invalid IP Address: ", wsc.VpnAddress)
+		color.Red("ERROR: Wireguard server has an invalid IP Address: ", wsc.VpnAddress)
 		os.Exit(1)
 	}
 
@@ -123,7 +125,7 @@ func findVpnAddress(factory string) string {
 		}
 	}
 
-	fmt.Println("ERROR: Unable to find unique IP address for VPN")
+	color.Red("ERROR: Unable to find unique IP address for VPN")
 	os.Exit(1)
 	return ""
 }
@@ -144,7 +146,7 @@ func doConfigWireguard(cmd *cobra.Command, args []string) {
 		}
 		os.Exit(0)
 	} else if args[1] != "enable" && args[1] != "disable" {
-		fmt.Printf("Invalid argument: '%s'. Must be 'enable' or 'disable'\n", args[1])
+		color.Red(fmt.Sprintf("Invalid argument: '%s'. Must be 'enable' or 'disable'\n", args[1]))
 		os.Exit(0)
 	}
 
@@ -161,7 +163,7 @@ func doConfigWireguard(cmd *cobra.Command, args []string) {
 
 	if args[1] == "enable" {
 		if len(wcc.PublicKey) == 0 {
-			fmt.Println("ERROR: Device has no public key for VPN")
+			color.Red("ERROR: Device has no public key for VPN")
 			os.Exit(1)
 		}
 		wcc.Enabled = true

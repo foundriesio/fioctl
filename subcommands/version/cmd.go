@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/fatih/color"
+
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -76,7 +78,7 @@ func DieNotNil(err error, message ...string) {
 			parts = append(parts, p)
 		}
 		parts = append(parts, err)
-		fmt.Println(parts...)
+		color.Red(fmt.Sprint(parts...))
 		os.Exit(1)
 	}
 }

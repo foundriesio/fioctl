@@ -7,6 +7,8 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/fatih/color"
+
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -41,16 +43,16 @@ func doEdit(cmd *cobra.Command, args []string) {
 	// Create temp file to edit with
 	tmpfile, err := os.CreateTemp("", "targets.*.json")
 	if err != nil {
-		fmt.Println("Unable to create tempfile: ", err)
+		color.Red("Unable to create tempfile: ", err)
 		os.Exit(1)
 	}
 	defer os.Remove(tmpfile.Name())
 	if _, err := tmpfile.Write(orig); err != nil {
-		fmt.Println("Unable to write tempfile: ", err)
+		color.Red("Unable to write tempfile: ", err)
 		os.Exit(1)
 	}
 	if err := tmpfile.Close(); err != nil {
-		fmt.Println("Unable to close tempfile: ", err)
+		color.Red("Unable to close tempfile: ", err)
 		os.Exit(1)
 	}
 
@@ -72,7 +74,7 @@ func doEdit(cmd *cobra.Command, args []string) {
 	// Read it and see if its changed
 	content, err := os.ReadFile(tmpfile.Name())
 	if err != nil {
-		fmt.Println("ERROR: Unable to re-read tempfile:", err)
+		color.Red("ERROR: Unable to re-read tempfile:", err)
 	}
 	if bytes.Equal(content, orig) {
 		fmt.Println("No changes found, exiting.")
@@ -83,7 +85,7 @@ func doEdit(cmd *cobra.Command, args []string) {
 	var newTargets tuf.Files
 	err = json.Unmarshal(content, &newTargets)
 	if err != nil {
-		fmt.Println("Unable to parse new targets: ", err)
+		color.Red("Unable to parse new targets: ", err)
 		os.Exit(1)
 	}
 	type TargetsUp struct {
@@ -92,7 +94,7 @@ func doEdit(cmd *cobra.Command, args []string) {
 	upload := TargetsUp{newTargets}
 	content, err = json.Marshal(upload)
 	if err != nil {
-		fmt.Println("Unable to marshall targets data: ", err)
+		color.Red("Unable to marshall targets data: ", err)
 		os.Exit(1)
 	}
 

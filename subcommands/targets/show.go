@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/fatih/color"
+
 	"github.com/cheynewallace/tabby"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -164,7 +166,7 @@ func doShowComposeApp(cmd *cobra.Command, args []string) {
 	for name, custom := range targets {
 		_, ok := custom.ComposeApps[appName]
 		if !ok {
-			fmt.Println("ERROR: App not found in target")
+			color.Red("ERROR: App not found in target")
 			os.Exit(1)
 		}
 		appInfo, err := api.TargetComposeApp(factory, name, appName)
@@ -172,12 +174,12 @@ func doShowComposeApp(cmd *cobra.Command, args []string) {
 
 		fmt.Println("Version:\n\t", appInfo.Uri)
 		if len(appInfo.Error) > 0 {
-			fmt.Println("Error:\n\t", appInfo.Error)
+			color.Red(fmt.Sprintf("Error:\n\t %s", appInfo.Error))
 		}
 		if appInfo.Warnings != nil {
-			fmt.Println("Warnings:")
+			color.Yellow("Warnings:")
 			for _, warn := range appInfo.Warnings {
-				fmt.Println("\t", warn)
+				color.Yellow("\t", warn)
 			}
 		}
 
@@ -265,7 +267,7 @@ func getTargets(factory string, prodTag string, version string) ([]string, map[s
 		names = append(names, name)
 	}
 	if len(matches) == 0 {
-		fmt.Println("ERROR: no target found for this version")
+		color.Red("ERROR: no target found for this version")
 		os.Exit(1)
 	}
 	sort.Strings(names)

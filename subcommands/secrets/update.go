@@ -1,9 +1,10 @@
 package secrets
 
 import (
-	"fmt"
 	"os"
 	"strings"
+
+	"github.com/fatih/color"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -42,7 +43,7 @@ func doUpdate(cmd *cobra.Command, args []string) {
 	for i, arg := range args {
 		parts := strings.SplitN(arg, "=", 2)
 		if len(parts) != 2 {
-			fmt.Println("ERROR: Invalid key=value argument: ", arg)
+			color.Red("ERROR: Invalid key=value argument: ", arg)
 			os.Exit(1)
 		}
 		secrets[i].Name = parts[0]
@@ -67,7 +68,7 @@ func doUpdate(cmd *cobra.Command, args []string) {
 	} else if len(triggers) == 1 {
 		pt = triggers[0]
 	} else {
-		fmt.Println("ERROR: Factory configuration issue. Factory has unexpected number of triggers.")
+		color.Red("ERROR: Factory configuration issue. Factory has unexpected number of triggers.")
 		os.Exit(1)
 	}
 

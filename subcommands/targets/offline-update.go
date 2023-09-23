@@ -13,6 +13,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/fatih/color"
+
 	"github.com/foundriesio/fioctl/client"
 	"github.com/foundriesio/fioctl/subcommands"
 	"github.com/spf13/cobra"
@@ -90,7 +92,7 @@ func doOfflineUpdate(cmd *cobra.Command, args []string) {
 			fmt.Printf("Downloading Apps fetched by the `assemble-system-image` run; build number:  %d, tag: %s...\n", ti.version, ti.buildTag)
 			err = downloadApps(factory, targetName, ti.version, ti.buildTag, path.Join(dstDir, "apps"))
 			if herr := client.AsHttpError(err); herr != nil && herr.Response.StatusCode == 404 {
-				fmt.Println("WARNING: The Target Apps were not fetched by the `assemble` run, make sure that App preloading is enabled if needed. The update won't include any Apps!")
+				color.Yellow("WARNING: The Target Apps were not fetched by the `assemble` run, make sure that App preloading is enabled if needed. The update won't include any Apps!")
 			} else {
 				subcommands.DieNotNil(err, "Failed to download Target's Apps:")
 			}

@@ -5,6 +5,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/fatih/color"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
@@ -83,7 +85,7 @@ func doTag(cmd *cobra.Command, args []string) {
 			}
 		}
 		if len(updates) == 0 {
-			fmt.Println("ERROR: no targets found matching the given versions")
+			color.Red("ERROR: no targets found matching the given versions")
 			os.Exit(1)
 		}
 	} else {
@@ -100,7 +102,7 @@ func doTag(cmd *cobra.Command, args []string) {
 				}
 				fmt.Printf("Changing tags of %s from %s -> %s\n", name, custom.Tags, targetTags)
 			} else {
-				fmt.Printf("Target(%s) not found in targets.json\n", name)
+				color.Red(fmt.Sprintf("Target(%s) not found in targets.json\n", name))
 				os.Exit(1)
 			}
 		}

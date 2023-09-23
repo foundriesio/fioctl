@@ -5,6 +5,8 @@ import (
 	"os"
 	"regexp"
 
+	"github.com/fatih/color"
+
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -41,8 +43,8 @@ func validateAppShortlist() {
 	pattern := `^[a-zA-Z0-9-_,]+$`
 	re := regexp.MustCompile(pattern)
 	if len(appsShortlist) > 0 && !re.MatchString(appsShortlist) {
-		fmt.Println("ERROR: Invalid value for apps:", appsShortlist)
-		fmt.Println("       apps must be ", pattern)
+		color.Red("ERROR: Invalid value for apps:", appsShortlist)
+		color.Red("       apps must be ", pattern)
 		os.Exit(1)
 	}
 }

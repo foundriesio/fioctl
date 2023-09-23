@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"text/tabwriter"
 
+	"github.com/fatih/color"
+
 	"github.com/cheynewallace/tabby"
 	canonical "github.com/docker/go/canonical/json"
 	homedir "github.com/mitchellh/go-homedir"
@@ -138,7 +140,7 @@ func DieNotNil(err error, message ...string) {
 			parts = append(parts, p)
 		}
 		parts = append(parts, err)
-		fmt.Println(parts...)
+		color.Red(fmt.Sprint(parts...))
 		for _, w := range onLastWill {
 			w()
 		}
@@ -177,7 +179,7 @@ func AssertWritable(path string) {
 	DieNotNil(err)
 	f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, st.Mode())
 	if err != nil {
-		fmt.Println("ERROR: File is not writeable:", path)
+		color.Red(fmt.Sprintf("ERROR: File is not writeable:%s", path))
 		os.Exit(1)
 	}
 	f.Close()

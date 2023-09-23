@@ -511,7 +511,7 @@ func (d Device) Online(inactiveHoursThreshold int) bool {
 			return false
 		}
 	} else {
-		logrus.Error(err)
+		color.Red(fmt.Sprint(err))
 		return false
 	}
 	return true
@@ -534,7 +534,7 @@ func NewApiClient(serverUrl string, config Config, caCertPath string, version st
 		}
 
 		if ok := rootCAs.AppendCertsFromPEM(certs); !ok {
-			logrus.Warning("No certs appended, using system certs only")
+			color.Yellow("No certs appended, using system certs only")
 		}
 		tlsCfg.RootCAs = rootCAs
 	}

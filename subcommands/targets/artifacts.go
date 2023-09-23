@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/fatih/color"
+
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -81,7 +83,7 @@ func (d *DlStatus) Write(p []byte) (int, error) {
 func downloadArtifact(factory string, target int, artifact string) {
 	firstSlash := strings.Index(artifact, "/")
 	if firstSlash < 1 {
-		fmt.Println("ERROR: Invalid artifact path:", artifact)
+		color.Red(fmt.Sprintf("ERROR: Invalid artifact path: %s", artifact))
 		os.Exit(1)
 	}
 	run := artifact[0:firstSlash]
