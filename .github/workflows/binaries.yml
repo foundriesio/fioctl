@@ -1,0 +1,65 @@
+name: Binaries Build
+
+on:
+  pull_request:
+
+jobs:
+  build-binaries:
+    name: Build Binaries
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '~1.19'
+
+      - name: Build All Binaries
+        run: make build
+
+      - name: Archive Binaries
+        uses: actions/upload-artifact@v2
+        with:
+          name: binaries
+          path: bin/
+          retention-days: 1
+
+  test:
+    needs: build-binaries
+    name: Check ${{ matrix.binary }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            binary: fioctl-linux-amd64
+          - os: ubuntu-latest
+            binary: fioctl-linux-arm64
+            qemu: true
+            qemu-platform: aarch64
+          - os: windows-latest
+            binary: fioctl-windows-amd64.exe
+          - os: macos-latest
+            binary: fioctl-darwin-amd64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Set up QEMU
+        if: matrix.qemu
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: ${{ matrix.qemu-platform }}
+
+      - name: Download Binaries
+        uses: actions/download-artifact@v2
+        with:
+          name: binaries
+          path: bin/
+
+      - name: Set Execute Permission
+        if: runner.os != 'Windows'
+        run: chmod +x ./bin/${{ matrix.binary }}
+
+      - name: Verify binary
+        run: ./bin/${{ matrix.binary }} help
+        shell: bash
