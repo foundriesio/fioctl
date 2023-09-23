@@ -24,25 +24,3 @@ scripts:
   unit-test: |
     #!/bin/sh -ex
     make check
-
-  create-binaries: |
-    #!/bin/sh -e
-    make
-
-    GH_REPO="https://api.github.com/repos/foundriesio/fioctl"
-    GH_TAGS="$GH_REPO/releases/tags/$tag"
-    AUTH="Authorization: token $(cat /secrets/githubtok)"
-
-    # Validate token.
-    curl -o /dev/null -sH "$AUTH" $GH_REPO || { echo "Error: Invalid repo, token or network issue!";  exit 1; }
-
-    response=$(curl -sH "$AUTH" $GH_TAGS)
-    eval $(echo "$response" | grep -m 1 "id.:" | grep -w id | tr : = | tr -cd '[[:alnum:]]=')
-    [ "$id" ] || { echo "Error: Failed to get release id for tag: $tag"; echo "$response" | awk 'length($0)<100' >&2; exit 1; }
-
-    cd bin
-    for filename in `ls`; do
-      echo "Uploading $filename ..."
-      GH_ASSET="https://uploads.github.com/repos/foundriesio/fioctl/releases/$id/assets?name=$filename)"
-      curl --data-binary @"$filename" -H "$AUTH" -H "Content-Type: application/octet-stream" $GH_ASSET
-    done
