@@ -7,6 +7,12 @@ COMMON_LDFLAGS=-v -s -w -linkmode=external $(VERSION_LDFLAGS)
 linter:=$(shell which golangci-lint 2>/dev/null || echo $(HOME)/go/bin/golangci-lint)
 builder:=$(shell which xgo 2>/dev/null || echo $(HOME)/go/bin/xgo)
 
+# A crazy-max/xgo does not allow to provide docker args, and creates files as root. The below script sets proper ownership.
+docker::=$(shell which docker)
+docker_command:=xgo-build . && chown --reference /build/bin /build/bin/fioctl-*
+# A substitution below removes the first (run) and the last (.) arguments from the docker run command passed by xgo.
+docker_alias=test $$1 = run && $(docker) run --entrypoint=sh "$${@:2:(($$\#-2))}" -c "$(docker_command)" || $(docker) "$$@"
+
 build: fioctl-linux-amd64 fioctl-linux-arm64 fioctl-windows-amd64 fioctl-darwin-amd64 fioctl-darwin-arm64
 	@true
 
@@ -31,8 +37,10 @@ fioctl-%:
 	# static PIE is not yet supported on Arm by GCC
 	$(eval TARGET_LDFLAGS:=$(if $(shell test $* = linux-amd64 && echo "ok"),-buildmode=pie '-extldflags=-static-pie -O1',$(TARGET_LDFLAGS)))
 	$(eval COMBINED_LDFLAGS=$(COMMON_LDFLAGS) $(TARGET_LDFLAGS))
-	$(builder) --targets=$(GOOS)/$(GOARCH) -out bin/fioctl --tags=$(TARGET_GOTAGS) --ldflags "$(COMBINED_LDFLAGS)" .
-	# This creates files as root, use `sudo chown --reference bin bin/fioctl-*` if you wish them under your user.
+	@mkdir -p bin .tmpbin && echo '#!/bin/bash' > .tmpbin/docker && echo '$(docker_alias)' >> .tmpbin/docker && chmod 755 .tmpbin/docker
+	PATH=$(shell pwd)/.tmpbin:${PATH} && which docker && cat .tmpbin/docker && \
+		$(builder) --targets=$(GOOS)/$(GOARCH) -out bin/fioctl --tags=$(TARGET_GOTAGS) --ldflags "$(COMBINED_LDFLAGS)" .
+	@rm .tmpbin/docker && rm -r .tmpbin
 
 format:
 	@gofmt -l  -w ./
