@@ -7,11 +7,8 @@ COMMON_LDFLAGS=-v -s -w -linkmode=external $(VERSION_LDFLAGS)
 linter:=$(shell which golangci-lint 2>/dev/null || echo $(HOME)/go/bin/golangci-lint)
 builder:=$(shell which xgo 2>/dev/null || echo $(HOME)/go/bin/xgo)
 
-# A crazy-max/xgo does not allow to provide docker args, and creates files as root. The below script sets proper ownership.
-docker::=$(shell which docker)
+# A crazy-max/xgo creates files as root. The below script sets proper ownership.
 docker_command:=xgo-build . && chown --reference /build/bin /build/bin/fioctl-*
-# A substitution below removes the first (run) and the last (.) arguments from the docker run command passed by xgo.
-docker_alias=test $$1 = run && $(docker) run --entrypoint=sh "$${@:2:(($$\#-2))}" -c "$(docker_command)" || $(docker) "$$@"
 
 build: fioctl-linux-amd64 fioctl-linux-arm64 fioctl-windows-amd64 fioctl-darwin-amd64 fioctl-darwin-arm64
 	@true
@@ -26,7 +23,7 @@ fioctl-windows-amd64:
 fioctl-darwin-amd64:
 fioctl-darwin-arm64:
 fioctl-%:
-	@test -x $(builder) || (echo "Please install xgo toolchain $(HOME)/go/bin: go install github.com/crazy-max/xgo@v0.30.0")
+	@test -x $(builder) || (echo "Please install xgo toolchain $(HOME)/go/bin: go install github.com/techknowlogick/xgo@v1.7.0+1.19.5")
 	$(eval GOOS:=$(shell echo $* | cut -f1 -d\- ))
 	$(eval GOARCH:=$(shell echo $* | cut -f2- -d\-))
 	$(eval TARGET_GOTAGS:=netgo,osusergo)
@@ -37,10 +34,10 @@ fioctl-%:
 	# static PIE is not yet supported on Arm by GCC
 	$(eval TARGET_LDFLAGS:=$(if $(shell test $* = linux-amd64 && echo "ok"),-buildmode=pie '-extldflags=-static-pie -O1',$(TARGET_LDFLAGS)))
 	$(eval COMBINED_LDFLAGS=$(COMMON_LDFLAGS) $(TARGET_LDFLAGS))
-	@mkdir -p bin .tmpbin && echo '#!/bin/bash' > .tmpbin/docker && echo '$(docker_alias)' >> .tmpbin/docker && chmod 755 .tmpbin/docker
-	PATH=$(shell pwd)/.tmpbin:${PATH} && which docker && cat .tmpbin/docker && \
-		$(builder) --targets=$(GOOS)/$(GOARCH) -out bin/fioctl --tags=$(TARGET_GOTAGS) --ldflags "$(COMBINED_LDFLAGS)" .
-	@rm .tmpbin/docker && rm -r .tmpbin
+	@mkdir -p bin .tmpbin && echo '#!/bin/sh' > .tmpbin/cmd && echo '$(docker_command)' >> .tmpbin/cmd && chmod 755 .tmpbin/cmd
+	$(builder) --targets=$(GOOS)/$(GOARCH) -out bin/fioctl --tags=$(TARGET_GOTAGS) --ldflags "$(COMBINED_LDFLAGS)" \
+		--image="ghcr.io/crazy-max/xgo" --dockerargs "-v=$$(pwd)/.tmpbin:/tmpbin,--entrypoint=/tmpbin/cmd" .
+	@rm .tmpbin/cmd && rm -r .tmpbin
 
 format:
 	@gofmt -l  -w ./
