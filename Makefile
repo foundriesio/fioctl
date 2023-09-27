@@ -24,12 +24,25 @@ fioctl-%:
 		go build $(LDFLAGS) -o bin/$@ main.go
 	@if [ "$@" = "fioctl-windows-amd64" ]; then mv bin/$@ bin/$@.exe; fi
 
-format:
-	@gofmt -l  -w ./
-check:
-	@test -z $(shell gofmt -l ./ | tee /dev/stderr) || echo "[WARN] Fix formatting issues with 'make format'"
-	@test -x $(linter) || (echo "Please install linter from https://github.com/golangci/golangci-lint/releases/tag/v1.51.2 to $(HOME)/go/bin")
+install-linter:
+	echo "[WARN] Installing golangci binary version v1.51.2 at $(HOME)/go/bin/golangci-lint"
+	@curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell dirname $(linter)) v1.51.2
+
+has-linter:
+	@test -x $(linter) || (echo '[ERROR] Please install go linter using "make install-linter"' && exit 1)
+
+linter-check: has-linter
 	$(linter) run
+
+linter-fix: has-linter
+	echo "[WARN] Attempting to automatically fix some linter issues."
+	$(linter) run --fix
+
+format-check:
+	@test -z $(shell gofmt -l ./ | tee /dev/stderr) || echo "[WARN] Fix formatting issues with 'make format-check'"
+
+check: format-check linter-check
+	@true
 
 # Use the image for Dockerfile.build to build and install the tool.
 container-init:
