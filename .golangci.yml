@@ -17,3 +17,4 @@ linters:
     - unparam
     - unused
     - misspell
+    - goimports

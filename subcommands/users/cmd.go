@@ -1,13 +1,14 @@
 package users
 
 import (
+	"strings"
+
 	"github.com/cheynewallace/tabby"
 	"github.com/foundriesio/fioctl/client"
 	"github.com/foundriesio/fioctl/subcommands"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"strings"
 )
 
 func NewCommand() *cobra.Command {
