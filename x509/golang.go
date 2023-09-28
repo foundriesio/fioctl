@@ -5,8 +5,6 @@ package x509
 import (
 	"bytes"
 	"crypto"
-	"crypto/ecdsa"
-	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
@@ -31,21 +29,6 @@ func genRandomSerialNumber() *big.Int {
 	serial, err := rand.Int(rand.Reader, max)
 	subcommands.DieNotNil(err)
 	return serial
-}
-
-func genAndSaveKey(fn string) crypto.Signer {
-	priv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	subcommands.DieNotNil(err)
-
-	keyRaw, err := x509.MarshalECPrivateKey(priv)
-	subcommands.DieNotNil(err)
-
-	keyBlock := &pem.Block{Type: "EC PRIVATE KEY", Bytes: keyRaw}
-
-	factoryKeyBytes := pem.EncodeToMemory(keyBlock)
-	err = os.WriteFile(fn, factoryKeyBytes, 0600)
-	subcommands.DieNotNil(err)
-	return priv
 }
 
 func genCertificate(
@@ -77,20 +60,6 @@ func parsePemCertificateRequest(csrPem string) *x509.CertificateRequest {
 	err = clientCSR.CheckSignature()
 	subcommands.DieNotNil(err)
 	return clientCSR
-}
-
-func parsePemPrivateKey(keyPem string) crypto.Signer {
-	pemBlock := parseOnePemBlock(keyPem)
-	caPrivateKey, err := x509.ParseECPrivateKey(pemBlock.Bytes)
-	subcommands.DieNotNil(err)
-	return caPrivateKey
-}
-
-func parsePemCertificate(crtPem string) *x509.Certificate {
-	pemBlock := parseOnePemBlock(crtPem)
-	crt, err := x509.ParseCertificate(pemBlock.Bytes)
-	subcommands.DieNotNil(err)
-	return crt
 }
 
 func marshalSubject(cn string, ou string) pkix.Name {
@@ -125,7 +94,7 @@ func marshalSubject(cn string, ou string) pkix.Name {
 }
 
 func CreateFactoryCa(ou string) string {
-	priv := genAndSaveKey(FactoryCaKeyFile)
+	priv := genAndSaveKeyToFile(FactoryCaKeyFile)
 	crtTemplate := x509.Certificate{
 		SerialNumber: genRandomSerialNumber(),
 		Subject:      marshalSubject("Factory-CA", ou),
@@ -143,9 +112,9 @@ func CreateFactoryCa(ou string) string {
 }
 
 func CreateDeviceCa(cn string, ou string) string {
-	factoryKey := parsePemPrivateKey(readFile(FactoryCaKeyFile))
-	factoryCa := parsePemCertificate(readFile(FactoryCaCertFile))
-	priv := genAndSaveKey(DeviceCaKeyFile)
+	factoryKey := loadKeyFromFile(FactoryCaKeyFile)
+	factoryCa := loadCertFromFile(FactoryCaCertFile)
+	priv := genAndSaveKeyToFile(DeviceCaKeyFile)
 	crtTemplate := x509.Certificate{
 		SerialNumber: genRandomSerialNumber(),
 		Subject:      marshalSubject(cn, ou),
@@ -164,8 +133,8 @@ func CreateDeviceCa(cn string, ou string) string {
 
 func SignTlsCsr(csrPem string) string {
 	csr := parsePemCertificateRequest(csrPem)
-	factoryKey := parsePemPrivateKey(readFile(FactoryCaKeyFile))
-	factoryCa := parsePemCertificate(readFile(FactoryCaCertFile))
+	factoryKey := loadKeyFromFile(FactoryCaKeyFile)
+	factoryCa := loadCertFromFile(FactoryCaCertFile)
 	crtTemplate := x509.Certificate{
 		SerialNumber: genRandomSerialNumber(),
 		Subject:      csr.Subject,
@@ -184,8 +153,8 @@ func SignTlsCsr(csrPem string) string {
 
 func SignCaCsr(csrPem string) string {
 	csr := parsePemCertificateRequest(csrPem)
-	factoryKey := parsePemPrivateKey(readFile(FactoryCaKeyFile))
-	factoryCa := parsePemCertificate(readFile(FactoryCaCertFile))
+	factoryKey := loadKeyFromFile(FactoryCaKeyFile)
+	factoryCa := loadCertFromFile(FactoryCaCertFile)
 	crtTemplate := x509.Certificate{
 		SerialNumber: genRandomSerialNumber(),
 		Subject:      csr.Subject,
