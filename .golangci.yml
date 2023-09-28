@@ -16,3 +16,4 @@ linters:
     - typecheck
     - unparam
     - unused
+    - misspell
