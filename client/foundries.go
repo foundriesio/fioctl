@@ -277,6 +277,10 @@ type ProjectTrigger struct {
 	Id      int             `json:"id,omitempty"`
 	Secrets []ProjectSecret `json:"secrets"`
 }
+type DeltaStats struct {
+	Sha256 string `json:"sha256"`
+	Size   int    `json:"size"`
+}
 
 type TufCustom struct {
 	HardwareIds    []string              `json:"hardwareIds,omitempty"`
@@ -286,6 +290,7 @@ type TufCustom struct {
 	ComposeApps    map[string]ComposeApp `json:"docker_compose_apps,omitempty"`
 	Name           string                `json:"name,omitempty"`
 	ContainersSha  string                `json:"containers-sha,omitempty"`
+	DeltaStats     *DeltaStats           `json:"delta-stats,omitempty"`
 	LmpManifestSha string                `json:"lmp-manifest-sha,omitempty"`
 	OverridesSha   string                `json:"meta-subscriber-overrides-sha,omitempty"`
 	Uri            string                `json:"uri,omitempty"`
