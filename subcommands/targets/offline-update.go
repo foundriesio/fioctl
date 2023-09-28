@@ -6,16 +6,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/foundriesio/fioctl/client"
-	"github.com/foundriesio/fioctl/subcommands"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"io"
 	"os"
 	"path"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/foundriesio/fioctl/client"
+	"github.com/foundriesio/fioctl/subcommands"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 type (
