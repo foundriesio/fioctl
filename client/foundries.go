@@ -1201,7 +1201,8 @@ func (a *Api) TufMetadataGet(factory string, metadata string, tag string, prod b
 	return a.Get(url)
 }
 
-func (a *Api) TufTargetMetadataRefresh(factory string, target string, tag string, expiresIn int, prod bool) (map[string]tuf.Signed, error) {
+func (a *Api) TufTargetMetadataRefresh(factory string, target string, tag string,
+	expiresIn int, prod bool) (map[string]tuf.Signed, error) {
 	url := a.serverUrl + "/ota/factories/" + factory + "/targets/" + target + "/meta/"
 	type targetMeta struct {
 		Tag       string `json:"tag"`
@@ -1350,7 +1351,8 @@ func (a *Api) TargetDeleteTargets(factory string, target_names []string) (string
 	return parseJobServResponse(resp, err, "UpdateTargets")
 }
 
-func (a *Api) TargetImageCreate(factory, targetName, appShortlist, ciScriptsRepo, ciScriptsRef string) (string, string, error) {
+func (a *Api) TargetImageCreate(factory, targetName, appShortlist,
+	ciScriptsRepo, ciScriptsRef string) (string, string, error) {
 	url := a.serverUrl + "/ota/factories/" + factory + "/targets/" + targetName + "/images/"
 	url += "?script_repo=" + ciScriptsRepo + "&script_repo_ref=" + ciScriptsRef
 	if len(appShortlist) > 0 {
@@ -1389,7 +1391,8 @@ func (a *Api) TargetComposeApp(factory string, targetName string, app string) (*
 }
 
 func (a *Api) TargetDeltasCreate(factory string, toVer int, fromVers []int, hwId string) (string, string, error) {
-	url := a.serverUrl + "/ota/factories/" + factory + "/targets/" + strconv.Itoa(toVer) + "/static-deltas/"
+	url := a.serverUrl + "/ota/factories/" + factory +
+		"/targets/" + strconv.Itoa(toVer) + "/static-deltas/"
 	type payload struct {
 		FromVersions []int  `json:"from_versions"`
 		HwId         string `json:"hw_id"`
@@ -1459,7 +1462,8 @@ func (a *Api) TargetTestResults(factory string, target int, testId string) (*Tar
 }
 
 func (a *Api) TargetTestArtifact(factory string, target int, testId string, artifact string) (*[]byte, error) {
-	url := a.serverUrl + "/ota/factories/" + factory + "/targets/" + strconv.Itoa(target) + "/testing/" + testId + "/" + artifact
+	url := a.serverUrl + "/ota/factories/" + factory + "/targets/" + strconv.Itoa(target) +
+		"/testing/" + testId + "/" + artifact
 	logrus.Debugf("TargetTests with url: %s", url)
 	return a.Get(url)
 }
@@ -1686,7 +1690,8 @@ func (a *Api) FactoryCreateWave(factory string, wave *WaveCreate) error {
 }
 
 func (a *Api) FactoryListWaves(factory string, limit uint64, page int) (*WaveList, error) {
-	url := a.serverUrl + "/ota/factories/" + factory + "/waves/?limit=" + strconv.FormatUint(limit, 10) + "&page=" + strconv.Itoa(page)
+	url := a.serverUrl + "/ota/factories/" + factory +
+		"/waves/?limit=" + strconv.FormatUint(limit, 10) + "&page=" + strconv.Itoa(page)
 	logrus.Debugf("Listing factory waves %s", url)
 
 	body, err := a.Get(url)

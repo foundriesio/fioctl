@@ -22,12 +22,16 @@ a certificate rotation using the EST server configured with "fioctl keys est".
 
 This command will only work for devices running LmP version 90 and later.`,
 	}
-	cmd.Flags().StringP("est-resource", "e", "/.well-known/est", "The path the to EST resource on your server")
+	cmd.Flags().StringP("est-resource", "e", "/.well-known/est",
+		"The path the to EST resource on your server")
 	cmd.Flags().IntP("est-port", "p", 8443, "The EST server port")
 	cmd.Flags().StringP("reason", "r", "", "The reason for changing the cert")
-	cmd.Flags().StringP("hsm-pkey-ids", "", "01,07", "Available PKCS11 slot IDs for the private key")
-	cmd.Flags().StringP("hsm-cert-ids", "", "03,09", "Available PKCS11 slot IDs for the client certificate")
-	cmd.Flags().StringP("server-name", "", "", "EST server name when not using the Foundries managed server. e.g. est.example.com")
+	cmd.Flags().StringP("hsm-pkey-ids", "", "01,07",
+		"Available PKCS11 slot IDs for the private key")
+	cmd.Flags().StringP("hsm-cert-ids", "", "03,09",
+		"Available PKCS11 slot IDs for the client certificate")
+	cmd.Flags().StringP("server-name", "", "",
+		"EST server name when not using the Foundries managed server. e.g. est.example.com")
 	cmd.Flags().BoolP("dryrun", "", false, "Show what the fioconfig entry will be and exit")
 	configCmd.AddCommand(cmd)
 	_ = cmd.MarkFlagRequired("reason")

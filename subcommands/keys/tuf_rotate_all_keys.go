@@ -34,11 +34,14 @@ Migrate an old factory to use Ed25519 key type for all TUF signing keys (online 
 	rotate.Flags().StringP("keys", "k", "", "Path to <offline-creds.tgz> used to sign TUF root.")
 	_ = rotate.MarkFlagRequired("keys")
 	_ = rotate.MarkFlagFilename("keys")
-	rotate.Flags().StringP("targets-keys", "K", "", "Path to <offline-targets-creds.tgz> used to sign prod & wave TUF targets.")
+	rotate.Flags().StringP("targets-keys", "K", "",
+		"Path to <offline-targets-creds.tgz> used to sign prod & wave TUF targets.")
 	_ = rotate.MarkFlagFilename("targets-keys")
-	rotate.Flags().BoolP("first-time", "", false, "Used for the first customer rotation. The command will download the initial root key.")
+	rotate.Flags().BoolP("first-time", "", false,
+		"Used for the first customer rotation. The command will download the initial root key.")
 	rotate.Flags().StringP("key-type", "y", tufKeyTypeNameEd25519, "Key type, supported: Ed25519, RSA.")
-	rotate.Flags().StringP("changelog", "m", "", "Reason for doing rotation. Saved in root metadata for tracking change history.")
+	rotate.Flags().StringP("changelog", "m", "",
+		"Reason for doing rotation. Saved in root metadata for tracking change history.")
 	tufCmd.AddCommand(rotate)
 }
 

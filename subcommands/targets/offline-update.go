@@ -41,6 +41,7 @@ func init() {
 		Short: "Download Target content for an offline update",
 		Run:   doOfflineUpdate,
 		Args:  cobra.ExactArgs(2),
+		// nolint:lll
 		Example: `
 	# Download update content of the production target #1451 tagged by "release-01" for "intel-corei7-64" hardware type
 	fioctl targets offline-update intel-corei7-64-lmp-1451 /mnt/flash-drive/offline-update-content --tag release-01 --prod
@@ -79,17 +80,21 @@ func doOfflineUpdate(cmd *cobra.Command, args []string) {
 	subcommands.DieNotNil(err, "Failed to obtain Target's details:")
 
 	fmt.Printf("Refreshing and downloading TUF metadata for Target %s to %s...\n", targetName, path.Join(dstDir, "tuf"))
-	subcommands.DieNotNil(downloadTufRepo(factory, targetName, ouTag, ouProd, ouExpiresIn, path.Join(dstDir, "tuf")), "Failed to download TUF metadata:")
+	subcommands.DieNotNil(downloadTufRepo(factory, targetName, ouTag, ouProd, ouExpiresIn, path.Join(dstDir, "tuf")),
+		"Failed to download TUF metadata:")
 	fmt.Println("Successfully refreshed and downloaded TUF metadata")
 
 	if !ouTufOnly {
 		fmt.Printf("Downloading an ostree repo from the Target's OE build %d...\n", ti.ostreeVersion)
-		subcommands.DieNotNil(downloadOstree(factory, ti.ostreeVersion, ti.hardwareID, dstDir), "Failed to download Target's ostree repo:")
+		subcommands.DieNotNil(downloadOstree(factory, ti.ostreeVersion, ti.hardwareID, dstDir),
+			"Failed to download Target's ostree repo:")
 		if !ouNoApps {
-			fmt.Printf("Downloading Apps fetched by the `assemble-system-image` run; build number:  %d, tag: %s...\n", ti.version, ti.buildTag)
+			fmt.Printf("Downloading Apps fetched by the `assemble-system-image` run; build number:  %d, tag: %s...\n",
+				ti.version, ti.buildTag)
 			err = downloadApps(factory, targetName, ti.version, ti.buildTag, path.Join(dstDir, "apps"))
 			if herr := client.AsHttpError(err); herr != nil && herr.Response.StatusCode == 404 {
-				fmt.Println("WARNING: The Target Apps were not fetched by the `assemble` run, make sure that App preloading is enabled if needed. The update won't include any Apps!")
+				fmt.Println("WARNING: The Target Apps were not fetched by the `assemble` run, make sure that " +
+					"App preloading is enabled if needed. The update won't include any Apps!")
 			} else {
 				subcommands.DieNotNil(err, "Failed to download Target's Apps:")
 			}
@@ -102,7 +107,8 @@ func checkIfTargetExists(factory string, targetName string, tag string, prod boo
 	data, err := api.TufMetadataGet(factory, "targets.json", tag, prod)
 	if err != nil {
 		if herr := client.AsHttpError(err); herr != nil && herr.Response.StatusCode == 404 {
-			return fmt.Errorf("the specified Target has not been found; target: %s, tag: %s, production: %v", targetName, ouTag, ouProd)
+			return fmt.Errorf("the specified Target has not been found; target: %s, tag: %s, production: %v",
+				targetName, ouTag, ouProd)
 		}
 		return fmt.Errorf("failed to check whether Target exists: %s", err.Error())
 	}
@@ -116,7 +122,8 @@ func checkIfTargetExists(factory string, targetName string, tag string, prod boo
 			return nil
 		}
 	}
-	return fmt.Errorf("the specified Target has not been found; target: %s, tag: %s, production: %v", targetName, ouTag, ouProd)
+	return fmt.Errorf("the specified Target has not been found; target: %s, tag: %s, production: %v",
+		targetName, ouTag, ouProd)
 }
 
 func getTargetInfo(factory string, targetName string) (*ouTargetInfo, error) {
@@ -135,6 +142,7 @@ func getTargetInfo(factory string, targetName string) (*ouTargetInfo, error) {
 		return nil, err
 	}
 	info.hardwareID = custom.HardwareIds[0]
+	// nolint:lll
 	info.buildTag = custom.Tags[0] // See the assemble.py script in ci-scripts https://github.com/foundriesio/ci-scripts/blob/18b4fb154c37b6ad1bc6e7b7903a540b7a758f5d/assemble.py#L300
 	info.ostreeVersion = info.version
 	if len(custom.OrigUri) > 0 {
@@ -240,14 +248,16 @@ func getTargetCustomInfo(factory string, targetName string) (*client.TufCustom, 
 	return custom, err
 }
 
-func downloadItem(factory string, targetVer int, runName string, artifactPath string, storeHandler func(r io.Reader) error) error {
+func downloadItem(factory string, targetVer int, runName string, artifactPath string,
+	storeHandler func(r io.Reader) error) error {
 	resp, err := api.JobservRunArtifact(factory, targetVer, runName, artifactPath)
 	if err != nil {
 		return err
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return &client.HttpError{
-			Message:  fmt.Sprintf("failed to download a CI artifact; status code: %d, artifact: %s", resp.StatusCode, artifactPath),
+			Message: fmt.Sprintf("failed to download a CI artifact; status code: %d, artifact: %s",
+				resp.StatusCode, artifactPath),
 			Response: resp,
 		}
 	}

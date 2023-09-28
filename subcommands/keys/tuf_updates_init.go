@@ -17,9 +17,11 @@ func init() {
 		Short: "Start a new transaction to update TUF root keys",
 		Run:   doTufUpdatesInit,
 	}
-	initCmd.Flags().StringP("changelog", "m", "", "Reason for doing this operation. Saved in root metadata to track change history.")
+	initCmd.Flags().StringP("changelog", "m", "",
+		"Reason for doing this operation. Saved in root metadata to track change history.")
 	_ = initCmd.MarkFlagRequired("changelog")
-	initCmd.Flags().BoolP("first-time", "", false, "Used for the first customer rotation. The command will download the initial root key.")
+	initCmd.Flags().BoolP("first-time", "", false,
+		"Used for the first customer rotation. The command will download the initial root key.")
 	initCmd.Flags().StringP("keys", "k", "", "Path to <offline-creds.tgz> used to store initial root key.")
 	_ = initCmd.MarkFlagFilename("keys")
 	initCmd.MarkFlagsRequiredTogether("first-time", "keys")

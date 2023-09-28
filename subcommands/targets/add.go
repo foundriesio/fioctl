@@ -27,12 +27,14 @@ func init() {
 		Use:   "add",
 		Short: "Compose and add Targets to Factory's  TUF targets metadata",
 		Run:   doAdd,
+		//nolint:lll
 		Long: `
 Compose new Targets out of the latest Targets tagged with the specified source tag and the specified via the command arguments either OSTree commit hashes or App URIs.
 
 fioctl targets add --type <ostree | app> --tags <comma,separate,list of Target tags> --src-tag <source Target tag> [--targets-creator <something about Targets originator>]\ 
 	<hardware ID> <ostree commit hash> [<hardware ID> <ostree commit hash>]  (for ostree type)
 	<App #1 URI> [App #N URI] (for app type)`,
+		// nolint:lll
 		Example: `
 Add new ostree Targets: 
 	fioctl targets add --type ostree --tags dev,test --src-tag dev --targets-creator "custom jenkins ostree build" intel-corei7-64 00b2ad4a1dd7fe1e856a6d607ed492c354a423be22a44bad644092bb275e12fa raspberrypi4-64 5e05a59529dcdd54310945b2628d73c0533097d76cc483334925a901845b3794
@@ -47,7 +49,8 @@ Add new App Targets:
 	addCmd.Flags().StringVarP(&addSrcTag, "src-tag", "", "", "OSTree Target tag to base app targets on")
 	addCmd.Flags().BoolVarP(&addQuiet, "quiet", "", false, "don't print generated new Targets to stdout")
 	addCmd.Flags().BoolVarP(&addDryRun, "dry-run", "", false, "don't post generated new Targets")
-	addCmd.Flags().StringVarP(&addTargetsCreator, "targets-creator", "", "fioctl", "optional name/comment/context about Targets origination")
+	addCmd.Flags().StringVarP(&addTargetsCreator, "targets-creator", "", "fioctl",
+		"optional name/comment/context about Targets origination")
 }
 
 func doAdd(cmd *cobra.Command, args []string) {
@@ -100,7 +103,8 @@ func createAppTargets(factory string, tags []string, srcTag string, appUris []st
 		newTargetApps[appName] = composeApp
 	}
 	// TBC:
-	// 1. Parse App manifests to determine supported platforms/archs, map it to hardware IDs and pass them as an input param to `deriveTargets`
+	// 1. Parse App manifests to determine supported platforms/archs, map it to hardware IDs and pass them as an
+	// input param to `deriveTargets`
 	// 2. Add CLI param `hw-ids` to shortlist by hardware IDs when new App Targets are being added,
 	// instead of generating Targets for each hardware ID of the specified source tag.
 	return deriveTargets(factory, nil, srcTag, func(target *client.Target) error {
@@ -137,7 +141,8 @@ func createOstreeTarget(factory string, tags []string, srcTag string, hwIdToHash
 	})
 }
 
-func deriveTargets(factory string, hwIds map[string]interface{}, srcTag string, customizeFunc func(target *client.Target) error) (Targets, error) {
+func deriveTargets(factory string, hwIds map[string]interface{}, srcTag string,
+	customizeFunc func(target *client.Target) error) (Targets, error) {
 	latestBuild, err := api.JobservLatestBuild(factory, false)
 	subcommands.DieNotNil(err)
 
@@ -161,7 +166,8 @@ func deriveTargets(factory string, hwIds map[string]interface{}, srcTag string, 
 				continue
 			}
 		}
-		if latestTargetForSrcTag, exists := latestTargetsPerHwId[curTargetHwId]; !exists || latestTargetForSrcTag.Version() < curVer {
+		if latestTargetForSrcTag, exists := latestTargetsPerHwId[curTargetHwId]; !exists ||
+			latestTargetForSrcTag.Version() < curVer {
 			latestTargetsPerHwId[curTargetHwId] = target
 		}
 	}

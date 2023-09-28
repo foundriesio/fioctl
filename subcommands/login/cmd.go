@@ -27,9 +27,13 @@ func NewCommand() *cobra.Command {
 		Short: "Access Foundries.io services with your client credentials",
 		Run:   doLogin,
 	}
-	cmd.Flags().BoolVarP(&refreshToken, "refresh-access-token", "", false, "Refresh your current oauth2 access token. This is used when a token's scopes have been updated in app.foundries.io")
-	cmd.Flags().StringVarP(&authURL, "oauth-url", "", client.OauthURL, "OAuth URL to authenticate with")
-	cmd.Flags().BoolVarP(&insecure, "insecure-ssl", "", false, "Ignore TLS certificates from API servers.")
+	cmd.Flags().BoolVarP(&refreshToken, "refresh-access-token", "", false,
+		"Refresh your current oauth2 access token. This is used when a token's scopes have been "+
+			"updated in app.foundries.io")
+	cmd.Flags().StringVarP(&authURL, "oauth-url", "", client.OauthURL,
+		"OAuth URL to authenticate with")
+	cmd.Flags().BoolVarP(&insecure, "insecure-ssl", "", false,
+		"Ignore TLS certificates from API servers.")
 	_ = cmd.Flags().MarkHidden("insecure-ssl")
 	return cmd
 }

@@ -43,7 +43,8 @@ NOTE: The credentials will need the "source:read-update" scope to work with Git`
 			subcommands.DieNotNil(err, "Git not found on system")
 		},
 	}
-	cmd.Flags().StringVarP(&helperPath, "creds-path", "", helperPath, "Path to install credential helper. This needs to be writable and in $PATH")
+	cmd.Flags().StringVarP(&helperPath, "creds-path", "", helperPath, "Path to install credential "+
+		"helper. This needs to be writable and in $PATH")
 	if len(helperPath) == 0 {
 		_ = cmd.MarkFlagRequired("creds-path")
 	}
@@ -84,12 +85,16 @@ func doGitCreds(cmd *cobra.Command, args []string) {
 		u, err := user.Lookup(sudoer)
 		subcommands.DieNotNil(err)
 		execCommand = "su"
-		gitUsernameCommandArgs = []string{u.Username, "-c", "git config --global credential.https://source.foundries.io.username fio-oauth2"}
-		gitHelperCommandArgs = []string{u.Username, "-c", "git config --global credential.https://source.foundries.io.helper " + helperName}
+		gitUsernameCommandArgs = []string{u.Username, "-c", "git config --global " +
+			"credential.https://source.foundries.io.username fio-oauth2"}
+		gitHelperCommandArgs = []string{u.Username, "-c", "git config --global " +
+			"credential.https://source.foundries.io.helper " + helperName}
 	} else {
 		execCommand = "git"
-		gitUsernameCommandArgs = []string{"config", "--global", "credential.https://source.foundries.io.username", "fio-oauth2"}
-		gitHelperCommandArgs = []string{"config", "--global", "credential.https://source.foundries.io.helper", helperName}
+		gitUsernameCommandArgs = []string{"config", "--global",
+			"credential.https://source.foundries.io.username", "fio-oauth2"}
+		gitHelperCommandArgs = []string{"config", "--global",
+			"credential.https://source.foundries.io.helper", helperName}
 	}
 	c := exec.Command(execCommand, gitUsernameCommandArgs...)
 	out, err := c.CombinedOutput()
@@ -110,7 +115,9 @@ func doGitCreds(cmd *cobra.Command, args []string) {
 
 func RunCredsHelper() int {
 	if subcommands.Config.ClientCredentials.ClientSecret == "" {
-		msg := "ERROR: Your fioctl configuration does not appear to include oauth2 credentials. Please run `fioctl login` to configure and then try again.\n"
+		msg := "ERROR: Your fioctl configuration " +
+			"does not appear to include oauth2 credentials. " +
+			"Please run `fioctl login` to configure and then try again.\n"
 		os.Stderr.WriteString(msg)
 		os.Exit(1)
 	}

@@ -61,6 +61,7 @@ func ParseTufRoleNameOnline(s string) string {
 }
 
 func genTufKeyId(key crypto.Signer) string {
+	// nolint:lll
 	// # This has to match the exact logic used by ota-tuf (required by garage-sign):
 	// https://github.com/foundriesio/ota-tuf/blob/fio-changes/libtuf/src/main/scala/com/advancedtelematic/libtuf/crypt/TufCrypto.scala#L66-L71
 	// It sets a keyid to a signature of the key's canonical DER encoding (same logic for all keys).

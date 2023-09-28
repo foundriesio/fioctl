@@ -46,11 +46,15 @@ The same expiration will be used for production targets when a wave is complete.
 The same expiration will be used for production targets when a wave is complete.
 When set this value overrides an 'expires-days' argument.
 Example: 2020-01-01T00:00:00Z`)
-	initCmd.Flags().BoolP("dry-run", "d", false, "Don't create a wave, print it to standard output.")
-	initCmd.Flags().StringSlice("prune", []string{}, `Prune old unused Target(s) from the production metadata.
+	initCmd.Flags().BoolP("dry-run", "d", false,
+		"Don't create a wave, print it to standard output.")
+	initCmd.Flags().StringSlice("prune", []string{},
+		`Prune old unused Target(s) from the production metadata.
 Example: 1,2,3`)
-	initCmd.Flags().StringP("keys", "k", "", "Path to <offline-creds.tgz> used to sign wave targets.")
-	initCmd.Flags().StringP("source-tag", "", "", "Match this tag when looking for target versions. Certain advanced tagging configurations may require this argument.")
+	initCmd.Flags().StringP("keys", "k", "",
+		"Path to <offline-creds.tgz> used to sign wave targets.")
+	initCmd.Flags().StringP("source-tag", "", "",
+		"Match this tag when looking for target versions. Certain advanced tagging configurations may require this argument.")
 	_ = initCmd.MarkFlagRequired("keys")
 }
 
@@ -164,7 +168,8 @@ func pruneTargets(currentTargets *client.AtsTargetsMeta, versions []string) clie
 		}
 	}
 	if len(missing) > 0 {
-		subcommands.DieNotNil(fmt.Errorf(""), fmt.Sprintf("Unable to prune following versions: %s", strings.Join(missing, ",")))
+		subcommands.DieNotNil(fmt.Errorf(""),
+			fmt.Sprintf("Unable to prune following versions: %s", strings.Join(missing, ",")))
 	}
 
 	return *currentTargets

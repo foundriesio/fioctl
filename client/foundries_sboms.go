@@ -47,7 +47,8 @@ func (p SpdxPackage) License() string {
 	} else if p.LicenseConcluded == "NOASSERTION" {
 		return p.LicenseDeclared
 	}
-	return fmt.Sprintf("ERROR: Unknown license configuration for package: %s - Concluded(%s) Declared(%s)", p.Name, p.LicenseConcluded, p.LicenseDeclared)
+	return fmt.Sprintf("ERROR: Unknown license configuration for package: %s - Concluded(%s) Declared(%s)",
+		p.Name, p.LicenseConcluded, p.LicenseDeclared)
 }
 
 func (a *Api) SbomDownload(factory, targetName, path, contentType string) ([]byte, error) {

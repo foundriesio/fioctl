@@ -133,13 +133,16 @@ func doShow(cmd *cobra.Command, args []string) {
 		fmt.Println()
 		fmt.Println("\tSource:")
 		if len(target.LmpManifestSha) > 0 {
-			fmt.Printf("\t\thttps://source.foundries.io/factories/%s/lmp-manifest.git/commit/?id=%s\n", factory, target.LmpManifestSha)
+			fmt.Printf("\t\thttps://source.foundries.io/factories/%s/lmp-manifest.git/commit/?id=%s\n",
+				factory, target.LmpManifestSha)
 		}
 		if len(target.OverridesSha) > 0 {
-			fmt.Printf("\t\thttps://source.foundries.io/factories/%s/meta-subscriber-overrides.git/commit/?id=%s\n", factory, target.OverridesSha)
+			fmt.Printf("\t\thttps://source.foundries.io/factories/%s/meta-subscriber-overrides.git/commit/?id=%s\n",
+				factory, target.OverridesSha)
 		}
 		if len(target.ContainersSha) > 0 {
-			fmt.Printf("\t\thttps://source.foundries.io/factories/%s/containers.git/commit/?id=%s\n", factory, target.ContainersSha)
+			fmt.Printf("\t\thttps://source.foundries.io/factories/%s/containers.git/commit/?id=%s\n",
+				factory, target.ContainersSha)
 		}
 		fmt.Println()
 		t := subcommands.Tabby(1, "APP", "HASH")
@@ -209,7 +212,8 @@ func doShowComposeApp(cmd *cobra.Command, args []string) {
 	}
 }
 
-func getTargets(factory string, prodTag string, version string) ([]string, map[string]string, map[string]client.TufCustom) {
+func getTargets(factory string, prodTag string, version string) ([]string, map[string]string,
+	map[string]client.TufCustom) {
 	var targets tuf.Files
 	var prodMeta *client.AtsTufTargets
 

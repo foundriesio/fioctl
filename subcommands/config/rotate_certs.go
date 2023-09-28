@@ -27,7 +27,8 @@ This command will only work for devices running LmP version 90 and later.`,
 	rotateCmd.Flags().StringP("reason", "r", "", "The reason for changing the cert")
 	rotateCmd.Flags().StringP("hsm-pkey-ids", "", "01,07", "Available PKCS11 slot IDs for the private key")
 	rotateCmd.Flags().StringP("hsm-cert-ids", "", "03,09", "Available PKCS11 slot IDs for the client certificate")
-	rotateCmd.Flags().StringP("server-name", "", "", "EST server name when not using the Foundries managed server. e.g. est.example.com")
+	rotateCmd.Flags().StringP("server-name", "", "",
+		"EST server name when not using the Foundries managed server. e.g. est.example.com")
 	rotateCmd.Flags().BoolP("dryrun", "", false, "Show what the fioconfig entry will be and exit")
 	_ = cmd.MarkFlagRequired("reason")
 	_ = cmd.MarkFlagRequired("group")

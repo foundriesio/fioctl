@@ -25,7 +25,8 @@ func NewCommand() *cobra.Command {
 		},
 	}
 	subcommands.RequireFactory(cmd)
-	cmd.Flags().IntVarP(&inactiveThreshold, "offline-threshold", "", 4, "Consider device 'OFFLINE' if not seen in the last X hours")
+	cmd.Flags().IntVarP(&inactiveThreshold, "offline-threshold", "", 4,
+		"Consider device 'OFFLINE' if not seen in the last X hours")
 	return cmd
 }
 

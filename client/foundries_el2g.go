@@ -148,7 +148,8 @@ type El2gProduct struct {
 }
 
 func (a *Api) El2gProductInfo(factory, deviceId string) (El2gProduct, error) {
-	url := a.serverUrl + "/ota/factories/" + factory + "/el2g-proxy/devices/" + deviceId + "/product"
+	url := a.serverUrl + "/ota/factories/" +
+		factory + "/el2g-proxy/devices/" + deviceId + "/product"
 	body, err := a.Get(url)
 
 	var prod El2gProduct
@@ -211,7 +212,8 @@ type El2gSecureObjectProvisioning struct {
 }
 
 func (a *Api) El2gSecureObjectProvisionings(factory, deviceId string) ([]El2gSecureObjectProvisioning, error) {
-	url := a.serverUrl + "/ota/factories/" + factory + "/el2g-proxy/rtp/devices/" + deviceId + "/secure-object-provisionings"
+	url := a.serverUrl + "/ota/factories/" + factory + "/el2g-proxy/rtp/devices/" + deviceId +
+		"/secure-object-provisionings"
 	body, err := a.Get(url)
 	if err != nil {
 		return nil, err

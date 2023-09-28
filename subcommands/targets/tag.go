@@ -36,7 +36,8 @@ func init() {
 	tagCmd.Flags().StringVarP(&tagTags, "tags", "T", "", "comma,separate,list")
 	tagCmd.Flags().BoolVarP(&tagAppend, "append", "", false, "Append the given tags rather than set them")
 	tagCmd.Flags().BoolVarP(&tagNoTail, "no-tail", "", false, "Don't tail output of CI Job")
-	tagCmd.Flags().BoolVarP(&tagByVersion, "by-version", "", false, "Apply tags to all targets matching the given version(s)")
+	tagCmd.Flags().BoolVarP(&tagByVersion, "by-version", "", false,
+		"Apply tags to all targets matching the given version(s)")
 	tagCmd.Flags().BoolVarP(&dryRun, "dryrun", "", false, "Just show the changes that would be applied")
 }
 

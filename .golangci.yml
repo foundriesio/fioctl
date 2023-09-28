@@ -16,3 +16,8 @@ linters:
     - typecheck
     - unparam
     - unused
+    - lll
+
+linters-settings:
+  lll:
+    line-length: 120

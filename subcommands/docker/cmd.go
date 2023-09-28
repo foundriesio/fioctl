@@ -127,7 +127,8 @@ func doDockerCreds(cmd *cobra.Command, args []string) {
 
 func RunCredsHelper() int {
 	if subcommands.Config.ClientCredentials.ClientSecret == "" {
-		msg := "ERROR: Your fioctl configuration does not appear to include oauth2 credentials. Please run `fioctl login` to configure and then try again.\n"
+		msg := "ERROR: Your fioctl configuration does not appear to include oauth2 credentials. " +
+			"Please run `fioctl login` to configure and then try again.\n"
 		os.Stderr.WriteString(msg)
 		os.Exit(1)
 	}

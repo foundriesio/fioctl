@@ -69,7 +69,8 @@ device's configuration and apply it. The maximum size of a config is 1Mb.`,
 	configCmd.AddCommand(setConfigCmd)
 	setConfigCmd.Flags().StringP("reason", "m", "", "Add a message to store as the \"reason\" for this change")
 	setConfigCmd.Flags().BoolP("raw", "", false, "Use raw configuration file")
-	setConfigCmd.Flags().BoolP("create", "", false, "Replace the whole config with these values. Default is to merge these values in with the existing config values")
+	setConfigCmd.Flags().BoolP("create", "", false, "Replace the whole config with these values. "+
+		"Default is to merge these values in with the existing config values")
 }
 
 func loadEciesPub(pubkey string) *ecies.PublicKey {

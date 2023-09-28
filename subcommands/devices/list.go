@@ -99,8 +99,10 @@ func addPaginationFlags(cmd *cobra.Command) {
 		limitsStr += strconv.Itoa(limit)
 	}
 
-	cmd.Flags().IntVarP(&showPage, "page", "p", 1, "Page of devices to display when pagination is needed")
-	cmd.Flags().IntVarP(&paginationLimit, "limit", "n", 500, "Number of devices to paginate by. Allowed values: "+limitsStr)
+	cmd.Flags().IntVarP(&showPage, "page", "p", 1,
+		"Page of devices to display when pagination is needed")
+	cmd.Flags().IntVarP(&paginationLimit, "limit", "n", 500,
+		"Number of devices to paginate by. Allowed values: "+limitsStr)
 }
 
 func addSortFlag(cmd *cobra.Command, flag, short, help string) {
@@ -134,18 +136,24 @@ func init() {
 	}
 	sort.Strings(allCols)
 	listCmd := &cobra.Command{
-		Use:   "list [pattern]",
-		Short: "List devices registered to factories. Optionally include filepath style patterns to limit to device names. eg device-*",
-		Run:   doList,
-		Args:  cobra.MaximumNArgs(1),
-		Long:  "Available columns for display:\n\n  * " + strings.Join(allCols, "\n  * "),
+		Use: "list [pattern]",
+		Short: "List devices registered to factories. Optionally include filepath style patterns to limit to device " +
+			"names. eg device-*",
+		Run:  doList,
+		Args: cobra.MaximumNArgs(1),
+		Long: "Available columns for display:\n\n  * " + strings.Join(allCols, "\n  * "),
 	}
 	cmd.AddCommand(listCmd)
-	listCmd.Flags().BoolVarP(&deviceMine, "just-mine", "", false, "Only include devices owned by you")
-	listCmd.Flags().StringVarP(&deviceByTag, "by-tag", "", "", "Only list devices configured with the given tag")
-	listCmd.Flags().StringVarP(&deviceByTarget, "by-target", "", "", "Only list devices updated to the given target name")
-	listCmd.Flags().StringVarP(&deviceByGroup, "by-group", "g", "", "Only list devices belonging to this group (factory is mandatory)")
-	listCmd.Flags().IntVarP(&deviceInactiveHours, "offline-threshold", "", 4, "List the device as 'OFFLINE' if not seen in the last X hours")
+	listCmd.Flags().BoolVarP(&deviceMine, "just-mine", "", false,
+		"Only include devices owned by you")
+	listCmd.Flags().StringVarP(&deviceByTag, "by-tag", "", "",
+		"Only list devices configured with the given tag")
+	listCmd.Flags().StringVarP(&deviceByTarget, "by-target", "", "",
+		"Only list devices updated to the given target name")
+	listCmd.Flags().StringVarP(&deviceByGroup, "by-group", "g", "",
+		"Only list devices belonging to this group (factory is mandatory)")
+	listCmd.Flags().IntVarP(&deviceInactiveHours, "offline-threshold", "", 4,
+		"List the device as 'OFFLINE' if not seen in the last X hours")
 	listCmd.Flags().StringVarP(&deviceUuid, "uuid", "", "", "Find device with the given UUID")
 	listCmd.Flags().StringSliceVarP(&showColumns, "columns", "", defCols, "Specify which columns to display")
 	addPaginationFlags(listCmd)

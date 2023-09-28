@@ -61,7 +61,8 @@ create a device group wide configuration instead.`,
 	setCmd.Flags().StringP("group", "g", "", "Device group to use")
 	setCmd.Flags().StringP("reason", "m", "", "Add a message to store as the \"reason\" for this change")
 	setCmd.Flags().BoolP("raw", "", false, "Use raw configuration file")
-	setCmd.Flags().BoolP("create", "", false, "Replace the whole config with these values. Default is to merge these values in with the existing config values")
+	setCmd.Flags().BoolP("create", "", false,
+		"Replace the whole config with these values. Default is to merge these values in with the existing config values")
 }
 
 func doConfigSet(cmd *cobra.Command, args []string) {

@@ -33,8 +33,11 @@ func init() {
 		"comma,separate,list of Target apps to preload into a resultant image."+
 			" All apps of Target are preloaded if the flag is not defined or empty")
 	imageCmd.Flags().BoolVarP(&noTail, "no-tail", "", false, "Don't tail output of CI Job")
-	imageCmd.Flags().StringVarP(&ciScriptsRepo, "ci-scripts-repo", "", "https://github.com/foundriesio/ci-scripts", "Override to custom version of ci-scripts")
-	imageCmd.Flags().StringVarP(&ciScriptsRef, "ci-scripts-ref", "", "master", "Override to a specific git-ref of ci-scripts")
+	imageCmd.Flags().StringVarP(&ciScriptsRepo, "ci-scripts-repo", "",
+		"https://github.com/foundriesio/ci-scripts",
+		"Override to custom version of ci-scripts")
+	imageCmd.Flags().StringVarP(&ciScriptsRef, "ci-scripts-ref", "", "master",
+		"Override to a specific git-ref of ci-scripts")
 }
 
 func validateAppShortlist() {
