@@ -35,7 +35,6 @@ linter-check: has-linter
 	$(linter) run
 
 linter-fix: has-linter
-	echo "[WARN] Attempting to automatically fix some linter issues."
 	$(linter) run --fix
 
 format-check:
