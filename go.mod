@@ -19,7 +19,7 @@ require (
 	github.com/theupdateframework/go-tuf v0.5.2
 	github.com/theupdateframework/notary v0.7.0
 	golang.org/x/exp v0.0.0-20221204150635-6dcec336b2bb
-	golang.org/x/sys v0.5.0
+	golang.org/x/sys v0.12.0
 	google.golang.org/api v0.103.0
 	gopkg.in/yaml.v2 v2.4.0
 )
