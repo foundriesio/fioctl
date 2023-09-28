@@ -41,3 +41,11 @@ func loadCertFromFile(fn string) *x509.Certificate {
 	subcommands.DieNotNil(err)
 	return crt
 }
+
+func (s *fileStorage) genAndSaveKey() crypto.Signer {
+	return genAndSaveKeyToFile(s.Filename)
+}
+
+func (s *fileStorage) loadKey() crypto.Signer {
+	return loadKeyFromFile(s.Filename)
+}

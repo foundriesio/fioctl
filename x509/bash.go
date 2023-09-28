@@ -12,7 +12,20 @@ import (
 	"github.com/foundriesio/fioctl/subcommands"
 )
 
+type KeyStorage interface {
+	configure()
+}
+
+func (s *fileStorage) configure() {}
+
+func (s *hsmStorage) configure() {
+	os.Setenv("HSM_MODULE", s.Module)
+	os.Setenv("HSM_PIN", s.Pin)
+	os.Setenv("HSM_TOKEN_LABEL", s.TokenLabel)
+}
+
 func run(script string, arg ...string) string {
+	factoryCaKeyStorage.configure()
 	arg = append([]string{"-s"}, arg...)
 	cmd := exec.Command("/bin/sh", arg...)
 	cmd.Stderr = os.Stderr

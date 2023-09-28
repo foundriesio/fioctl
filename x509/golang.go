@@ -18,6 +18,11 @@ import (
 	"github.com/foundriesio/fioctl/subcommands"
 )
 
+type KeyStorage interface {
+	genAndSaveKey() crypto.Signer
+	loadKey() crypto.Signer
+}
+
 func writeFile(filename, contents string, mode os.FileMode) {
 	err := os.WriteFile(filename, []byte(contents), mode)
 	subcommands.DieNotNil(err)
@@ -94,7 +99,7 @@ func marshalSubject(cn string, ou string) pkix.Name {
 }
 
 func CreateFactoryCa(ou string) string {
-	priv := genAndSaveKeyToFile(FactoryCaKeyFile)
+	priv := factoryCaKeyStorage.genAndSaveKey()
 	crtTemplate := x509.Certificate{
 		SerialNumber: genRandomSerialNumber(),
 		Subject:      marshalSubject("Factory-CA", ou),
@@ -112,7 +117,7 @@ func CreateFactoryCa(ou string) string {
 }
 
 func CreateDeviceCa(cn string, ou string) string {
-	factoryKey := loadKeyFromFile(FactoryCaKeyFile)
+	factoryKey := factoryCaKeyStorage.loadKey()
 	factoryCa := loadCertFromFile(FactoryCaCertFile)
 	priv := genAndSaveKeyToFile(DeviceCaKeyFile)
 	crtTemplate := x509.Certificate{
@@ -133,7 +138,7 @@ func CreateDeviceCa(cn string, ou string) string {
 
 func SignTlsCsr(csrPem string) string {
 	csr := parsePemCertificateRequest(csrPem)
-	factoryKey := loadKeyFromFile(FactoryCaKeyFile)
+	factoryKey := factoryCaKeyStorage.loadKey()
 	factoryCa := loadCertFromFile(FactoryCaCertFile)
 	crtTemplate := x509.Certificate{
 		SerialNumber: genRandomSerialNumber(),
@@ -153,7 +158,7 @@ func SignTlsCsr(csrPem string) string {
 
 func SignCaCsr(csrPem string) string {
 	csr := parsePemCertificateRequest(csrPem)
-	factoryKey := loadKeyFromFile(FactoryCaKeyFile)
+	factoryKey := factoryCaKeyStorage.loadKey()
 	factoryCa := loadCertFromFile(FactoryCaCertFile)
 	crtTemplate := x509.Certificate{
 		SerialNumber: genRandomSerialNumber(),

@@ -1,6 +1,7 @@
 package keys
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -84,12 +85,13 @@ func doCreateCA(cmd *cobra.Command, args []string) {
 
 	if len(hsmModule) > 0 {
 		if len(hsmPin) == 0 {
-			fmt.Println("ERROR: --hsm-pin is required with --hsm-module")
-			os.Exit(1)
+			subcommands.DieNotNil(errors.New("--hsm-pin is required with --hsm-module"))
 		}
-		os.Setenv("HSM_MODULE", hsmModule)
-		os.Setenv("HSM_PIN", hsmPin)
-		os.Setenv("HSM_TOKEN_LABEL", hsmTokenLabel)
+		x509.InitHsm(x509.HsmInfo{
+			Module:     hsmModule,
+			Pin:        hsmPin,
+			TokenLabel: hsmTokenLabel,
+		})
 	}
 
 	resp, err := api.FactoryCreateCA(factory)
