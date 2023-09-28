@@ -41,6 +41,9 @@ linter-fix: has-linter
 format-check:
 	@test -z $(shell gofmt -l ./ | tee /dev/stderr) || echo "[WARN] Fix formatting issues with 'make format-check'"
 
+format:
+	@gofmt -l  -w ./
+
 check: format-check linter-check
 	@true
 
