@@ -1,3 +1,18 @@
 run:
   deadline: 5m
   allow-parallel-runners: true
+
+linters:
+  enable:
+    - dupl
+    - errcheck
+    - exportloopref
+    - gocyclo
+    - gofmt
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - typecheck
+    - unparam
+    - unused
