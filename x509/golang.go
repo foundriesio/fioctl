@@ -156,7 +156,6 @@ func CreateDeviceCa(cn string, ou string) string {
 		KeyUsage:              x509.KeyUsageCertSign,
 	}
 	crtPem := genCertificate(&crtTemplate, factoryCa, &priv.PublicKey, factoryKey)
-	writeFile(DeviceCaCertFile, crtPem, 0400)
 	return crtPem
 }
 

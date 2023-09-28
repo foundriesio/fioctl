@@ -95,13 +95,6 @@ func doCreateCA(cmd *cobra.Command, args []string) {
 	resp, err := api.FactoryCreateCA(factory)
 	subcommands.DieNotNil(err)
 
-	writeFile(x509.OnlineCaCsrFile, resp.CaCsr, 0400)
-	writeFile(x509.TlsCsrFile, resp.TlsCsr, 0400)
-	writeFile(x509.CreateCaScript, *resp.CreateCaScript, 0700)
-	writeFile(x509.CreateDeviceCaScript, *resp.CreateDeviceCaScript, 0700)
-	writeFile(x509.SignCaScript, *resp.SignCaScript, 0700)
-	writeFile(x509.SignTlsScript, *resp.SignTlsScript, 0700)
-
 	fmt.Println("Creating offline root CA for Factory")
 	resp.RootCrt = x509.CreateFactoryCa(factory)
 
@@ -121,7 +114,9 @@ func doCreateCA(cmd *cobra.Command, args []string) {
 			resp.CaCrt += "\n"
 		}
 		commonName := getDeviceCaCommonName(factory)
-		resp.CaCrt += x509.CreateDeviceCa(commonName, factory)
+		deviceCaCrt := x509.CreateDeviceCa(commonName, factory)
+		writeFile(x509.DeviceCaCertFile, deviceCaCrt, 0400)
+		resp.CaCrt += deviceCaCrt
 	}
 
 	fmt.Println("Uploading signed certs to Foundries")
