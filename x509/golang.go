@@ -4,6 +4,7 @@ package x509
 
 import (
 	"bytes"
+	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
@@ -32,7 +33,7 @@ func genRandomSerialNumber() *big.Int {
 	return serial
 }
 
-func genAndSaveKey(fn string) *ecdsa.PrivateKey {
+func genAndSaveKey(fn string) crypto.Signer {
 	priv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	subcommands.DieNotNil(err)
 
@@ -47,7 +48,9 @@ func genAndSaveKey(fn string) *ecdsa.PrivateKey {
 	return priv
 }
 
-func genCertificate(crtTemplate *x509.Certificate, caCrt *x509.Certificate, pub any, signerKey *ecdsa.PrivateKey) string {
+func genCertificate(
+	crtTemplate *x509.Certificate, caCrt *x509.Certificate, pub crypto.PublicKey, signerKey crypto.Signer,
+) string {
 	certRaw, err := x509.CreateCertificate(rand.Reader, crtTemplate, caCrt, pub, signerKey)
 	subcommands.DieNotNil(err)
 
@@ -76,7 +79,7 @@ func parsePemCertificateRequest(csrPem string) *x509.CertificateRequest {
 	return clientCSR
 }
 
-func parsePemPrivateKey(keyPem string) *ecdsa.PrivateKey {
+func parsePemPrivateKey(keyPem string) crypto.Signer {
 	pemBlock := parseOnePemBlock(keyPem)
 	caPrivateKey, err := x509.ParseECPrivateKey(pemBlock.Bytes)
 	subcommands.DieNotNil(err)
@@ -134,7 +137,7 @@ func CreateFactoryCa(ou string) string {
 		KeyUsage:              x509.KeyUsageCertSign,
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},
 	}
-	factoryCaString := genCertificate(&crtTemplate, &crtTemplate, &priv.PublicKey, priv)
+	factoryCaString := genCertificate(&crtTemplate, &crtTemplate, priv.Public(), priv)
 	writeFile(FactoryCaCertFile, factoryCaString, 0400)
 	return factoryCaString
 }
@@ -155,7 +158,7 @@ func CreateDeviceCa(cn string, ou string) string {
 		MaxPathLenZero:        true,
 		KeyUsage:              x509.KeyUsageCertSign,
 	}
-	crtPem := genCertificate(&crtTemplate, factoryCa, &priv.PublicKey, factoryKey)
+	crtPem := genCertificate(&crtTemplate, factoryCa, priv.Public(), factoryKey)
 	return crtPem
 }
 
