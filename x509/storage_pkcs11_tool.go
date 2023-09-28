@@ -1,4 +1,4 @@
-//go:build !bashpki
+//go:build !bashpki && !cgopki
 
 package x509
 

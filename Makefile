@@ -11,6 +11,10 @@ build: fioctl-linux-amd64 fioctl-linux-arm64 fioctl-windows-amd64 fioctl-darwin-
 fioctl-static:
 	CGO_ENABLED=0 go build -a -ldflags '-w -extldflags "-static"' -o ./bin/fioctl-static ./main.go
 
+# Allows building a dyn-linked fioctl on platforms without pkcs11-tool (not built by default)
+fioctl-cgo-pkcs11:
+	CGO_ENABLED=1 go build -tags cgopki $(LDFLAGS) -o bin/$@ ./main.go
+
 fioctl-linux-amd64:
 fioctl-linux-arm64:
 fioctl-linux-armv7:
@@ -34,6 +38,7 @@ has-linter:
 linter-check: has-linter
 	$(linter) run ${EXTRA_LINTER_FLAGS}
 	$(linter) run --build-tags bashpki ${EXTRA_LINTER_FLAGS}
+	$(linter) run --build-tags cgopki ${EXTRA_LINTER_FLAGS}
 
 linter: has-linter
 	$(linter) run --fix ${EXTRA_LINTER_FLAGS}
