@@ -34,7 +34,7 @@ has-linter:
 linter-check: has-linter
 	$(linter) run
 
-linter-fix: has-linter
+linter: has-linter
 	$(linter) run --fix
 
 format-check:
