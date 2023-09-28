@@ -137,8 +137,17 @@ keyUsage=critical, digitalSignature, keyEncipherment, keyAgreement
 extendedKeyUsage=critical, serverAuth
 subjectAltName=$dns
 EOF
-openssl x509 -req -days 3650 -in $csr -CAcreateserial \
-	-extfile server.ext -CAkey factory_ca.key -CA factory_ca.pem -sha256 -out $crt
+
+if [ -n "$HSM_MODULE" ] ; then
+	lbl=${HSM_TOKEN_LABEL-device-gateway-root}
+	key="pkcs11:token=${lbl};object=root-ca;type=private;pin-value=$HSM_PIN"
+	extra="-CAkeyform engine -engine pkcs11"
+else
+	key=factory_ca.key
+fi
+
+openssl x509 -req -days 3650 $extra -in $csr -CAcreateserial \
+	-extfile server.ext -CAkey "$key" -CA factory_ca.pem -sha256 -out $crt
 rm server.ext factory_ca.srl || true`
 	return signCsr(script, "tls-*", csrPem)
 }
