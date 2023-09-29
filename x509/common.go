@@ -14,6 +14,8 @@ const (
 	DeviceCaCertFile  string = "local-ca.pem"
 	TlsCertFile       string = "tls-crt"
 	OnlineCaCertFile  string = "online-crt"
+
+	factoryCaName string = "Factory-CA"
 )
 
 func readFile(filename string) string {

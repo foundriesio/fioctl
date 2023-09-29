@@ -96,7 +96,7 @@ func CreateFactoryCa(ou string) string {
 	priv := factoryCaKeyStorage.genAndSaveKey()
 	crtTemplate := x509.Certificate{
 		SerialNumber: genRandomSerialNumber(),
-		Subject:      marshalSubject("Factory-CA", ou),
+		Subject:      marshalSubject(factoryCaName, ou),
 		NotBefore:    time.Now(),
 		NotAfter:     time.Now().AddDate(20, 0, 0),
 
