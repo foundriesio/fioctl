@@ -22,6 +22,11 @@ func readFile(filename string) string {
 	return string(data)
 }
 
+func writeFile(filename, contents string) {
+	err := os.WriteFile(filename, []byte(contents), 0400)
+	subcommands.DieNotNil(err)
+}
+
 type HsmInfo struct {
 	Module     string
 	Pin        string

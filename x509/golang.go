@@ -12,7 +12,6 @@ import (
 	"encoding/pem"
 	"errors"
 	"math/big"
-	"os"
 	"time"
 
 	"github.com/foundriesio/fioctl/subcommands"
@@ -21,11 +20,6 @@ import (
 type KeyStorage interface {
 	genAndSaveKey() crypto.Signer
 	loadKey() crypto.Signer
-}
-
-func writeFile(filename, contents string, mode os.FileMode) {
-	err := os.WriteFile(filename, []byte(contents), mode)
-	subcommands.DieNotNil(err)
 }
 
 func genRandomSerialNumber() *big.Int {
@@ -112,7 +106,7 @@ func CreateFactoryCa(ou string) string {
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},
 	}
 	factoryCaString := genCertificate(&crtTemplate, &crtTemplate, priv.Public(), priv)
-	writeFile(FactoryCaCertFile, factoryCaString, 0400)
+	writeFile(FactoryCaCertFile, factoryCaString)
 	return factoryCaString
 }
 
@@ -133,6 +127,7 @@ func CreateDeviceCa(cn string, ou string) string {
 		KeyUsage:              x509.KeyUsageCertSign,
 	}
 	crtPem := genCertificate(&crtTemplate, factoryCa, priv.Public(), factoryKey)
+	writeFile(DeviceCaCertFile, crtPem)
 	return crtPem
 }
 
@@ -153,6 +148,7 @@ func SignTlsCsr(csrPem string) string {
 		DNSNames:    csr.DNSNames,
 	}
 	crtPem := genCertificate(&crtTemplate, factoryCa, csr.PublicKey, factoryKey)
+	writeFile(TlsCertFile, crtPem)
 	return crtPem
 }
 
@@ -173,6 +169,7 @@ func SignCaCsr(csrPem string) string {
 		KeyUsage:              x509.KeyUsageCertSign,
 	}
 	crtPem := genCertificate(&crtTemplate, factoryCa, csr.PublicKey, factoryKey)
+	writeFile(OnlineCaCertFile, crtPem)
 	return crtPem
 }
 

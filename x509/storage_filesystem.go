@@ -9,7 +9,6 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"encoding/pem"
-	"os"
 
 	"github.com/foundriesio/fioctl/subcommands"
 )
@@ -23,8 +22,7 @@ func genAndSaveKeyToFile(fn string) crypto.Signer {
 
 	keyBlock := &pem.Block{Type: "EC PRIVATE KEY", Bytes: keyRaw}
 	keyBytes := pem.EncodeToMemory(keyBlock)
-	err = os.WriteFile(fn, keyBytes, 0600)
-	subcommands.DieNotNil(err)
+	writeFile(fn, string(keyBytes))
 	return priv
 }
 

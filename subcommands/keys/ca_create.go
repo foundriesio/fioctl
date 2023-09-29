@@ -64,13 +64,6 @@ This is optional.`,
 	cmd.Flags().StringVarP(&hsmTokenLabel, "hsm-token-label", "", "device-gateway-root", "The label of the HSM token created for this")
 }
 
-func writeFile(filename, contents string, mode os.FileMode) {
-	if err := os.WriteFile(filename, []byte(contents), mode); err != nil {
-		fmt.Printf("ERROR: Creating %s: %s", filename, err)
-		os.Exit(1)
-	}
-}
-
 func getDeviceCaCommonName(factory string) string {
 	user, err := api.UserAccessDetails(factory, "self")
 	subcommands.DieNotNil(err)
@@ -102,12 +95,10 @@ func doCreateCA(cmd *cobra.Command, args []string) {
 
 	fmt.Println("Signing Foundries TLS CSR")
 	resp.TlsCrt = x509.SignTlsCsr(resp.TlsCsr)
-	writeFile(x509.TlsCertFile, resp.TlsCrt, 0400)
 
 	if createOnlineCA {
 		fmt.Println("Signing Foundries CSR for online use")
 		resp.CaCrt = x509.SignCaCsr(resp.CaCsr)
-		writeFile(x509.OnlineCaCertFile, resp.CaCrt, 0400)
 	}
 
 	if createLocalCA {
@@ -116,9 +107,7 @@ func doCreateCA(cmd *cobra.Command, args []string) {
 			resp.CaCrt += "\n"
 		}
 		commonName := getDeviceCaCommonName(factory)
-		deviceCaCrt := x509.CreateDeviceCa(commonName, factory)
-		writeFile(x509.DeviceCaCertFile, deviceCaCrt, 0400)
-		resp.CaCrt += deviceCaCrt
+		resp.CaCrt += x509.CreateDeviceCa(commonName, factory)
 	}
 
 	fmt.Println("Uploading signed certs to Foundries")

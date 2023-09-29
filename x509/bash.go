@@ -85,8 +85,10 @@ if [ -n "$HSM_MODULE" ] ; then
 else
 	openssl ecparam -genkey -name prime256v1 | openssl ec -out factory_ca.key
 	key=factory_ca.key
+	chmod 400 $key
 fi
 openssl req $extra -new -x509 -days 7300 -config ca.cnf -key "$key" -out factory_ca.pem -sha256
+chmod 400 factory_ca.pem
 rm ca.cnf
 `
 	run(script, ou)
@@ -125,9 +127,12 @@ EOF
 
 openssl ecparam -genkey -name prime256v1 | openssl ec -out $key
 openssl req -new -config ca.cnf -key $key
+chmod 400 $key
 rm ca.cnf`
 	csrPem := run(script, DeviceCaKeyFile, cn, ou)
-	return signCaCsr("device-ca-*", csrPem)
+	crtPem := signCaCsr("device-ca-*", csrPem)
+	writeFile(DeviceCaCertFile, crtPem)
+	return crtPem
 }
 
 func SignTlsCsr(csrPem string) string {
@@ -162,11 +167,15 @@ fi
 openssl x509 -req -days 3650 $extra -in $csr -CAcreateserial \
 	-extfile server.ext -CAkey "$key" -CA factory_ca.pem -sha256 -out $crt
 rm server.ext factory_ca.srl || true`
-	return signCsr(script, "tls-*", csrPem)
+	crtPem := signCsr(script, "tls-*", csrPem)
+	writeFile(TlsCertFile, crtPem)
+	return crtPem
 }
 
 func SignCaCsr(csrPem string) string {
-	return signCaCsr("online-ca-*", csrPem)
+	crtPem := signCaCsr("online-ca-*", csrPem)
+	writeFile(OnlineCaCertFile, crtPem)
+	return crtPem
 }
 
 func SignEl2GoCsr(csrPem string) string {
