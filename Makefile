@@ -39,6 +39,7 @@ linter-check: has-linter
 	$(linter) run ${EXTRA_LINTER_FLAGS}
 	$(linter) run --build-tags bashpki ${EXTRA_LINTER_FLAGS}
 	$(linter) run --build-tags cgopki ${EXTRA_LINTER_FLAGS}
+	$(linter) run --build-tags testhsm ${EXTRA_LINTER_FLAGS}
 
 linter: has-linter
 	$(linter) run --fix ${EXTRA_LINTER_FLAGS}
@@ -51,6 +52,15 @@ format:
 
 check: format-check linter-check
 	@true
+
+install-test-pki-deps:
+	apt install openssl softhsm2 opensc libengine-pkcs11-openssl
+
+# This needs the following packages on Ubuntu: openssl softhsm2 opensc libengine-pkcs11-openssl
+test-pki:
+	go test ./x509/... -v -tags testhsm
+	go test ./x509/... -v -tags testhsm,bashpki
+	go test ./x509/... -v -tags testhsm,cgopki
 
 # Use the image for Dockerfile.build to build and install the tool.
 container-init:

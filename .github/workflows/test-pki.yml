@@ -1,0 +1,19 @@
+name: Test PKI
+on:
+  pull_request:
+
+jobs:
+  test-pki:
+    name: test-pki
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Go
+        uses: actions/setup-go@v4.1.0
+        with:
+          go-version: '~1.19'
+      - name: Clone the code
+        uses: actions/checkout@v4
+      - name: Setup test deps
+        run: sudo make install-test-pki-deps
+      - name: Run tests
+        run: make test-pki
