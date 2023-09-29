@@ -11,6 +11,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/asn1"
 	"encoding/pem"
+	"errors"
 	"math/big"
 	"os"
 	"time"
@@ -58,8 +59,16 @@ func genCertificate(crtTemplate *x509.Certificate, caCrt *x509.Certificate, pub 
 	return certRow.String()
 }
 
+func parseOnePemBlock(pemBlock string) *pem.Block {
+	first, rest := pem.Decode([]byte(pemBlock))
+	if first == nil || len(rest) > 0 {
+		subcommands.DieNotNil(errors.New("Malformed PEM data"))
+	}
+	return first
+}
+
 func parsePemCertificateRequest(csrPem string) *x509.CertificateRequest {
-	pemBlock, _ := pem.Decode([]byte(csrPem))
+	pemBlock := parseOnePemBlock(csrPem)
 	clientCSR, err := x509.ParseCertificateRequest(pemBlock.Bytes)
 	subcommands.DieNotNil(err)
 	err = clientCSR.CheckSignature()
@@ -68,15 +77,15 @@ func parsePemCertificateRequest(csrPem string) *x509.CertificateRequest {
 }
 
 func parsePemPrivateKey(keyPem string) *ecdsa.PrivateKey {
-	caPrivateKeyPemBlock, _ := pem.Decode([]byte(keyPem))
-	caPrivateKey, err := x509.ParseECPrivateKey(caPrivateKeyPemBlock.Bytes)
+	pemBlock := parseOnePemBlock(keyPem)
+	caPrivateKey, err := x509.ParseECPrivateKey(pemBlock.Bytes)
 	subcommands.DieNotNil(err)
 	return caPrivateKey
 }
 
 func parsePemCertificate(crtPem string) *x509.Certificate {
-	caCrtPemBlock, _ := pem.Decode([]byte(crtPem))
-	crt, err := x509.ParseCertificate(caCrtPemBlock.Bytes)
+	pemBlock := parseOnePemBlock(crtPem)
+	crt, err := x509.ParseCertificate(pemBlock.Bytes)
 	subcommands.DieNotNil(err)
 	return crt
 }
