@@ -19,12 +19,12 @@ func run(name string, arg ...string) string {
 
 func CreateFactoryCa(ou string) string {
 	run("./" + CreateCaScript)
-	return string(readFile(FactoryCaCertFile))
+	return readFile(FactoryCaCertFile)
 }
 
 func CreateDeviceCa(cn string, ou string) string {
 	run("./"+CreateDeviceCaScript, DeviceCaKeyFile, DeviceCaCertFile)
-	return string(readFile(DeviceCaCertFile))
+	return readFile(DeviceCaCertFile)
 }
 
 func SignTlsCsr(csrPem string) string {
