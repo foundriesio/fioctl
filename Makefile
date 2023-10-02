@@ -32,10 +32,10 @@ has-linter:
 	@test -x $(linter) || (echo '[ERROR] Please install go linter using "make install-linter"' && exit 1)
 
 linter-check: has-linter
-	$(linter) run
+	$(linter) run ${EXTRA_LINTER_FLAGS}
 
 linter: has-linter
-	$(linter) run --fix
+	$(linter) run --fix ${EXTRA_LINTER_FLAGS}
 
 format-check:
 	@test -z $(shell gofmt -l ./ | tee /dev/stderr) || echo "[WARN] Fix formatting issues with 'make format-check'"

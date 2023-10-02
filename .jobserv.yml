@@ -12,11 +12,6 @@ triggers:
         script: create-binaries
 
 scripts:
-
-  unit-test: |
-    #!/bin/sh -ex
-    make check
-
   create-binaries: |
     #!/bin/sh -e
     make
