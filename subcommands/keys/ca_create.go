@@ -61,7 +61,7 @@ This is optional.`,
 	cmd.Flags().BoolVarP(&createLocalCA, "local-ca", "", true, "Create a local CA that you can use for signing your own device certificates")
 	cmd.Flags().StringVarP(&hsmModule, "hsm-module", "", "", "Create key on an PKCS#11 compatible HSM using this module")
 	cmd.Flags().StringVarP(&hsmPin, "hsm-pin", "", "", "The PKCS#11 PIN to set up on the HSM, if using one")
-	cmd.Flags().StringVarP(&hsmTokenLabel, "hsm-token-label", "", "device-gateway-root", "The label of the HSM token created for this")
+	cmd.Flags().StringVarP(&hsmTokenLabel, "hsm-token-label", "", "", "The label of the HSM token created for this")
 }
 
 func getDeviceCaCommonName(factory string) string {
@@ -79,6 +79,9 @@ func doCreateCA(cmd *cobra.Command, args []string) {
 	if len(hsmModule) > 0 {
 		if len(hsmPin) == 0 {
 			subcommands.DieNotNil(errors.New("--hsm-pin is required with --hsm-module"))
+		}
+		if len(hsmTokenLabel) == 0 {
+			subcommands.DieNotNil(errors.New("--hsm-token-label is required with --hsm-module"))
 		}
 		x509.InitHsm(x509.HsmInfo{
 			Module:     hsmModule,
