@@ -21,6 +21,7 @@ type hsmSigner struct {
 	hsm   HsmInfo
 	id    string
 	label string
+	pub   crypto.PublicKey
 }
 
 func (s *hsmSigner) keyArgs() []string {
@@ -39,6 +40,9 @@ func (s *hsmSigner) keyArgs() []string {
 }
 
 func (s *hsmSigner) Public() crypto.PublicKey {
+	if s.pub != nil {
+		return s.pub
+	}
 	args := append(s.keyArgs(), "--read-object", "--type=pubkey")
 	cmd := exec.Command("pkcs11-tool", args...)
 	out, err := cmd.Output()
@@ -52,6 +56,7 @@ func (s *hsmSigner) Public() crypto.PublicKey {
 	subcommands.DieNotNil(err)
 	key, err := x509.ParsePKIXPublicKey(out)
 	subcommands.DieNotNil(err)
+	s.pub = key
 	return key
 }
 
@@ -76,7 +81,7 @@ func genAndSaveKeyToHsm(hsm HsmInfo, id, label string) crypto.Signer {
 	// The pkcs11-tool allows creating many objects with the same ID and label, potentially corrupting the storage.
 	// For now, allow to create only one object.
 	// In the future we will use the ID field to allow key rotation.
-	key := &hsmSigner{hsm, id, label}
+	key := &hsmSigner{hsm, id, label, nil}
 	if key.Public() != nil {
 		subcommands.DieNotNil(fmt.Errorf("Key %s already exists on the HSM device", label))
 	}
@@ -89,7 +94,7 @@ func genAndSaveKeyToHsm(hsm HsmInfo, id, label string) crypto.Signer {
 }
 
 func loadKeyFromHsm(hsm HsmInfo, id, label string) crypto.Signer {
-	key := &hsmSigner{hsm, id, label}
+	key := &hsmSigner{hsm, id, label, nil}
 	if key.Public() == nil {
 		subcommands.DieNotNil(fmt.Errorf("Key %s not found on the HSM device", label))
 	}
