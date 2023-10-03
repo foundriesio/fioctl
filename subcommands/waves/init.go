@@ -29,8 +29,8 @@ Use a "fioctl wave rollout <wave> <group>" to trigger updates of this wave to a 
 Use a "fioctl wave complete <wave>" to update all devices (make it globally available).
 Use a "fioctl wave cancel <wave> to cancel a wave (make it no longer available).
 
-We recommend that you generate static deltas for your production targets to optimize 
-OTA update download. Consider generating a static delta for targets using:
+We recommend that you generate static deltas for your production targets to optimize OTA update download. 
+Consider generating a static delta for targets using:
 $ fioctl targets static-deltas
 `,
 		Run:  doInitWave,
@@ -156,11 +156,11 @@ func doInitWave(cmd *cobra.Command, args []string) {
 		fmt.Print(`
 WARNING: You created a wave for a target version without static deltas.
 
-We recommend that you generate static deltas for your production targets to optimize
-OTA update download. Consider generating a static delta for targets using: 
+We recommend that you generate static deltas for your production targets to optimize OTA update download. 
+Consider generating a static delta for targets using: 
 $ fioctl targets static-deltas
 
-You can then cancel the wave and create a new one by using a static delta.
+You can then cancel this wave and create a new one for a target with a static delta.
 `)
 
 	}
