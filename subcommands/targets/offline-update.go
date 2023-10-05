@@ -29,11 +29,12 @@ type (
 )
 
 var (
-	ouTag       string
-	ouProd      bool
-	ouExpiresIn int
-	ouTufOnly   bool
-	ouNoApps    bool
+	ouTag                  string
+	ouProd                 bool
+	ouExpiresIn            int
+	ouTufOnly              bool
+	ouNoApps               bool
+	ouAllowMultipleTargets bool
 )
 
 func init() {
@@ -62,6 +63,8 @@ func init() {
 		"Fetch only TUF metadata")
 	offlineUpdateCmd.Flags().BoolVarP(&ouNoApps, "no-apps", "", false,
 		"Skip fetching Target Apps")
+	offlineUpdateCmd.Flags().BoolVarP(&ouAllowMultipleTargets, "allow-multiple-targets", "", false,
+		"Allow multiple targets to be stored in the same <dst> directory")
 }
 
 func doOfflineUpdate(cmd *cobra.Command, args []string) {
@@ -84,6 +87,14 @@ func doOfflineUpdate(cmd *cobra.Command, args []string) {
 	fmt.Println("Successfully refreshed and downloaded TUF metadata")
 
 	if !ouTufOnly {
+		if !isDstDirClean(dstDir) {
+			if !ouAllowMultipleTargets {
+				subcommands.DieNotNil(errors.New(`Destination directory already has update data.
+Provide a clean destination directory or re-run with --allow-multiple-targets to add a new target to a directory which already has update data.
+Notice that multiple targets in the same directory is only supported in LmP >= v92.`))
+			}
+		}
+
 		fmt.Printf("Downloading an ostree repo from the Target's OE build %d...\n", ti.ostreeVersion)
 		subcommands.DieNotNil(downloadOstree(factory, ti.ostreeVersion, ti.hardwareID, dstDir), "Failed to download Target's ostree repo:")
 		if !ouNoApps {
@@ -150,6 +161,17 @@ func getTargetInfo(factory string, targetName string) (*ouTargetInfo, error) {
 		}
 	}
 	return &info, nil
+}
+
+func isDstDirClean(dstDir string) bool {
+	for _, subDir := range []string{"ostree_repo", "apps"} {
+		fullPath := path.Join(dstDir, subDir)
+		if _, err := os.Stat(fullPath); !os.IsNotExist(err) {
+			fmt.Println(fullPath + " already exists")
+			return false
+		}
+	}
+	return true
 }
 
 func downloadTufRepo(factory string, target string, tag string, prod bool, expiresIn int, dstDir string) error {
