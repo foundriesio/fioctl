@@ -45,3 +45,9 @@ export PATH=$PATH:`pwd`/bin
 
 After making changes be sure to run `make format` which will run the go-fmt
 tool against the source code.
+
+## HSM support
+
+The HSM support (for some commands) is provided via the OpenSC pkcs11-tool application,
+which needs to be installed separately.
+It is not needed if you do not plan to use HSM devices.

@@ -1,26 +1,25 @@
-//go:build windows
+//go:build !bashpki
 
 package x509
 
 import (
 	"bytes"
-	"crypto/ecdsa"
-	"crypto/elliptic"
+	"crypto"
 	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/asn1"
 	"encoding/pem"
+	"errors"
 	"math/big"
-	"os"
 	"time"
 
 	"github.com/foundriesio/fioctl/subcommands"
 )
 
-func writeFile(filename, contents string, mode os.FileMode) {
-	err := os.WriteFile(filename, []byte(contents), mode)
-	subcommands.DieNotNil(err)
+type KeyStorage interface {
+	genAndSaveKey() crypto.Signer
+	loadKey() crypto.Signer
 }
 
 func genRandomSerialNumber() *big.Int {
@@ -31,22 +30,9 @@ func genRandomSerialNumber() *big.Int {
 	return serial
 }
 
-func genAndSaveKey(fn string) *ecdsa.PrivateKey {
-	priv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	subcommands.DieNotNil(err)
-
-	keyRaw, err := x509.MarshalECPrivateKey(priv)
-	subcommands.DieNotNil(err)
-
-	keyBlock := &pem.Block{Type: "EC PRIVATE KEY", Bytes: keyRaw}
-
-	factoryKeyBytes := pem.EncodeToMemory(keyBlock)
-	err = os.WriteFile(fn, factoryKeyBytes, 0600)
-	subcommands.DieNotNil(err)
-	return priv
-}
-
-func genCertificate(crtTemplate *x509.Certificate, caCrt *x509.Certificate, pub any, signerKey *ecdsa.PrivateKey) string {
+func genCertificate(
+	crtTemplate *x509.Certificate, caCrt *x509.Certificate, pub crypto.PublicKey, signerKey crypto.Signer,
+) string {
 	certRaw, err := x509.CreateCertificate(rand.Reader, crtTemplate, caCrt, pub, signerKey)
 	subcommands.DieNotNil(err)
 
@@ -58,27 +44,21 @@ func genCertificate(crtTemplate *x509.Certificate, caCrt *x509.Certificate, pub 
 	return certRow.String()
 }
 
+func parseOnePemBlock(pemBlock string) *pem.Block {
+	first, rest := pem.Decode([]byte(pemBlock))
+	if first == nil || len(rest) > 0 {
+		subcommands.DieNotNil(errors.New("Malformed PEM data"))
+	}
+	return first
+}
+
 func parsePemCertificateRequest(csrPem string) *x509.CertificateRequest {
-	pemBlock, _ := pem.Decode([]byte(csrPem))
+	pemBlock := parseOnePemBlock(csrPem)
 	clientCSR, err := x509.ParseCertificateRequest(pemBlock.Bytes)
 	subcommands.DieNotNil(err)
 	err = clientCSR.CheckSignature()
 	subcommands.DieNotNil(err)
 	return clientCSR
-}
-
-func parsePemPrivateKey(keyPem string) *ecdsa.PrivateKey {
-	caPrivateKeyPemBlock, _ := pem.Decode([]byte(keyPem))
-	caPrivateKey, err := x509.ParseECPrivateKey(caPrivateKeyPemBlock.Bytes)
-	subcommands.DieNotNil(err)
-	return caPrivateKey
-}
-
-func parsePemCertificate(crtPem string) *x509.Certificate {
-	caCrtPemBlock, _ := pem.Decode([]byte(crtPem))
-	crt, err := x509.ParseCertificate(caCrtPemBlock.Bytes)
-	subcommands.DieNotNil(err)
-	return crt
 }
 
 func marshalSubject(cn string, ou string) pkix.Name {
@@ -113,10 +93,10 @@ func marshalSubject(cn string, ou string) pkix.Name {
 }
 
 func CreateFactoryCa(ou string) string {
-	priv := genAndSaveKey(FactoryCaKeyFile)
+	priv := factoryCaKeyStorage.genAndSaveKey()
 	crtTemplate := x509.Certificate{
 		SerialNumber: genRandomSerialNumber(),
-		Subject:      marshalSubject("Factory-CA", ou),
+		Subject:      marshalSubject(factoryCaName, ou),
 		NotBefore:    time.Now(),
 		NotAfter:     time.Now().AddDate(20, 0, 0),
 
@@ -125,15 +105,15 @@ func CreateFactoryCa(ou string) string {
 		KeyUsage:              x509.KeyUsageCertSign,
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},
 	}
-	factoryCaString := genCertificate(&crtTemplate, &crtTemplate, &priv.PublicKey, priv)
-	writeFile(FactoryCaCertFile, factoryCaString, 0400)
+	factoryCaString := genCertificate(&crtTemplate, &crtTemplate, priv.Public(), priv)
+	writeFile(FactoryCaCertFile, factoryCaString)
 	return factoryCaString
 }
 
 func CreateDeviceCa(cn string, ou string) string {
-	factoryKey := parsePemPrivateKey(readFile(FactoryCaKeyFile))
-	factoryCa := parsePemCertificate(readFile(FactoryCaCertFile))
-	priv := genAndSaveKey(DeviceCaKeyFile)
+	factoryKey := factoryCaKeyStorage.loadKey()
+	factoryCa := loadCertFromFile(FactoryCaCertFile)
+	priv := genAndSaveKeyToFile(DeviceCaKeyFile)
 	crtTemplate := x509.Certificate{
 		SerialNumber: genRandomSerialNumber(),
 		Subject:      marshalSubject(cn, ou),
@@ -146,15 +126,15 @@ func CreateDeviceCa(cn string, ou string) string {
 		MaxPathLenZero:        true,
 		KeyUsage:              x509.KeyUsageCertSign,
 	}
-	crtPem := genCertificate(&crtTemplate, factoryCa, &priv.PublicKey, factoryKey)
-	writeFile(DeviceCaCertFile, crtPem, 0400)
+	crtPem := genCertificate(&crtTemplate, factoryCa, priv.Public(), factoryKey)
+	writeFile(DeviceCaCertFile, crtPem)
 	return crtPem
 }
 
 func SignTlsCsr(csrPem string) string {
 	csr := parsePemCertificateRequest(csrPem)
-	factoryKey := parsePemPrivateKey(readFile(FactoryCaKeyFile))
-	factoryCa := parsePemCertificate(readFile(FactoryCaCertFile))
+	factoryKey := factoryCaKeyStorage.loadKey()
+	factoryCa := loadCertFromFile(FactoryCaCertFile)
 	crtTemplate := x509.Certificate{
 		SerialNumber: genRandomSerialNumber(),
 		Subject:      csr.Subject,
@@ -162,19 +142,20 @@ func SignTlsCsr(csrPem string) string {
 		NotBefore:    time.Now(),
 		NotAfter:     time.Now().AddDate(10, 0, 0),
 
-		IsCA:        true,
+		IsCA:        false,
 		KeyUsage:    x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment | x509.KeyUsageKeyAgreement,
 		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 		DNSNames:    csr.DNSNames,
 	}
 	crtPem := genCertificate(&crtTemplate, factoryCa, csr.PublicKey, factoryKey)
+	writeFile(TlsCertFile, crtPem)
 	return crtPem
 }
 
 func SignCaCsr(csrPem string) string {
 	csr := parsePemCertificateRequest(csrPem)
-	factoryKey := parsePemPrivateKey(readFile(FactoryCaKeyFile))
-	factoryCa := parsePemCertificate(readFile(FactoryCaCertFile))
+	factoryKey := factoryCaKeyStorage.loadKey()
+	factoryCa := loadCertFromFile(FactoryCaCertFile)
 	crtTemplate := x509.Certificate{
 		SerialNumber: genRandomSerialNumber(),
 		Subject:      csr.Subject,
@@ -188,6 +169,7 @@ func SignCaCsr(csrPem string) string {
 		KeyUsage:              x509.KeyUsageCertSign,
 	}
 	crtPem := genCertificate(&crtTemplate, factoryCa, csr.PublicKey, factoryKey)
+	writeFile(OnlineCaCertFile, crtPem)
 	return crtPem
 }
 

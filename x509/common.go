@@ -8,22 +8,44 @@ import (
 
 const (
 	FactoryCaKeyFile  string = "factory_ca.key"
+	FactoryCaKeyLabel string = "root-ca"
 	FactoryCaCertFile string = "factory_ca.pem"
 	DeviceCaKeyFile   string = "local-ca.key"
 	DeviceCaCertFile  string = "local-ca.pem"
 	TlsCertFile       string = "tls-crt"
-	TlsCsrFile        string = "tls-csr"
 	OnlineCaCertFile  string = "online-crt"
-	OnlineCaCsrFile   string = "ca-csr"
 
-	CreateCaScript       string = "create_ca"
-	CreateDeviceCaScript string = "create_device_ca"
-	SignCaScript         string = "sign_ca_csr"
-	SignTlsScript        string = "sign_tls_csr"
+	factoryCaName string = "Factory-CA"
 )
 
 func readFile(filename string) string {
 	data, err := os.ReadFile(filename)
 	subcommands.DieNotNil(err)
 	return string(data)
+}
+
+func writeFile(filename, contents string) {
+	err := os.WriteFile(filename, []byte(contents), 0400)
+	subcommands.DieNotNil(err)
+}
+
+type HsmInfo struct {
+	Module     string
+	Pin        string
+	TokenLabel string
+}
+
+type fileStorage struct {
+	Filename string
+}
+
+type hsmStorage struct {
+	HsmInfo
+	Label string
+}
+
+var factoryCaKeyStorage KeyStorage = &fileStorage{FactoryCaKeyFile}
+
+func InitHsm(hsm HsmInfo) {
+	factoryCaKeyStorage = &hsmStorage{hsm, FactoryCaKeyLabel}
 }

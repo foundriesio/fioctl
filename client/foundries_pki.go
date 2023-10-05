@@ -19,11 +19,6 @@ type CaCerts struct {
 	TlsCsr  string `json:"tls-csr"`
 
 	ChangeMeta ChangeMeta `json:"change-meta"`
-
-	CreateCaScript       *string `json:"create_ca"`
-	CreateDeviceCaScript *string `json:"create_device_ca"`
-	SignCaScript         *string `json:"sign_ca_csr"`
-	SignTlsScript        *string `json:"sign_tls_csr"`
 }
 
 func (a *Api) FactoryGetCA(factory string) (CaCerts, error) {

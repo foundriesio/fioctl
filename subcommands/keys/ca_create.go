@@ -1,6 +1,7 @@
 package keys
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -60,14 +61,7 @@ This is optional.`,
 	cmd.Flags().BoolVarP(&createLocalCA, "local-ca", "", true, "Create a local CA that you can use for signing your own device certificates")
 	cmd.Flags().StringVarP(&hsmModule, "hsm-module", "", "", "Create key on an PKCS#11 compatible HSM using this module")
 	cmd.Flags().StringVarP(&hsmPin, "hsm-pin", "", "", "The PKCS#11 PIN to set up on the HSM, if using one")
-	cmd.Flags().StringVarP(&hsmTokenLabel, "hsm-token-label", "", "device-gateway-root", "The label of the HSM token created for this")
-}
-
-func writeFile(filename, contents string, mode os.FileMode) {
-	if err := os.WriteFile(filename, []byte(contents), mode); err != nil {
-		fmt.Printf("ERROR: Creating %s: %s", filename, err)
-		os.Exit(1)
-	}
+	cmd.Flags().StringVarP(&hsmTokenLabel, "hsm-token-label", "", "", "The label of the HSM token created for this")
 }
 
 func getDeviceCaCommonName(factory string) string {
@@ -84,35 +78,30 @@ func doCreateCA(cmd *cobra.Command, args []string) {
 
 	if len(hsmModule) > 0 {
 		if len(hsmPin) == 0 {
-			fmt.Println("ERROR: --hsm-pin is required with --hsm-module")
-			os.Exit(1)
+			subcommands.DieNotNil(errors.New("--hsm-pin is required with --hsm-module"))
 		}
-		os.Setenv("HSM_MODULE", hsmModule)
-		os.Setenv("HSM_PIN", hsmPin)
-		os.Setenv("HSM_TOKEN_LABEL", hsmTokenLabel)
+		if len(hsmTokenLabel) == 0 {
+			subcommands.DieNotNil(errors.New("--hsm-token-label is required with --hsm-module"))
+		}
+		x509.InitHsm(x509.HsmInfo{
+			Module:     hsmModule,
+			Pin:        hsmPin,
+			TokenLabel: hsmTokenLabel,
+		})
 	}
 
 	resp, err := api.FactoryCreateCA(factory)
 	subcommands.DieNotNil(err)
-
-	writeFile(x509.OnlineCaCsrFile, resp.CaCsr, 0400)
-	writeFile(x509.TlsCsrFile, resp.TlsCsr, 0400)
-	writeFile(x509.CreateCaScript, *resp.CreateCaScript, 0700)
-	writeFile(x509.CreateDeviceCaScript, *resp.CreateDeviceCaScript, 0700)
-	writeFile(x509.SignCaScript, *resp.SignCaScript, 0700)
-	writeFile(x509.SignTlsScript, *resp.SignTlsScript, 0700)
 
 	fmt.Println("Creating offline root CA for Factory")
 	resp.RootCrt = x509.CreateFactoryCa(factory)
 
 	fmt.Println("Signing Foundries TLS CSR")
 	resp.TlsCrt = x509.SignTlsCsr(resp.TlsCsr)
-	writeFile(x509.TlsCertFile, resp.TlsCrt, 0400)
 
 	if createOnlineCA {
 		fmt.Println("Signing Foundries CSR for online use")
 		resp.CaCrt = x509.SignCaCsr(resp.CaCsr)
-		writeFile(x509.OnlineCaCertFile, resp.CaCrt, 0400)
 	}
 
 	if createLocalCA {
