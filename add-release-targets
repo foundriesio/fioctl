@@ -9,17 +9,19 @@ fi
 version=$1
 
 if [ -z "${TUF_TARGETS_PASSPHRASE}" ] ; then
-	echo "set the environment variable TUF_TARGETS_PASSPHRASE before running"
-	exit 1
+	read -sp "Enter your targets key password:" TUF_TARGETS_PASSPHRASE
+	echo ""
 fi
 if [ -z "${TUF_SNAPSHOT_PASSPHRASE}" ] ; then
-	echo "set the environment variable TUF_SNAPSHOT_PASSPHRASE before running"
-	exit 1
+	read -sp "Enter your snapshot key password:" TUF_SNAPSHOT_PASSPHRASE
+	echo ""
 fi
 if [ -z "${TUF_TIMESTAMP_PASSPHRASE}" ] ; then
-	echo "set the environment variable TUF_TIMESTAMP_PASSPHRASE before running"
-	exit 1
+	read -sp "Enter your timestamp key password:" TUF_TIMESTAMP_PASSPHRASE
+	echo ""
 fi
+
+export TUF_TARGETS_PASSPHRASE TUF_SNAPSHOT_PASSPHRASE TUF_TIMESTAMP_PASSPHRASE
 
 URLBASE="https://github.com/foundriesio/fioctl/releases/download/${version}"
 PLATFORMS="
