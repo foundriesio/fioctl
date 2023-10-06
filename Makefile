@@ -60,11 +60,3 @@ test-pki:
 	go test ./x509/... -v -tags testhsm
 	go test ./x509/... -v -tags testhsm,bashpki
 	go test ./x509/... -v -tags testhsm,cgopki
-
-# Use the image for Dockerfile.build to build and install the tool.
-container-init:
-	docker build -t fioctl-build -f Dockerfile.build .
-
-container-build:
-	docker run --rm -ti -v $(shell pwd):/fioctl fioctl-build make build
-
