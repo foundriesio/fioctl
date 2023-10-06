@@ -8,9 +8,6 @@ linter:=$(shell which golangci-lint 2>/dev/null || echo $(HOME)/go/bin/golangci-
 build: fioctl-linux-amd64 fioctl-linux-arm64 fioctl-windows-amd64 fioctl-darwin-amd64 fioctl-darwin-arm64
 	@true
 
-fioctl-static:
-	CGO_ENABLED=0 go build -a -ldflags '-w -extldflags "-static"' -o ./bin/fioctl-static ./main.go
-
 # Allows building a dyn-linked fioctl on platforms without pkcs11-tool (not built by default)
 fioctl-cgo-pkcs11:
 	CGO_ENABLED=1 go build -tags cgopki $(LDFLAGS) -o bin/$@ ./main.go
