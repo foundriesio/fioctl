@@ -8,16 +8,15 @@ linter:=$(shell which golangci-lint 2>/dev/null || echo $(HOME)/go/bin/golangci-
 build: fioctl-linux-amd64 fioctl-linux-arm64 fioctl-windows-amd64 fioctl-darwin-amd64 fioctl-darwin-arm64
 	@true
 
-fioctl-static:
-	CGO_ENABLED=0 go build -a -ldflags '-w -extldflags "-static"' -o ./bin/fioctl-static ./main.go
-
 # Allows building a dyn-linked fioctl on platforms without pkcs11-tool (not built by default)
 fioctl-cgo-pkcs11:
 	CGO_ENABLED=1 go build -tags cgopki $(LDFLAGS) -o bin/$@ ./main.go
 
+# Any target of "fioctl-{GOOS}-{GOARCH}" can be built for your desired platform.
+# Below is a list of platforms supported and verified by Foundries.io.
+# For a full list of potentially supported (by Golang compiler) see https://go.dev/doc/install/source#environment.
 fioctl-linux-amd64:
 fioctl-linux-arm64:
-fioctl-linux-armv7:
 fioctl-windows-amd64:
 fioctl-darwin-amd64:
 fioctl-darwin-arm64:
@@ -61,11 +60,3 @@ test-pki:
 	go test ./x509/... -v -tags testhsm
 	go test ./x509/... -v -tags testhsm,bashpki
 	go test ./x509/... -v -tags testhsm,cgopki
-
-# Use the image for Dockerfile.build to build and install the tool.
-container-init:
-	docker build -t fioctl-build -f Dockerfile.build .
-
-container-build:
-	docker run --rm -ti -v $(shell pwd):/fioctl fioctl-build make build
-
