@@ -15,9 +15,11 @@ fioctl-static:
 fioctl-cgo-pkcs11:
 	CGO_ENABLED=1 go build -tags cgopki $(LDFLAGS) -o bin/$@ ./main.go
 
+# Any target of "fioctl-{GOOS}-{GOARCH}" can be built for your desired platform.
+# Below is a list of platforms supported and verified by Foundries.io.
+# For a full list of potentially supported (by Golang compiler) see https://go.dev/doc/install/source#environment.
 fioctl-linux-amd64:
 fioctl-linux-arm64:
-fioctl-linux-armv7:
 fioctl-windows-amd64:
 fioctl-darwin-amd64:
 fioctl-darwin-arm64:
