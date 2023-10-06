@@ -3,6 +3,7 @@ package targets
 import (
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -210,6 +211,10 @@ func doShowComposeApp(cmd *cobra.Command, args []string) {
 }
 
 func getTargets(factory string, prodTag string, version string) ([]string, map[string]string, map[string]client.TufCustom) {
+	if len(version) == 0 {
+		subcommands.DieNotNil(errors.New("Missing required argument <version>"))
+	}
+
 	var targets tuf.Files
 	var prodMeta *client.AtsTufTargets
 
