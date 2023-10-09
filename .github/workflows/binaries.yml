@@ -20,7 +20,7 @@ jobs:
         run: make build
 
       - name: Archive Binaries
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: binaries
           path: bin/
