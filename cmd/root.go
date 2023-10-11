@@ -40,8 +40,9 @@ var (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "fioctl",
-	Short: "Manage Foundries Factories",
+	Use:               "fioctl",
+	Short:             "Manage Foundries Factories",
+	PersistentPreRunE: rootArgValidation,
 }
 
 func Execute() {
@@ -69,6 +70,7 @@ func Execute() {
 }
 
 func init() {
+	cobra.OnInitialize(func() { fixPersistentPreRuns(rootCmd) })
 	cobra.OnInitialize(initConfig)
 
 	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file (default is $HOME/.config/fioctl.yaml)")
@@ -98,6 +100,15 @@ func init() {
 
 	rootCmd.AddCommand(docsRstCmd)
 	rootCmd.AddCommand(docsMdCmd)
+}
+
+func rootArgValidation(cmd *cobra.Command, args []string) error {
+	for pos, val := range args {
+		if len(strings.TrimSpace(val)) == 0 {
+			return fmt.Errorf("Empty values or values containing only white space are not allowed for positional argument at %d\n", pos)
+		}
+	}
+	return nil
 }
 
 func getConfigDir() string {
@@ -201,4 +212,60 @@ $ fioctl completion fish > ~/.config/fish/completions/fioctl.fish
 			}
 		}
 	},
+}
+
+func fixPersistentPreRuns(cmd *cobra.Command) {
+	// See https://github.com/spf13/cobra/issues/216
+	parentPreRunE := cmd.PersistentPreRunE
+	parentPreRun := cmd.PersistentPreRun
+	// First, traverse up to find a parent defining the PersistentPreRun function.
+	for p := cmd.Parent(); p != nil && parentPreRunE == nil && parentPreRun == nil; p = p.Parent() {
+		// Cobra prefers PersistentPreRunE over PersistentPreRun if both are defined, so do we.
+		// Actually, no our code defines both functions (expected), so that assumption is safe.
+		if p.PersistentPreRunE != nil {
+			parentPreRunE = p.PersistentPreRunE
+		} else if p.PersistentPreRun != nil {
+			parentPreRun = p.PersistentPreRun
+		}
+	}
+
+	// Traverse children tree top-down, gradually fixing their PersistentPreRun functions to call into parents.
+	for _, child := range cmd.Commands() {
+		preRun := child.PersistentPreRun
+		preRunE := child.PersistentPreRunE
+		if preRunE != nil {
+			if parentPreRunE != nil {
+				child.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
+					if err := parentPreRunE(cmd, args); err != nil {
+						return err
+					}
+					return preRunE(cmd, args)
+				}
+			} else if parentPreRun != nil {
+				child.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
+					parentPreRun(cmd, args)
+					return preRunE(cmd, args)
+				}
+			}
+		} else if preRun != nil {
+			if parentPreRunE != nil {
+				// Set the PersistentPreRunE, not PersistentPreRun, so that we can return the parent error into cmd.execute.
+				child.PersistentPreRun = nil
+				child.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
+					if err := parentPreRunE(cmd, args); err != nil {
+						return err
+					}
+					preRun(cmd, args)
+					return nil
+				}
+			} else if parentPreRun != nil {
+				child.PersistentPreRun = func(cmd *cobra.Command, args []string) {
+					parentPreRun(cmd, args)
+					preRun(cmd, args)
+				}
+			}
+		}
+		// Now that this child command was fixed, we can run the magic recursion.
+		fixPersistentPreRuns(child)
+	}
 }
