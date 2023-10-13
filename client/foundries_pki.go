@@ -11,14 +11,17 @@ import (
 )
 
 type CaCerts struct {
-	RootCrt string `json:"root-crt"`
-	CaCrt   string `json:"ca-crt"`
-	CaCsr   string `json:"ca-csr"`
-	EstCrt  string `json:"est-tls-crt"`
-	TlsCrt  string `json:"tls-crt"`
-	TlsCsr  string `json:"tls-csr"`
+	RootCrt string `json:"root-crt,omitempty"`
+	CaCrt   string `json:"ca-crt,omitempty"`
+	EstCrt  string `json:"est-tls-crt,omitempty"`
+	TlsCrt  string `json:"tls-crt,omitempty"`
 
 	ChangeMeta ChangeMeta `json:"change-meta"`
+}
+
+type CaCsrs struct {
+	CaCsr  string `json:"ca-csr,omitempty"`
+	TlsCsr string `json:"tls-csr,omitempty"`
 }
 
 func (a *Api) FactoryGetCA(factory string) (CaCerts, error) {
@@ -35,10 +38,10 @@ func (a *Api) FactoryGetCA(factory string) (CaCerts, error) {
 	return resp, err
 }
 
-func (a *Api) FactoryCreateCA(factory string) (CaCerts, error) {
+func (a *Api) FactoryCreateCA(factory string) (CaCsrs, error) {
 	url := a.serverUrl + "/ota/factories/" + factory + "/certs/"
 	logrus.Debugf("Creating new factory CA %s", url)
-	var resp CaCerts
+	var resp CaCsrs
 
 	body, err := a.Post(url, []byte("{}"))
 	if err != nil {

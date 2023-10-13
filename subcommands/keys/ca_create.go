@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	"github.com/foundriesio/fioctl/client"
 	"github.com/foundriesio/fioctl/subcommands"
 	"github.com/foundriesio/fioctl/x509"
 )
@@ -80,29 +81,30 @@ func doCreateCA(cmd *cobra.Command, args []string) {
 	x509.InitHsm(hsm)
 
 	logrus.Debugf("Create CA for %s under %s", factory, certsDir)
-	resp, err := api.FactoryCreateCA(factory)
+	csrs, err := api.FactoryCreateCA(factory)
 	subcommands.DieNotNil(err)
 
+	var certs client.CaCerts
 	fmt.Println("Creating offline root CA for Factory")
-	resp.RootCrt = x509.CreateFactoryCa(factory)
+	certs.RootCrt = x509.CreateFactoryCa(factory)
 
 	fmt.Println("Signing Foundries TLS CSR")
-	resp.TlsCrt = x509.SignTlsCsr(resp.TlsCsr)
+	certs.TlsCrt = x509.SignTlsCsr(csrs.TlsCsr)
 
 	if createOnlineCA {
 		fmt.Println("Signing Foundries CSR for online use")
-		resp.CaCrt = x509.SignCaCsr(resp.CaCsr)
+		certs.CaCrt = x509.SignCaCsr(csrs.CaCsr)
 	}
 
 	if createLocalCA {
 		fmt.Println("Creating local device CA")
-		if len(resp.CaCrt) > 0 {
-			resp.CaCrt += "\n"
+		if len(certs.CaCrt) > 0 {
+			certs.CaCrt += "\n"
 		}
 		commonName := getDeviceCaCommonName(factory)
-		resp.CaCrt += x509.CreateDeviceCa(commonName, factory)
+		certs.CaCrt += x509.CreateDeviceCa(commonName, factory)
 	}
 
 	fmt.Println("Uploading signed certs to Foundries")
-	subcommands.DieNotNil(api.FactoryPatchCA(factory, resp))
+	subcommands.DieNotNil(api.FactoryPatchCA(factory, certs))
 }
