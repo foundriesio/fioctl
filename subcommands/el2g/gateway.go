@@ -2,8 +2,6 @@ package el2g
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 
 	"github.com/foundriesio/fioctl/client"
 	"github.com/foundriesio/fioctl/subcommands"
@@ -30,13 +28,6 @@ func init() {
 
 func doDeviceGateway(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
-
-	path := filepath.Join(pkiDir, "factory_ca.key")
-	_, err := os.Stat(path)
-	subcommands.DieNotNil(err)
-	path = filepath.Join(pkiDir, "sign_ca_csr")
-	_, err = os.Stat(path)
-	subcommands.DieNotNil(err)
 
 	ca, err := api.FactoryGetCA(factory)
 	subcommands.DieNotNil(err)
