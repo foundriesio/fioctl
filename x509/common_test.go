@@ -73,6 +73,7 @@ func runTest(t *testing.T, verifyFiles func(factoryCa, tlsCert, onlineCa, offlin
 	factoryCaPool := x509.NewCertPool()
 	tlsKey, tlsCsr := genTestTlsCsr(t)
 	onlineCaKey, onlineCaCsr := genTestOnlineCaCsr(t)
+	el2goCaKey, el2goCaCsr := genTestEl2GoCaCsr(t)
 
 	factoryCaPem := CreateFactoryCa(testFactory)
 	factoryCa, err := x509.ParseCertificate(pemToDer(t, factoryCaPem))
@@ -158,6 +159,26 @@ func runTest(t *testing.T, verifyFiles func(factoryCa, tlsCert, onlineCa, offlin
 	assert.Equal(t, offlineCa, offlineCaChain[0][0])
 	assert.Equal(t, factoryCa, offlineCaChain[0][1])
 
+	el2goCaPem := SignEl2GoCsr(el2goCaCsr)
+	el2goCa, err := x509.ParseCertificate(pemToDer(t, el2goCaPem))
+	require.Nil(t, err)
+	el2goCaChain, err := el2goCa.Verify(x509.VerifyOptions{
+		Roots:     factoryCaPool,
+		KeyUsages: []x509.ExtKeyUsage{},
+	})
+	assert.Nil(t, err)
+
+	assert.Equal(t, true, el2goCa.IsCA)
+	assert.Equal(t, x509.KeyUsageCertSign, el2goCa.KeyUsage)
+	assert.Equal(t, testDnsGateway, el2goCa.Subject.CommonName)
+	assert.Equal(t, []string{testFactory}, el2goCa.Subject.OrganizationalUnit)
+	assert.Equal(t, []string{"nxp"}, el2goCa.Subject.Organization)
+	assert.Equal(t, 1, len(el2goCaChain))
+	assert.Equal(t, 2, len(el2goCaChain[0]))
+	assert.Equal(t, el2goCa.PublicKey, el2goCaKey.Public())
+	assert.Equal(t, el2goCa, el2goCaChain[0][0])
+	assert.Equal(t, factoryCa, el2goCaChain[0][1])
+
 	verifyFiles(factoryCa, tlsCert, onlineCa, offlineCa)
 }
 
@@ -186,6 +207,22 @@ func genTestOnlineCaCsr(t *testing.T) (crypto.Signer, string) {
 	require.Nil(t, err)
 	csr := &x509.CertificateRequest{
 		Subject: pkix.Name{CommonName: testDnsGateway, OrganizationalUnit: []string{testFactory}},
+	}
+	csrDer, err := x509.CreateCertificateRequest(rand.Reader, csr, key)
+	require.Nil(t, err)
+	csrPem := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE REQUEST", Bytes: csrDer})
+	return key, string(csrPem)
+}
+
+func genTestEl2GoCaCsr(t *testing.T) (crypto.Signer, string) {
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	require.Nil(t, err)
+	csr := &x509.CertificateRequest{
+		Subject: pkix.Name{
+			CommonName:         testDnsGateway,
+			OrganizationalUnit: []string{testFactory},
+			Organization:       []string{"nxp"},
+		},
 	}
 	csrDer, err := x509.CreateCertificateRequest(rand.Reader, csr, key)
 	require.Nil(t, err)

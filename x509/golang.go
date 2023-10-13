@@ -111,24 +111,22 @@ func CreateFactoryCa(ou string) string {
 }
 
 func CreateDeviceCa(cn string, ou string) string {
-	factoryKey := factoryCaKeyStorage.loadKey()
-	factoryCa := loadCertFromFile(FactoryCaCertFile)
 	priv := genAndSaveKeyToFile(DeviceCaKeyFile)
-	crtTemplate := x509.Certificate{
-		SerialNumber: genRandomSerialNumber(),
-		Subject:      marshalSubject(cn, ou),
-		Issuer:       factoryCa.Subject,
-		NotBefore:    time.Now(),
-		NotAfter:     time.Now().AddDate(10, 0, 0),
-
-		BasicConstraintsValid: true,
-		IsCA:                  true,
-		MaxPathLenZero:        true,
-		KeyUsage:              x509.KeyUsageCertSign,
-	}
-	crtPem := genCertificate(&crtTemplate, factoryCa, priv.Public(), factoryKey)
+	crtPem := genCaCert(marshalSubject(cn, ou), priv.Public())
 	writeFile(DeviceCaCertFile, crtPem)
 	return crtPem
+}
+
+func SignCaCsr(csrPem string) string {
+	csr := parsePemCertificateRequest(csrPem)
+	crtPem := genCaCert(csr.Subject, csr.PublicKey)
+	writeFile(OnlineCaCertFile, crtPem)
+	return crtPem
+}
+
+func SignEl2GoCsr(csrPem string) string {
+	csr := parsePemCertificateRequest(csrPem)
+	return genCaCert(csr.Subject, csr.PublicKey)
 }
 
 func SignTlsCsr(csrPem string) string {
@@ -152,13 +150,12 @@ func SignTlsCsr(csrPem string) string {
 	return crtPem
 }
 
-func SignCaCsr(csrPem string) string {
-	csr := parsePemCertificateRequest(csrPem)
+func genCaCert(subject pkix.Name, pubkey crypto.PublicKey) string {
 	factoryKey := factoryCaKeyStorage.loadKey()
 	factoryCa := loadCertFromFile(FactoryCaCertFile)
 	crtTemplate := x509.Certificate{
 		SerialNumber: genRandomSerialNumber(),
-		Subject:      csr.Subject,
+		Subject:      subject,
 		Issuer:       factoryCa.Subject,
 		NotBefore:    time.Now(),
 		NotAfter:     time.Now().AddDate(10, 0, 0),
@@ -168,11 +165,5 @@ func SignCaCsr(csrPem string) string {
 		MaxPathLenZero:        true,
 		KeyUsage:              x509.KeyUsageCertSign,
 	}
-	crtPem := genCertificate(&crtTemplate, factoryCa, csr.PublicKey, factoryKey)
-	writeFile(OnlineCaCertFile, crtPem)
-	return crtPem
-}
-
-func SignEl2GoCsr(csrPem string) string {
-	return SignCaCsr(csrPem)
+	return genCertificate(&crtTemplate, factoryCa, pubkey, factoryKey)
 }
