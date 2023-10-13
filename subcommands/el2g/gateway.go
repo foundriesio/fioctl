@@ -2,6 +2,7 @@ package el2g
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/foundriesio/fioctl/client"
 	"github.com/foundriesio/fioctl/subcommands"
@@ -23,11 +24,13 @@ func init() {
   fioctl el2g config-device-gateway --pki-dir /tmp/factory-pki`,
 	}
 	cmd.AddCommand(configCmd)
-	configCmd.Flags().StringVarP(&pkiDir, "pki-dir", "", "", "Directory container factory PKI keys")
+	configCmd.Flags().StringVarP(&pkiDir, "pki-dir", "", "", "Directory containing factory PKI keys")
+	_ = configCmd.MarkFlagRequired("pki-dir")
 }
 
 func doDeviceGateway(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
+	subcommands.DieNotNil(os.Chdir(pkiDir))
 
 	ca, err := api.FactoryGetCA(factory)
 	subcommands.DieNotNil(err)
