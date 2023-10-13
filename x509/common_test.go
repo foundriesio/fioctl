@@ -19,6 +19,7 @@ const (
 	testFactory    = "factory"
 	testUser       = "fio-user"
 	testDnsBase    = "ota-lite.fio"
+	testDnsEst     = "repo.est.fio"
 	testDnsGateway = "repo.ota-lite.fio"
 	testDnsOstree  = "repo.ostree.fio"
 )
@@ -72,6 +73,7 @@ func runTest(t *testing.T, verifyFiles func(factoryCa, tlsCert, onlineCa, offlin
 
 	factoryCaPool := x509.NewCertPool()
 	tlsKey, tlsCsr := genTestTlsCsr(t)
+	estKey, estCsr := genTestEstCsr(t)
 	onlineCaKey, onlineCaCsr := genTestOnlineCaCsr(t)
 	el2goCaKey, el2goCaCsr := genTestEl2GoCaCsr(t)
 
@@ -121,6 +123,27 @@ func runTest(t *testing.T, verifyFiles func(factoryCa, tlsCert, onlineCa, offlin
 	assert.Equal(t, tlsCert.PublicKey, tlsKey.Public())
 	assert.Equal(t, tlsCert, tlsCertChain[0][0])
 	assert.Equal(t, factoryCa, tlsCertChain[0][1])
+
+	estCertPem := SignEstCsr(estCsr)
+	estCert, err := x509.ParseCertificate(pemToDer(t, estCertPem))
+	require.Nil(t, err)
+	estCertChain, err := estCert.Verify(x509.VerifyOptions{
+		DNSName:   testDnsEst,
+		Roots:     factoryCaPool,
+		KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+	})
+	assert.Nil(t, err)
+
+	assert.Equal(t, false, estCert.IsCA)
+	assert.Equal(t, x509.KeyUsageDigitalSignature|x509.KeyUsageKeyEncipherment|x509.KeyUsageKeyAgreement, estCert.KeyUsage)
+	assert.Equal(t, testDnsBase, estCert.Subject.CommonName)
+	assert.Equal(t, 1, len(estCert.DNSNames))
+	assert.Equal(t, testDnsEst, estCert.DNSNames[0])
+	assert.Equal(t, 1, len(estCertChain))
+	assert.Equal(t, 2, len(estCertChain[0]))
+	assert.Equal(t, estCert.PublicKey, estKey.Public())
+	assert.Equal(t, estCert, estCertChain[0][0])
+	assert.Equal(t, factoryCa, estCertChain[0][1])
 
 	onlineCaPem := SignCaCsr(onlineCaCsr)
 	onlineCa, err := x509.ParseCertificate(pemToDer(t, onlineCaPem))
@@ -195,6 +218,19 @@ func genTestTlsCsr(t *testing.T) (crypto.Signer, string) {
 	csr := &x509.CertificateRequest{
 		Subject:  pkix.Name{CommonName: testDnsBase},
 		DNSNames: []string{testDnsGateway, testDnsOstree},
+	}
+	csrDer, err := x509.CreateCertificateRequest(rand.Reader, csr, key)
+	require.Nil(t, err)
+	csrPem := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE REQUEST", Bytes: csrDer})
+	return key, string(csrPem)
+}
+
+func genTestEstCsr(t *testing.T) (crypto.Signer, string) {
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	require.Nil(t, err)
+	csr := &x509.CertificateRequest{
+		Subject:  pkix.Name{CommonName: testDnsBase},
+		DNSNames: []string{testDnsEst},
 	}
 	csrDer, err := x509.CreateCertificateRequest(rand.Reader, csr, key)
 	require.Nil(t, err)

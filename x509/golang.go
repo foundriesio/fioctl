@@ -131,11 +131,22 @@ func SignEl2GoCsr(csrPem string) string {
 
 func SignTlsCsr(csrPem string) string {
 	csr := parsePemCertificateRequest(csrPem)
+	crtPem := genTlsCert(csr.Subject, csr.DNSNames, csr.PublicKey)
+	writeFile(TlsCertFile, crtPem)
+	return crtPem
+}
+
+func SignEstCsr(csrPem string) string {
+	csr := parsePemCertificateRequest(csrPem)
+	return genTlsCert(csr.Subject, csr.DNSNames, csr.PublicKey)
+}
+
+func genTlsCert(subject pkix.Name, dnsNames []string, pubkey crypto.PublicKey) string {
 	factoryKey := factoryCaKeyStorage.loadKey()
 	factoryCa := loadCertFromFile(FactoryCaCertFile)
 	crtTemplate := x509.Certificate{
 		SerialNumber: genRandomSerialNumber(),
-		Subject:      csr.Subject,
+		Subject:      subject,
 		Issuer:       factoryCa.Subject,
 		NotBefore:    time.Now(),
 		NotAfter:     time.Now().AddDate(10, 0, 0),
@@ -143,11 +154,9 @@ func SignTlsCsr(csrPem string) string {
 		IsCA:        false,
 		KeyUsage:    x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment | x509.KeyUsageKeyAgreement,
 		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
-		DNSNames:    csr.DNSNames,
+		DNSNames:    dnsNames,
 	}
-	crtPem := genCertificate(&crtTemplate, factoryCa, csr.PublicKey, factoryKey)
-	writeFile(TlsCertFile, crtPem)
-	return crtPem
+	return genCertificate(&crtTemplate, factoryCa, pubkey, factoryKey)
 }
 
 func genCaCert(subject pkix.Name, pubkey crypto.PublicKey) string {

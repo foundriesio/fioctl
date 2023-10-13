@@ -1,13 +1,11 @@
 package keys
 
 import (
-	"bytes"
 	"fmt"
 	"os"
-	"os/exec"
-	"path/filepath"
 
 	"github.com/foundriesio/fioctl/subcommands"
+	"github.com/foundriesio/fioctl/x509"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -54,40 +52,12 @@ func doShowEst(cmd *cobra.Command, args []string) {
 func doAuthorizeEst(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 	logrus.Debugf("Authorizing EST for %s", factory)
-	pkiDir := args[0]
-
-	signPath := filepath.Join(pkiDir, "sign_tls_csr")
-	_, err := os.Stat(signPath)
-	subcommands.DieNotNil(err)
-	signPath, err = filepath.Abs(signPath)
-	subcommands.DieNotNil(err)
-
-	tmpDir, err := os.MkdirTemp("", "*-fio-est")
-	subcommands.DieNotNil(err)
-	defer os.RemoveAll(tmpDir)
-
-	// Workaround: the sign_tls_csr script has a bug where it expects a
-	// file named factory_ca.srl to exist in the working directory.
-	subcommands.DieNotNil(
-		os.WriteFile(filepath.Join(tmpDir, "factory_ca.srl"), []byte{}, 0o700))
-
-	tmpFile, err := os.Create(filepath.Join(tmpDir, "fio-est.csr"))
-	subcommands.DieNotNil(err)
+	subcommands.DieNotNil(os.Chdir(args[0]))
 
 	csr, err := api.FactoryCreateEstCsr(factory)
 	subcommands.DieNotNil(err)
 
-	_, err = tmpFile.WriteString(csr)
-	subcommands.DieNotNil(err)
-
-	c := exec.Command(signPath, tmpFile.Name())
-	buf := bytes.NewBuffer([]byte{})
-	stdErr := bytes.NewBuffer([]byte{})
-	c.Stdout = buf
-	c.Stderr = stdErr
-	c.Dir = tmpDir
-	subcommands.DieNotNil(c.Run(), stdErr.String())
-	cert := buf.String()
+	cert := x509.SignEstCsr(csr)
 	fmt.Println("Uploading new EST certificate:")
 	fmt.Println(cert)
 	subcommands.DieNotNil(api.FactorySetEstCrt(factory, cert))
