@@ -81,7 +81,12 @@ func doCreateCA(cmd *cobra.Command, args []string) {
 	x509.InitHsm(hsm)
 
 	logrus.Debugf("Create CA for %s under %s", factory, certsDir)
-	csrs, err := api.FactoryCreateCA(factory)
+	opts := client.CaCreateOptions{
+		FirstTimeInit:  true,
+		CreateOnlineCa: true,
+		CreateTlsCert:  true,
+	}
+	csrs, err := api.FactoryCreateCA(factory, opts)
 	subcommands.DieNotNil(err)
 
 	var certs client.CaCerts

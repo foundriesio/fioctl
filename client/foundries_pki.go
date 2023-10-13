@@ -24,6 +24,12 @@ type CaCsrs struct {
 	TlsCsr string `json:"tls-csr,omitempty"`
 }
 
+type CaCreateOptions struct {
+	FirstTimeInit  bool `json:"first-time-init"`
+	CreateOnlineCa bool `json:"ca-csr"`
+	CreateTlsCert  bool `json:"tls-csr"`
+}
+
 func (a *Api) FactoryGetCA(factory string) (CaCerts, error) {
 	url := a.serverUrl + "/ota/factories/" + factory + "/certs/"
 	logrus.Debugf("Getting certs %s", url)
@@ -38,12 +44,17 @@ func (a *Api) FactoryGetCA(factory string) (CaCerts, error) {
 	return resp, err
 }
 
-func (a *Api) FactoryCreateCA(factory string) (CaCsrs, error) {
+func (a *Api) FactoryCreateCA(factory string, opts CaCreateOptions) (CaCsrs, error) {
 	url := a.serverUrl + "/ota/factories/" + factory + "/certs/"
 	logrus.Debugf("Creating new factory CA %s", url)
 	var resp CaCsrs
 
-	body, err := a.Post(url, []byte("{}"))
+	data, err := json.Marshal(opts)
+	if err != nil {
+		return resp, err
+	}
+
+	body, err := a.Post(url, data)
 	if err != nil {
 		return resp, err
 	}
