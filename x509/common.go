@@ -1,6 +1,7 @@
 package x509
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/foundriesio/fioctl/subcommands"
@@ -46,6 +47,21 @@ type hsmStorage struct {
 
 var factoryCaKeyStorage KeyStorage = &fileStorage{FactoryCaKeyFile}
 
-func InitHsm(hsm HsmInfo) {
-	factoryCaKeyStorage = &hsmStorage{hsm, FactoryCaKeyLabel}
+func InitHsm(hsm *HsmInfo) {
+	if hsm != nil {
+		factoryCaKeyStorage = &hsmStorage{*hsm, FactoryCaKeyLabel}
+	}
+}
+
+func ValidateHsmArgs(hsmModule, hsmPin, hsmTokenLabel, moduleArg, pinArg, tokenArg string) (*HsmInfo, error) {
+	if len(hsmModule) > 0 {
+		if len(hsmPin) == 0 {
+			return nil, fmt.Errorf("%s is required with %s", pinArg, moduleArg)
+		}
+		if len(hsmTokenLabel) == 0 {
+			return nil, fmt.Errorf("%s is required with %s", tokenArg, moduleArg)
+		}
+		return &HsmInfo{Module: hsmModule, Pin: hsmPin, TokenLabel: hsmTokenLabel}, nil
+	}
+	return nil, nil
 }

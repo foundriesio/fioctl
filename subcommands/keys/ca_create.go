@@ -1,7 +1,6 @@
 package keys
 
 import (
-	"errors"
 	"fmt"
 	"os"
 
@@ -59,9 +58,9 @@ This is optional.`,
 	caCmd.AddCommand(cmd)
 	cmd.Flags().BoolVarP(&createOnlineCA, "online-ca", "", true, "Create an online CA owned by Foundries that works with lmp-device-register")
 	cmd.Flags().BoolVarP(&createLocalCA, "local-ca", "", true, "Create a local CA that you can use for signing your own device certificates")
-	cmd.Flags().StringVarP(&hsmModule, "hsm-module", "", "", "Create key on an PKCS#11 compatible HSM using this module")
-	cmd.Flags().StringVarP(&hsmPin, "hsm-pin", "", "", "The PKCS#11 PIN to set up on the HSM, if using one")
-	cmd.Flags().StringVarP(&hsmTokenLabel, "hsm-token-label", "", "", "The label of the HSM token created for this")
+	cmd.Flags().StringVarP(&hsmModule, "hsm-module", "", "", "Create a root CA key on a PKCS#11 compatible HSM using this module")
+	cmd.Flags().StringVarP(&hsmPin, "hsm-pin", "", "", "The PKCS#11 PIN to log into the HSM")
+	cmd.Flags().StringVarP(&hsmTokenLabel, "hsm-token-label", "", "", "The label of the HSM token created for the root CA key")
 }
 
 func getDeviceCaCommonName(factory string) string {
@@ -73,23 +72,14 @@ func getDeviceCaCommonName(factory string) string {
 func doCreateCA(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 	certsDir := args[0]
-	logrus.Debugf("Create CA for %s under %s", factory, certsDir)
+
 	subcommands.DieNotNil(os.Chdir(certsDir))
+	hsm, err := x509.ValidateHsmArgs(
+		hsmModule, hsmPin, hsmTokenLabel, "--hsm-module", "--hsm-pin", "--hsm-token-label")
+	subcommands.DieNotNil(err)
+	x509.InitHsm(hsm)
 
-	if len(hsmModule) > 0 {
-		if len(hsmPin) == 0 {
-			subcommands.DieNotNil(errors.New("--hsm-pin is required with --hsm-module"))
-		}
-		if len(hsmTokenLabel) == 0 {
-			subcommands.DieNotNil(errors.New("--hsm-token-label is required with --hsm-module"))
-		}
-		x509.InitHsm(x509.HsmInfo{
-			Module:     hsmModule,
-			Pin:        hsmPin,
-			TokenLabel: hsmTokenLabel,
-		})
-	}
-
+	logrus.Debugf("Create CA for %s under %s", factory, certsDir)
 	resp, err := api.FactoryCreateCA(factory)
 	subcommands.DieNotNil(err)
 

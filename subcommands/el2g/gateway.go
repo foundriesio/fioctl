@@ -12,7 +12,10 @@ import (
 )
 
 var (
-	pkiDir string
+	pkiDir        string
+	hsmModule     string
+	hsmPin        string
+	hsmTokenLabel string
 )
 
 func init() {
@@ -25,12 +28,20 @@ func init() {
 	}
 	cmd.AddCommand(configCmd)
 	configCmd.Flags().StringVarP(&pkiDir, "pki-dir", "", "", "Directory containing factory PKI keys")
+	configCmd.Flags().StringVarP(&hsmModule, "hsm-module", "", "", "Load a root CA key from a PKCS#11 compatible HSM using this module")
+	configCmd.Flags().StringVarP(&hsmPin, "hsm-pin", "", "", "The PKCS#11 PIN to log into the HSM")
+	configCmd.Flags().StringVarP(&hsmTokenLabel, "hsm-token-label", "", "", "The label of the HSM token containing the root CA key")
 	_ = configCmd.MarkFlagRequired("pki-dir")
 }
 
 func doDeviceGateway(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
+
 	subcommands.DieNotNil(os.Chdir(pkiDir))
+	hsm, err := x509.ValidateHsmArgs(
+		hsmModule, hsmPin, hsmTokenLabel, "--hsm-module", "--hsm-pin", "--hsm-token-label")
+	subcommands.DieNotNil(err)
+	x509.InitHsm(hsm)
 
 	ca, err := api.FactoryGetCA(factory)
 	subcommands.DieNotNil(err)
