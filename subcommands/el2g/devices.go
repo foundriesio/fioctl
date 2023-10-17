@@ -74,9 +74,9 @@ func doList(cmd *cobra.Command, args []string) {
 	devices, err := api.El2gDevices(factory)
 	subcommands.DieNotNil(err)
 	t := tabby.New()
-	t.AddHeader("GROUP", "ID", "LAST CONNECTION")
+	t.AddHeader("GROUP", "ID")
 	for _, device := range devices {
-		t.AddLine(device.DeviceGroup, device.Id, device.LastConnection)
+		t.AddLine(device.DeviceGroup, device.Id)
 	}
 	t.Print()
 }
