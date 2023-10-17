@@ -41,15 +41,14 @@ func init() {
 }
 
 func Set(a, b []string) []string {
-	unique := make([]string, len(a), len(a)+len(b))
+	unique := make([]string, 0, len(a)+len(b))
 	items := make(map[string]bool, len(a))
-	for i, item := range a {
-		unique[i] = item
-		items[item] = true
-	}
-	for _, item := range b {
-		if ok := items[item]; !ok {
-			unique = append(unique, item)
+	for i, lst := 0, a; i < 2; i, lst = i+1, b {
+		for _, item := range lst {
+			if ok := items[item]; !ok {
+				unique = append(unique, item)
+				items[item] = true
+			}
 		}
 	}
 	return unique
@@ -58,6 +57,11 @@ func Set(a, b []string) []string {
 func doTag(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 	tags := strings.Split(tagTags, ",")
+
+	// Make sure all tags are unique, no accidental repeats/typos
+	if len(tags) != len(Set(tags, nil)) {
+		subcommands.DieNotNil(fmt.Errorf("Invalid list of tags. An item was repeated in %s", tags))
+	}
 
 	targets, err := api.TargetsList(factory)
 	subcommands.DieNotNil(err)
