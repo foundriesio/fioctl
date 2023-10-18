@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/foundriesio/fioctl/client"
 	"github.com/foundriesio/fioctl/subcommands"
 	"github.com/foundriesio/fioctl/x509"
 	"github.com/sirupsen/logrus"
@@ -63,11 +64,11 @@ func doAuthorizeEst(cmd *cobra.Command, args []string) {
 	x509.InitHsm(hsm)
 
 	logrus.Debugf("Authorizing EST for %s", factory)
-	csr, err := api.FactoryCreateEstCsr(factory)
+	csrs, err := api.FactoryCreateCA(factory, client.CaCreateOptions{CreateEstCert: true})
 	subcommands.DieNotNil(err)
 
-	cert := x509.SignEstCsr(csr)
+	certs := client.CaCerts{EstCrt: x509.SignEstCsr(csrs.EstCsr)}
 	fmt.Println("Uploading new EST certificate:")
-	fmt.Println(cert)
-	subcommands.DieNotNil(api.FactorySetEstCrt(factory, cert))
+	fmt.Println(certs.EstCrt)
+	subcommands.DieNotNil(api.FactoryPatchCA(factory, certs))
 }
