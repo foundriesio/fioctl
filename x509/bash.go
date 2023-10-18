@@ -136,6 +136,26 @@ rm ca.cnf`
 }
 
 func SignTlsCsr(csrPem string) string {
+	crtPem := signTlsCsr("tls-*", csrPem)
+	writeFile(TlsCertFile, crtPem)
+	return crtPem
+}
+
+func SignEstCsr(csrPem string) string {
+	return signTlsCsr("est-*", csrPem)
+}
+
+func SignCaCsr(csrPem string) string {
+	crtPem := signCaCsr("online-ca-*", csrPem)
+	writeFile(OnlineCaCertFile, crtPem)
+	return crtPem
+}
+
+func SignEl2GoCsr(csrPem string) string {
+	return signCaCsr("el2g-*", csrPem)
+}
+
+func signTlsCsr(tmpFileMask, csrPem string) string {
 	const script = `#!/bin/sh -e
 ## This script signs the "tls-csr" returned when creating Factory certificates.
 ## This certificate are signed so that the devices trust the TLS connection with the Foundries device gateway.
@@ -167,19 +187,7 @@ fi
 openssl x509 -req -days 3650 $extra -in $csr -CAcreateserial \
 	-extfile server.ext -CAkey "$key" -CA factory_ca.pem -sha256 -out $crt
 rm server.ext factory_ca.srl || true`
-	crtPem := signCsr(script, "tls-*", csrPem)
-	writeFile(TlsCertFile, crtPem)
-	return crtPem
-}
-
-func SignCaCsr(csrPem string) string {
-	crtPem := signCaCsr("online-ca-*", csrPem)
-	writeFile(OnlineCaCertFile, crtPem)
-	return crtPem
-}
-
-func SignEl2GoCsr(csrPem string) string {
-	return signCaCsr("el2g-*", csrPem)
+	return signCsr(script, tmpFileMask, csrPem)
 }
 
 func signCaCsr(tmpFileMask, csrPem string) string {

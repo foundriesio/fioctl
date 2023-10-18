@@ -40,7 +40,7 @@ func TestHsm(t *testing.T) {
 	cmd.Stdout = os.Stdout
 	require.Nil(t, cmd.Run())
 
-	InitHsm(HsmInfo{Module: testHsmModule, Pin: testHsmPin, TokenLabel: testHsmTokenLabel})
+	InitHsm(&HsmInfo{Module: testHsmModule, Pin: testHsmPin, TokenLabel: testHsmTokenLabel})
 
 	runTest(t, func(factoryCa, tlsCert, onlineCa, offlineCa *x509.Certificate) {
 		for _, fn := range []string{
