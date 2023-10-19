@@ -63,3 +63,31 @@ jobs:
       - name: Verify binary
         run: ./bin/${{ matrix.binary }} help
         shell: bash
+
+  check-docs:
+    needs: build-binaries
+    name: Check Docs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download binary
+        uses: actions/download-artifact@v3
+        with:
+          name: binaries
+          path: bin/
+      - name: Generate RST Docs
+        run: |
+          chmod +x bin/fioctl-linux-amd64 && \
+          mkdir -p docs/rst && \
+          mkdir -p docs/html && \
+          bin/fioctl-linux-amd64 gen-rst docs/rst/
+      - name: Sphinx Fix
+        run: |
+          echo ':ref:`fioctl`' > docs/rst/index.rst && \
+          touch docs/rst/conf.py
+      - name: Generate Sphinx Docs
+        uses: addnab/docker-run-action@v3
+        with:
+          image: sphinxdoc/sphinx:7.1.2
+          options: -v ${{ github.workspace }}/docs:/docs
+          run: |
+            sphinx-build -W /docs/rst/ /docs/html/
