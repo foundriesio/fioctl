@@ -95,7 +95,11 @@ rm ca.cnf
 	return readFile(FactoryCaCertFile)
 }
 
-func CreateDeviceCa(cn string, ou string) string {
+func CreateDeviceCa(cn, ou string) string {
+	return CreateDeviceCaExt(cn, ou, DeviceCaKeyFile, DeviceCaCertFile)
+}
+
+func CreateDeviceCaExt(cn, ou, keyFile, certFile string) string {
 	const script = `#!/bin/sh -e
 ## This is an optional script a customer can use to create a certificate
 ## capable of signing a certicate signing request from an LMP device.
@@ -129,9 +133,9 @@ openssl ecparam -genkey -name prime256v1 | openssl ec -out $key
 openssl req -new -config ca.cnf -key $key
 chmod 400 $key
 rm ca.cnf`
-	csrPem := run(script, DeviceCaKeyFile, cn, ou)
+	csrPem := run(script, keyFile, cn, ou)
 	crtPem := signCaCsr("device-ca-*", csrPem)
-	writeFile(DeviceCaCertFile, crtPem)
+	writeFile(certFile, crtPem)
 	return crtPem
 }
 

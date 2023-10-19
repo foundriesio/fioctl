@@ -110,10 +110,14 @@ func CreateFactoryCa(ou string) string {
 	return factoryCaString
 }
 
-func CreateDeviceCa(cn string, ou string) string {
-	priv := genAndSaveKeyToFile(DeviceCaKeyFile)
+func CreateDeviceCa(cn, ou string) string {
+	return CreateDeviceCaExt(cn, ou, DeviceCaKeyFile, DeviceCaCertFile)
+}
+
+func CreateDeviceCaExt(cn, ou, keyFile, certFile string) string {
+	priv := genAndSaveKeyToFile(keyFile)
 	crtPem := genCaCert(marshalSubject(cn, ou), priv.Public())
-	writeFile(DeviceCaCertFile, crtPem)
+	writeFile(certFile, crtPem)
 	return crtPem
 }
 
