@@ -5,6 +5,7 @@ import (
 	"crypto/elliptic"
 	"crypto/x509"
 	"encoding/asn1"
+	"encoding/hex"
 	"encoding/pem"
 	"fmt"
 	"strings"
@@ -183,7 +184,19 @@ func prettyPrint(cert string) {
 		fmt.Println("\tIs CA:", c.IsCA)
 		fmt.Println("\tExtensions:")
 		for _, ext := range c.Extensions {
-			if ext.Id.String() == "2.5.29.15" {
+			if ext.Id.String() == "2.5.29.14" {
+				fmt.Print("\t\tx509v3 Subject Key Id: ")
+				if ext.Critical {
+					fmt.Print("(critical)")
+				}
+				fmt.Println("\n\t\t\t", hex.EncodeToString(c.SubjectKeyId))
+			} else if ext.Id.String() == "2.5.29.35" {
+				fmt.Print("\t\tx509v3 Authority Key Id: ")
+				if ext.Critical {
+					fmt.Print("(critical)")
+				}
+				fmt.Println("\n\t\t\t", hex.EncodeToString(c.AuthorityKeyId))
+			} else if ext.Id.String() == "2.5.29.15" {
 				fmt.Print("\t\tx509v3 Key Usage: ")
 				if ext.Critical {
 					fmt.Print("(critical)")
@@ -232,7 +245,7 @@ func prettyPrint(cert string) {
 					fmt.Println("\t\t\tEmail:", name)
 				}
 			} else {
-				fmt.Println("Unknown OID", ext.Id.String())
+				fmt.Println("\t\tUnknown OID", ext.Id.String())
 			}
 		}
 	}
