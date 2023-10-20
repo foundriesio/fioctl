@@ -44,10 +44,10 @@ linter: has-linter
 	$(linter) run --fix ${EXTRA_LINTER_FLAGS}
 
 format-check:
-	@test -z $(shell gofmt -l ./ | tee /dev/stderr) || echo "[WARN] Fix formatting issues with 'make format-check'"
+	@test -z $(shell gofmt -l -s ./ | tee /dev/stderr) || echo "[WARN] Fix formatting issues with 'make format-check'"
 
 format:
-	@gofmt -l  -w ./
+	@gofmt -l -s -w ./
 
 check: format-check linter-check
 	@true
