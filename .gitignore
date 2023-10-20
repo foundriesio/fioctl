@@ -1,4 +1,9 @@
 bin/*
+data/*
+
+### tuf-metadata
+keys/*
+repository/*
 
 ### IDE
 .idea
