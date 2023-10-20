@@ -10,7 +10,6 @@ import (
 	"crypto/x509/pkix"
 	"encoding/asn1"
 	"encoding/pem"
-	"errors"
 	"math/big"
 	"time"
 
@@ -42,14 +41,6 @@ func genCertificate(
 	subcommands.DieNotNil(err)
 
 	return certRow.String()
-}
-
-func parseOnePemBlock(pemBlock string) *pem.Block {
-	first, rest := pem.Decode([]byte(pemBlock))
-	if first == nil || len(rest) > 0 {
-		subcommands.DieNotNil(errors.New("Malformed PEM data"))
-	}
-	return first
 }
 
 func parsePemCertificateRequest(csrPem string) *x509.CertificateRequest {
@@ -147,7 +138,7 @@ func SignEstCsr(csrPem string) string {
 
 func genTlsCert(subject pkix.Name, dnsNames []string, pubkey crypto.PublicKey) string {
 	factoryKey := factoryCaKeyStorage.loadKey()
-	factoryCa := loadCertFromFile(FactoryCaCertFile)
+	factoryCa := LoadCertFromFile(FactoryCaCertFile)
 	crtTemplate := x509.Certificate{
 		SerialNumber: genRandomSerialNumber(),
 		Subject:      subject,
@@ -165,7 +156,7 @@ func genTlsCert(subject pkix.Name, dnsNames []string, pubkey crypto.PublicKey) s
 
 func genCaCert(subject pkix.Name, pubkey crypto.PublicKey) string {
 	factoryKey := factoryCaKeyStorage.loadKey()
-	factoryCa := loadCertFromFile(FactoryCaCertFile)
+	factoryCa := LoadCertFromFile(FactoryCaCertFile)
 	crtTemplate := x509.Certificate{
 		SerialNumber: genRandomSerialNumber(),
 		Subject:      subject,

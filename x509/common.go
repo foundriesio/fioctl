@@ -1,6 +1,9 @@
 package x509
 
 import (
+	"crypto/x509"
+	"encoding/pem"
+	"errors"
 	"fmt"
 	"os"
 
@@ -64,4 +67,19 @@ func ValidateHsmArgs(hsmModule, hsmPin, hsmTokenLabel, moduleArg, pinArg, tokenA
 		return &HsmInfo{Module: hsmModule, Pin: hsmPin, TokenLabel: hsmTokenLabel}, nil
 	}
 	return nil, nil
+}
+
+func parseOnePemBlock(pemBlock string) *pem.Block {
+	first, rest := pem.Decode([]byte(pemBlock))
+	if first == nil || len(rest) > 0 {
+		subcommands.DieNotNil(errors.New("Malformed PEM data"))
+	}
+	return first
+}
+
+func LoadCertFromFile(fn string) *x509.Certificate {
+	crtPem := parseOnePemBlock(readFile(fn))
+	crt, err := x509.ParseCertificate(crtPem.Bytes)
+	subcommands.DieNotNil(err)
+	return crt
 }
