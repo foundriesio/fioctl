@@ -158,7 +158,7 @@ func prettyPrint(cert string) {
 		}
 		fmt.Println("Certificate:")
 		fmt.Println("\tVersion:", c.Version)
-		fmt.Println("\tSerial Number:", c.SerialNumber)
+		fmt.Println("\tSerial Number:", c.SerialNumber.Text(10))
 		fmt.Println("\tSignature Algorithm:", c.SignatureAlgorithm)
 		fmt.Println("\tIssuer:", c.Issuer)
 		fmt.Println("\tValidity")
