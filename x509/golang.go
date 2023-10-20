@@ -136,6 +136,42 @@ func SignEstCsr(csrPem string) string {
 	return genTlsCert(csr.Subject, csr.DNSNames, csr.PublicKey)
 }
 
+var oidExtensionReasonCode = []int{2, 5, 29, 21}
+
+func CreateCrl(serials map[string]int) string {
+	factoryKey := factoryCaKeyStorage.loadKey()
+	factoryCa := LoadCertFromFile(FactoryCaCertFile)
+	now := time.Now()
+	crl := &x509.RevocationList{
+		Number:     big.NewInt(1),
+		ThisUpdate: now,
+		NextUpdate: now.Add(time.Minute * 15),
+	}
+	for serial, reason := range serials {
+		num := new(big.Int)
+		if _, ok := num.SetString(serial, 10); !ok {
+			// We expect a valid input here
+			panic("Value is not a valid base 10 serial:" + serial)
+		}
+		// This would be easier with RevokedCertificateEntries, but it is not yet available in Golang 1.20.
+		reasonBytes, err := asn1.Marshal(asn1.Enumerated(reason))
+		subcommands.DieNotNil(err)
+
+		crl.RevokedCertificates = append(crl.RevokedCertificates, pkix.RevokedCertificate{
+			SerialNumber:   num,
+			RevocationTime: now,
+			Extensions:     []pkix.Extension{{Id: oidExtensionReasonCode, Value: reasonBytes}},
+		})
+	}
+	derBytes, err := x509.CreateRevocationList(rand.Reader, crl, factoryCa, factoryKey)
+	subcommands.DieNotNil(err)
+
+	var pemBuffer bytes.Buffer
+	err = pem.Encode(&pemBuffer, &pem.Block{Type: "X509 CRL", Bytes: derBytes})
+	subcommands.DieNotNil(err)
+	return pemBuffer.String()
+}
+
 func genTlsCert(subject pkix.Name, dnsNames []string, pubkey crypto.PublicKey) string {
 	factoryKey := factoryCaKeyStorage.loadKey()
 	factoryCa := LoadCertFromFile(FactoryCaCertFile)

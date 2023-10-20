@@ -159,6 +159,13 @@ func SignEl2GoCsr(csrPem string) string {
 	return signCaCsr("el2g-*", csrPem)
 }
 
+func CreateCrl(serials map[string]int) string {
+	if true {
+		panic("This function is not implemented in Bash implementation")
+	}
+	return "Neverland"
+}
+
 func signTlsCsr(tmpFileMask, csrPem string) string {
 	const script = `#!/bin/sh -e
 ## This script signs the "tls-csr" returned when creating Factory certificates.

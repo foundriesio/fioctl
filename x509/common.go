@@ -22,6 +22,15 @@ const (
 	factoryCaName string = "Factory-CA"
 )
 
+const (
+	// CRL constants for device CA revokation.
+
+	// Revoke the device CA, so that no device client certificates issued by this CA are recognized.
+	// Note: the API will revoke the CA for any reason other than 6 or 8.
+	// This action is permanent.
+	CrlCaRevoke = 9 // RFC 5280 - privilegeWithdrawn
+)
+
 func readFile(filename string) string {
 	data, err := os.ReadFile(filename)
 	subcommands.DieNotNil(err)

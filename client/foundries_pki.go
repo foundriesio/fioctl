@@ -16,6 +16,8 @@ type CaCerts struct {
 	EstCrt  string `json:"est-tls-crt,omitempty"`
 	TlsCrt  string `json:"tls-crt,omitempty"`
 
+	CaRevokeCrl string `json:"ca-revoke-crl,omitempty"`
+
 	ChangeMeta ChangeMeta `json:"change-meta"`
 }
 
