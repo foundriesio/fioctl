@@ -5,7 +5,7 @@ published to Github.
 
 This repository is managed using [go-tuf](https://github.com/theupdateframework/go-tuf/releases/download/v0.6.0/tuf_0.6.0_linux_amd64.tar.gz)
 and a combination of Github actions and release scripts.
-You can also install it using `go install github.com/theupdateframework/go-tuf/cmd/tuf@v0.6.0`
+You can also install it using `GOBIN=$(pwd)/bin/ go install github.com/theupdateframework/go-tuf/cmd/tuf@v0.6.0`
 
 ## Creating a new release
 ```
@@ -19,13 +19,13 @@ TUF_TARGETS_PASSPHRASE="TODO" \
 ```
 $ git clone https://github.com/foundriesio/fioctl
 $ git checkout tuf-metadata
-$ tuf gen-key --expires 365 root
+$ bin/tuf gen-key --expires 365 root
 ```
 
 Next send a copy of `staged/root.json` to next person with root key:
 ```
 # copy the new root.json into ./staged
-$ tuf sign root.json
+$ bin/tuf sign root.json
 ```
 
 One way to do that is to `git commit` and `git push` your changes to `staged/root.json`.
@@ -38,9 +38,9 @@ the final person will do a `tuf commit` and then do a git commit/push to update 
 In order to be able to create new releases, you need to own 3 keys: targets, snapshot, timestamp:
 ```
 $ git checkout tuf-metadata
-$ tuf gen-key --expires 365 targets
-$ tuf gen-key --expires 365 snapshot
-$ tuf gen-key --expires 365 timestamp
+$ bin/tuf gen-key --expires 365 targets
+$ bin/tuf gen-key --expires 365 snapshot
+$ bin/tuf gen-key --expires 365 timestamp
 ```
 
 After doing that, send a copy of `staged/root.json` for signature to a person owning a root key.
