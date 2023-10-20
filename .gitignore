@@ -1,4 +1,5 @@
 bin/*
+data/*
 
 ### tuf-metadata
 keys/*
