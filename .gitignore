@@ -1,4 +1,5 @@
 bin/*
+data/*
 keys/*
 staged/*
 repository/targets
