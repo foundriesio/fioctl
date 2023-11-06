@@ -29,6 +29,15 @@ const (
 	// Note: the API will revoke the CA for any reason other than 6 or 8.
 	// This action is permanent.
 	CrlCaRevoke = 9 // RFC 5280 - privilegeWithdrawn
+
+	// Disable the device CA, so that no new devices can be registered with client certificates issued by this CA.
+	// Devices that were already registered can still connect and operate as normal.
+	// This action can be reverted by CrlCaRenew.
+	CrlCaDisable = 6 // RFC 5280 - certificateHold
+
+	// Renew the previously disabled device CA, so that new device registrations are possible again.
+	// This value is currently not used by Fioctl. It is here for the reference of API integrators.
+	CrlCaRenew = 8 // RFC 5280 - removeFromCRL
 )
 
 func readFile(filename string) string {
