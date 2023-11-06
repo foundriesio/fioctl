@@ -7,6 +7,7 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/asn1"
 	"encoding/pem"
 	"os"
 	"testing"
@@ -181,6 +182,47 @@ func runTest(t *testing.T, verifyFiles func(factoryCa, tlsCert, onlineCa, offlin
 	assert.Equal(t, []string{"nxp"}, el2goCa.Subject.Organization)
 	assert.Equal(t, [][]*x509.Certificate{{el2goCa, factoryCa}}, el2goCaChain)
 	assert.Equal(t, el2goCa.PublicKey, el2goCaKey.Public())
+
+	if crlSupported, crlPem := func() (bool, string) {
+		// Recover from "unsupported" panic in bash implementation
+		crlSupported := true
+		defer func() {
+			if r := recover(); r != nil {
+				require.Equal(t, r, "This function is not implemented in Bash implementation")
+				crlSupported = false
+			}
+		}()
+		crlPem := CreateCrl(map[string]int{
+			onlineCa.SerialNumber.Text(10):  CrlCaRevoke,
+			offlineCa.SerialNumber.Text(10): CrlCaDisable,
+		})
+		return crlSupported, crlPem
+	}(); crlSupported {
+		crl, err := x509.ParseRevocationList(pemToDer(t, crlPem))
+		require.Nil(t, err)
+		require.NotNil(t, crl)
+		assert.Equal(t, factoryCa.Subject.String(), crl.Issuer.String())
+		assert.Equal(t, 2, len(crl.RevokedCertificates))
+		assert.Nil(t, crl.CheckSignatureFrom(factoryCa))
+
+		var revokedReason asn1.Enumerated
+		onlineRevoked, offlineRevoked := crl.RevokedCertificates[0], crl.RevokedCertificates[1]
+		if onlineCa.SerialNumber.Cmp(onlineRevoked.SerialNumber) != 0 {
+			onlineRevoked, offlineRevoked = offlineRevoked, onlineRevoked
+		}
+		assert.Equal(t, onlineCa.SerialNumber, onlineRevoked.SerialNumber)
+		assert.Equal(t, 1, len(onlineRevoked.Extensions))
+		assert.Equal(t, "2.5.29.21", onlineRevoked.Extensions[0].Id.String())
+		_, err = asn1.Unmarshal(onlineRevoked.Extensions[0].Value, &revokedReason)
+		assert.Nil(t, err)
+		assert.Equal(t, CrlCaRevoke, int(revokedReason))
+		assert.Equal(t, offlineCa.SerialNumber, offlineRevoked.SerialNumber)
+		assert.Equal(t, 1, len(offlineRevoked.Extensions))
+		assert.Equal(t, "2.5.29.21", offlineRevoked.Extensions[0].Id.String())
+		_, err = asn1.Unmarshal(offlineRevoked.Extensions[0].Value, &revokedReason)
+		assert.Nil(t, err)
+		assert.Equal(t, CrlCaDisable, int(revokedReason))
+	}
 
 	verifyFiles(factoryCa, tlsCert, onlineCa, offlineCa)
 }
