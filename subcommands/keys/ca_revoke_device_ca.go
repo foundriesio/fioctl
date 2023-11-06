@@ -1,6 +1,10 @@
 package keys
 
 import (
+	x509Lib "crypto/x509"
+	"encoding/asn1"
+	"encoding/hex"
+	"encoding/pem"
 	"errors"
 	"fmt"
 	"math/big"
@@ -104,9 +108,8 @@ func addRevokeCmdFlags(cmd *cobra.Command, op string) {
 
 func doRevokeDeviceCa(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
-	// TODO: Implement the --dry-run and --pretty arguments
-	// dryRun, _ := cmd.Flags().GetBool("dry-run")
-	// pretty, _ := cmd.Flags().GetBool("pretty")
+	dryRun, _ := cmd.Flags().GetBool("dry-run")
+	pretty, _ := cmd.Flags().GetBool("pretty")
 	caFiles, _ := cmd.Flags().GetStringArray("ca-file")
 	caSerials, _ := cmd.Flags().GetStringArray("ca-serial")
 	crlReason := map[string]int{
@@ -152,6 +155,81 @@ func doRevokeDeviceCa(cmd *cobra.Command, args []string) {
 
 	fmt.Println("Signing CRL by factory root CA")
 	certs := client.CaCerts{CaRevokeCrl: x509.CreateCrl(toRevoke)}
+
+	if dryRun {
+		fmt.Println(certs.CaRevokeCrl)
+		if pretty {
+			prettyPrintCrl(certs.CaRevokeCrl)
+		}
+		return
+	}
+
 	fmt.Println("Uploading CRL to Foundries.io")
 	subcommands.DieNotNil(api.FactoryPatchCA(factory, certs))
+}
+
+func prettyPrintCrl(crlPem string) {
+	block, remaining := pem.Decode([]byte(crlPem))
+	if block == nil || len(remaining) > 0 {
+		subcommands.DieNotNil(errors.New("Invalid PEM block"), "Failed to parse generated CRL:")
+		return // linter
+	}
+	c, err := x509Lib.ParseRevocationList(block.Bytes)
+	subcommands.DieNotNil(err, "Failed to parse generated CRL:")
+	fmt.Println("Certificate Revocation List:")
+	fmt.Println("\tIssuer:", c.Issuer)
+	fmt.Println("\tValidity:")
+	fmt.Println("\t\tNot Before:", c.ThisUpdate)
+	fmt.Println("\t\tNot After:", c.NextUpdate)
+	fmt.Println("\tSignature Algorithm:", c.SignatureAlgorithm)
+	fmt.Println("\tSignature:", hex.EncodeToString(c.Signature))
+	fmt.Println("\tRevoked Certificates:")
+	for _, crt := range c.RevokedCertificates {
+		fmt.Println("\t\tSerial:", crt.SerialNumber.Text(10))
+		fmt.Println("\t\t\tRevocation Date:", crt.RevocationTime)
+		if len(crt.Extensions) > 0 {
+			fmt.Println("\t\t\tExtensions:")
+			for _, ext := range crt.Extensions {
+				if ext.Id.String() == "2.5.29.21" {
+					fmt.Print("\t\t\t\tx509v3 Reason Code:")
+					if ext.Critical {
+						fmt.Print("(critical)")
+					}
+					var val asn1.Enumerated
+					if _, err := asn1.Unmarshal(ext.Value, &val); err != nil {
+						fmt.Println(err)
+					} else {
+						readable := map[int]string{
+							x509.CrlCaRevoke:  "Revoke",
+							x509.CrlCaDisable: "Disable",
+							x509.CrlCaRenew:   "Renew",
+						}[int(val)]
+						fmt.Println("\n\t\t\t\t\t", readable, "-", val)
+					}
+				} else {
+					fmt.Println("\t\t\t\tUnknown OID", ext.Id.String())
+				}
+			}
+		}
+	}
+	if len(c.Extensions) > 0 {
+		fmt.Println("\tExtensions:")
+		for _, ext := range c.Extensions {
+			if ext.Id.String() == "2.5.29.35" {
+				fmt.Print("\t\tx509v3 Authority Key Id: ")
+				if ext.Critical {
+					fmt.Print("(critical)")
+				}
+				fmt.Println("\n\t\t\t", hex.EncodeToString(c.AuthorityKeyId))
+			} else if ext.Id.String() == "2.5.29.20" {
+				fmt.Print("\t\tx509v3 CRL Number: ")
+				if ext.Critical {
+					fmt.Print("(critical)")
+				}
+				fmt.Println("\n\t\t\t", c.Number)
+			} else {
+				fmt.Println("\t\tUnknown OID", ext.Id.String())
+			}
+		}
+	}
 }
