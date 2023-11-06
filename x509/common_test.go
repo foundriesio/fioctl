@@ -88,7 +88,7 @@ func runTest(t *testing.T, verifyFiles func(factoryCa, tlsCert, onlineCa, offlin
 	assert.Nil(t, err)
 
 	assert.Equal(t, true, factoryCa.IsCA)
-	assert.Equal(t, x509.KeyUsageCertSign, factoryCa.KeyUsage)
+	assert.Equal(t, x509.KeyUsageCertSign|x509.KeyUsageCRLSign, factoryCa.KeyUsage)
 	assert.Equal(t, factoryCaName, factoryCa.Subject.CommonName)
 	assert.Equal(t, []string{testFactory}, factoryCa.Subject.OrganizationalUnit)
 	assert.Equal(t, [][]*x509.Certificate{{factoryCa}}, factoryCaChain)

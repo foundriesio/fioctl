@@ -67,7 +67,7 @@ OU = ${ou}
 
 [ext]
 basicConstraints=CA:TRUE
-keyUsage = keyCertSign
+keyUsage = keyCertSign, cRLSign
 extendedKeyUsage = critical, clientAuth, serverAuth
 EOF
 

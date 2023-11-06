@@ -93,7 +93,7 @@ func CreateFactoryCa(ou string) string {
 
 		BasicConstraintsValid: true,
 		IsCA:                  true,
-		KeyUsage:              x509.KeyUsageCertSign,
+		KeyUsage:              x509.KeyUsageCertSign | x509.KeyUsageCRLSign,
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},
 	}
 	factoryCaString := genCertificate(&crtTemplate, &crtTemplate, priv.Public(), priv)
@@ -163,6 +163,8 @@ func CreateCrl(serials map[string]int) string {
 			Extensions:     []pkix.Extension{{Id: oidExtensionReasonCode, Value: reasonBytes}},
 		})
 	}
+	// Our old root CAs are missing this bit; it's OK to add this here, and the API will accept it.
+	factoryCa.KeyUsage |= x509.KeyUsageCRLSign
 	derBytes, err := x509.CreateRevocationList(rand.Reader, crl, factoryCa, factoryKey)
 	subcommands.DieNotNil(err)
 
