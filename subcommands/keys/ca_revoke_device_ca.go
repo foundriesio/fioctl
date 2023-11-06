@@ -137,6 +137,19 @@ func doRevokeDeviceCa(cmd *cobra.Command, args []string) {
 		ca := x509.LoadCertFromFile(filename)
 		toRevoke[ca.SerialNumber.Text(10)] = crlReason
 	}
+
+	caList, err := api.FactoryGetCA(factory)
+	subcommands.DieNotNil(err)
+	validSerials := make(map[string]bool, 0)
+	for _, c := range parseCertList(caList.CaCrt) {
+		validSerials[c.SerialNumber.Text(10)] = true
+	}
+	for serial := range toRevoke {
+		if _, ok := validSerials[serial]; !ok {
+			subcommands.DieNotNil(fmt.Errorf("There is no actual device CA with serial %s", serial))
+		}
+	}
+
 	fmt.Println("Signing CRL by factory root CA")
 	certs := client.CaCerts{CaRevokeCrl: x509.CreateCrl(toRevoke)}
 	fmt.Println("Uploading CRL to Foundries.io")
