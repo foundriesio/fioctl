@@ -58,6 +58,7 @@ func doShowCA(cmd *cobra.Command, args []string) {
 			printOneCert(resp.TlsCrt)
 		case justShowCas:
 			printOneCert(resp.CaCrt)
+			printDisabledCas(resp.CaDisabled)
 		default:
 			panic("Unknown flag: " + flag)
 		}
@@ -82,6 +83,7 @@ func doShowCA(cmd *cobra.Command, args []string) {
 	printOneCert(resp.TlsCrt)
 	fmt.Println("\n## Device Authentication Certificate(s)")
 	printOneCert(resp.CaCrt)
+	printDisabledCas(resp.CaDisabled)
 }
 
 func printOneCert(crt string) {
@@ -89,6 +91,15 @@ func printOneCert(crt string) {
 		prettyPrint(crt)
 	} else {
 		fmt.Println(crt)
+	}
+}
+
+func printDisabledCas(serials []string) {
+	if len(serials) > 0 {
+		fmt.Println("\n## Disabled Device Authentication Certificate Serial(s)")
+		for _, num := range serials {
+			fmt.Println(" - ", num)
+		}
 	}
 }
 
