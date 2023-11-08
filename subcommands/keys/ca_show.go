@@ -17,6 +17,12 @@ import (
 	"github.com/foundriesio/fioctl/subcommands"
 )
 
+const (
+	justShowRoot = "just-root"
+	justShowTls  = "just-tls"
+	justShowCas  = "just-device-cas"
+)
+
 var (
 	prettyFormat  bool
 	justShowFlags subcommands.MutuallyExclusiveFlags
@@ -30,9 +36,9 @@ func init() {
 	}
 	caCmd.AddCommand(cmd)
 	cmd.Flags().BoolVarP(&prettyFormat, "pretty", "", false, "Display human readable output of each certificate")
-	justShowFlags.Add(cmd, "just-root", "Only show the Factory root CA certificate")
-	justShowFlags.Add(cmd, "just-tls", "Only show the device-gateway TLS certificate")
-	justShowFlags.Add(cmd, "just-device-cas", "Only show device authenticate certificates trusted by the device-gateway")
+	justShowFlags.Add(cmd, justShowRoot, "Only show the Factory root CA certificate")
+	justShowFlags.Add(cmd, justShowTls, "Only show the device-gateway TLS certificate")
+	justShowFlags.Add(cmd, justShowCas, "Only show device authenticate certificates trusted by the device-gateway")
 }
 
 func doShowCA(cmd *cobra.Command, args []string) {
@@ -44,19 +50,16 @@ func doShowCA(cmd *cobra.Command, args []string) {
 
 	flag, err := justShowFlags.GetFlag()
 	subcommands.DieNotNil(err)
-	justVal := ""
-	if flag == "just-root" {
-		justVal = resp.RootCrt
-	} else if flag == "just-tls" {
-		justVal = resp.TlsCrt
-	} else if flag == "just-device-cas" {
-		justVal = resp.CaCrt
-	}
-	if len(justVal) > 0 {
-		if prettyFormat {
-			prettyPrint(justVal)
-		} else {
-			fmt.Println(justVal)
+	if len(flag) > 0 {
+		switch flag {
+		case justShowRoot:
+			printOneCert(resp.RootCrt)
+		case justShowTls:
+			printOneCert(resp.TlsCrt)
+		case justShowCas:
+			printOneCert(resp.CaCrt)
+		default:
+			panic("Unknown flag: " + flag)
 		}
 		return
 	}
@@ -74,22 +77,18 @@ func doShowCA(cmd *cobra.Command, args []string) {
 	}
 
 	fmt.Println("## Factory root certificate")
-	if prettyFormat {
-		prettyPrint(resp.RootCrt)
-	} else {
-		fmt.Println(resp.RootCrt)
-	}
+	printOneCert(resp.RootCrt)
 	fmt.Println("## Server TLS Certificate")
-	if prettyFormat {
-		prettyPrint(resp.TlsCrt)
-	} else {
-		fmt.Println(resp.TlsCrt)
-	}
+	printOneCert(resp.TlsCrt)
 	fmt.Println("\n## Device Authentication Certificate(s)")
+	printOneCert(resp.CaCrt)
+}
+
+func printOneCert(crt string) {
 	if prettyFormat {
-		prettyPrint(resp.CaCrt)
+		prettyPrint(crt)
 	} else {
-		fmt.Println(resp.CaCrt)
+		fmt.Println(crt)
 	}
 }
 
