@@ -157,7 +157,10 @@ func prettyPrint(cert string) {
 		block, remaining := pem.Decode([]byte(cert))
 		if block == nil {
 			// could be excessive whitespace
-			cert = strings.TrimSpace(string(remaining))
+			if cert = strings.TrimSpace(string(remaining)); len(cert) == len(remaining) {
+				fmt.Println("Failed to parse remaining certificates: invalid PEM data")
+				break
+			}
 			continue
 		}
 		cert = string(remaining)
