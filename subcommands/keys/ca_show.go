@@ -152,23 +152,30 @@ func extKeyUsage(ext []x509.ExtKeyUsage) string {
 	return vals
 }
 
-func prettyPrint(cert string) {
-	for len(cert) > 0 {
-		block, remaining := pem.Decode([]byte(cert))
+func parseCertList(pemData string) (certs []*x509.Certificate) {
+	for len(pemData) > 0 {
+		block, remaining := pem.Decode([]byte(pemData))
 		if block == nil {
 			// could be excessive whitespace
-			if cert = strings.TrimSpace(string(remaining)); len(cert) == len(remaining) {
+			if pemData = strings.TrimSpace(string(remaining)); len(pemData) == len(remaining) {
 				fmt.Println("Failed to parse remaining certificates: invalid PEM data")
 				break
 			}
 			continue
 		}
-		cert = string(remaining)
+		pemData = string(remaining)
 		c, err := x509.ParseCertificate(block.Bytes)
 		if err != nil {
 			fmt.Println("Failed to parse certificate:" + err.Error())
 			continue
 		}
+		certs = append(certs, c)
+	}
+	return
+}
+
+func prettyPrint(cert string) {
+	for _, c := range parseCertList(cert) {
 		fmt.Println("Certificate:")
 		fmt.Println("\tVersion:", c.Version)
 		fmt.Println("\tSerial Number:", c.SerialNumber.Text(10))
