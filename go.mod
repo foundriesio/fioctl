@@ -7,7 +7,7 @@ require (
 	github.com/ThalesIgnite/crypto11 v1.2.5
 	github.com/cheynewallace/tabby v1.1.1
 	github.com/docker/go v1.5.1-1.0.20160303222718-d30aec9fd63c
-	github.com/fatih/color v1.15.0
+	github.com/fatih/color v1.16.0
 	github.com/foundriesio/go-ecies v0.3.0
 	github.com/hashicorp/go-version v1.6.0
 	github.com/karrick/godiff v0.0.2
@@ -43,7 +43,7 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
-	github.com/mattn/go-isatty v0.0.17 // indirect
+	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/miekg/pkcs11 v1.0.3-0.20190429190417-a667d056470f // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.8 // indirect
