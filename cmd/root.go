@@ -96,8 +96,9 @@ func init() {
 	rootCmd.AddCommand(targets.NewCommand())
 	rootCmd.AddCommand(version.NewCommand())
 	rootCmd.AddCommand(waves.NewCommand())
-	rootCmd.AddCommand(http.NewGetCommand())
-	rootCmd.AddCommand(http.NewPostCommand())
+	rootCmd.AddCommand(http.NewCommand())
+	rootCmd.AddCommand(&cobra.Command{Use: "get", Hidden: true, Deprecated: "Use 'http get' instead"})
+	rootCmd.AddCommand(&cobra.Command{Use: "post", Hidden: true, Deprecated: "Use 'http post' instead"})
 
 	rootCmd.AddCommand(docsRstCmd)
 	rootCmd.AddCommand(docsMdCmd)

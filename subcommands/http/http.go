@@ -16,31 +16,30 @@ import (
 
 var api *client.Api
 
-func NewGetCommand() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:    "get https://api.foundries.io/ota.... [header=val..]",
-		Short:  "Do an authenticated HTTP GET",
+func NewCommand() *cobra.Command {
+	httpCmd := &cobra.Command{
+		Use:    "http",
+		Short:  "Run a direct authenticated HTTP command to the Foundries.io API",
 		Hidden: true,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			api = subcommands.Login(cmd)
 		},
-		Run:  doGet,
-		Args: cobra.MinimumNArgs(1),
 	}
-	cmd.PersistentFlags().StringP("token", "t", "", "API token from https://app.foundries.io/settings/tokens/")
-	return cmd
-}
+	httpCmd.PersistentFlags().StringP("token", "t", "", "API token from https://app.foundries.io/settings/tokens/")
 
-func NewPostCommand() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:    "post https://api.foundries.io/ota.... [header=val..]",
-		Short:  "Do an authenticated HTTP POST",
-		Hidden: true,
-		PersistentPreRun: func(cmd *cobra.Command, args []string) {
-			api = subcommands.Login(cmd)
-		},
-		Run:  doPost,
-		Args: cobra.MinimumNArgs(1),
+	getCmd := &cobra.Command{
+		Use:   "get https://api.foundries.io/ota.... [header=val..]",
+		Short: "Do an authenticated HTTP GET",
+		Run:   doGet,
+		Args:  cobra.MinimumNArgs(1),
+	}
+	httpCmd.AddCommand(getCmd)
+
+	postCmd := &cobra.Command{
+		Use:   "post https://api.foundries.io/ota.... [header=val..]",
+		Short: "Do an authenticated HTTP POST",
+		Run:   doPost,
+		Args:  cobra.MinimumNArgs(1),
 		Example: `# Post data directly from CLI:
 fioctl post -d '{"key": "value"}' https://... content-type=application/json
 
@@ -51,9 +50,10 @@ fioctl post -d @/tmp/tmp.json  https://... content-type=application/json
 echo '{"key": "value"}' | fioctl post -d - https://... content-type=application/json
 `,
 	}
-	cmd.PersistentFlags().StringP("token", "t", "", "API token from https://app.foundries.io/settings/tokens/")
-	cmd.Flags().StringP("data", "d", "", "HTTP POST data")
-	return cmd
+	postCmd.Flags().StringP("data", "d", "", "HTTP POST data")
+	httpCmd.AddCommand(postCmd)
+
+	return httpCmd
 }
 
 func doGet(cmd *cobra.Command, args []string) {
