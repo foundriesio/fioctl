@@ -3,6 +3,7 @@ package http
 import (
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"strings"
 
@@ -56,61 +57,48 @@ echo '{"key": "value"}' | fioctl post -d - https://... content-type=application/
 }
 
 func doGet(cmd *cobra.Command, args []string) {
-	headers := make(map[string]string)
-
-	if len(args) > 1 {
-		for _, arg := range args[1:] {
-			parts := strings.SplitN(arg, "=", 2)
-			if len(parts) == 1 {
-				headers[arg] = ""
-			} else {
-				headers[parts[0]] = parts[1]
-			}
-		}
-	}
-
-	resp, err := api.RawGet(args[0], &headers)
-	subcommands.DieNotNil(err)
-	fmt.Fprintf(os.Stderr, "< Status: %s\n", resp.Status)
-	for k, v := range resp.Header {
-		fmt.Fprintf(os.Stderr, "< %s: %s\n", k, v)
-	}
-	_, err = io.Copy(os.Stdout, resp.Body)
-	subcommands.DieNotNil(err)
+	printResponse(api.RawGet(args[0], readHeaders(args[1:])))
 }
 
 func doPost(cmd *cobra.Command, args []string) {
-	headers := make(map[string]string)
+	printResponse(api.RawPost(args[0], readData(cmd), readHeaders(args[1:])))
+}
 
-	if len(args) > 1 {
-		for _, arg := range args[1:] {
-			parts := strings.SplitN(arg, "=", 2)
-			if len(parts) == 1 {
-				headers[arg] = ""
-			} else {
-				headers[parts[0]] = parts[1]
-			}
+func readHeaders(args []string) *map[string]string {
+	if len(args) == 0 {
+		return nil
+	}
+	headers := make(map[string]string, len(args))
+	for _, arg := range args {
+		parts := strings.SplitN(arg, "=", 2)
+		if len(parts) == 1 {
+			headers[arg] = ""
+		} else {
+			headers[parts[0]] = parts[1]
 		}
 	}
+	return &headers
+}
 
-	var dataBytes []byte
-	var err error
+func readData(cmd *cobra.Command) []byte {
 	data, _ := cmd.Flags().GetString("data")
 	if data == "-" {
 		logrus.Debug("Reading post data from stdin")
-		dataBytes, err = io.ReadAll(os.Stdin)
+		dataBytes, err := io.ReadAll(os.Stdin)
 		subcommands.DieNotNil(err)
+		return dataBytes
 	} else if len(data) > 0 && data[0] == '@' {
-		// read from file
 		dataFile := data[1:]
 		logrus.Debugf("Reading post data from %s", dataFile)
-		dataBytes, err = os.ReadFile(dataFile)
+		dataBytes, err := os.ReadFile(dataFile)
 		subcommands.DieNotNil(err)
+		return dataBytes
 	} else {
-		dataBytes = []byte(data)
+		return []byte(data)
 	}
+}
 
-	resp, err := api.RawPost(args[0], dataBytes, &headers)
+func printResponse(resp *http.Response, err error) {
 	subcommands.DieNotNil(err)
 	fmt.Fprintf(os.Stderr, "< Status: %s\n", resp.Status)
 	for k, v := range resp.Header {
