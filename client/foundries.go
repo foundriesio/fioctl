@@ -695,112 +695,91 @@ func (a *Api) GetOauthConfig() OAuthConfig {
 	return a.config.ClientCredentials
 }
 
-func (a *Api) RawGet(url string, headers *map[string]string) (*http.Response, error) {
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+func (a *Api) rawMethod(method, url string, data []byte, headers *map[string]string) (*http.Response, error) {
+	var body io.Reader
+	if data != nil {
+		body = bytes.NewBuffer(data)
+	}
+
+	req, err := http.NewRequest(method, url, body)
 	if err != nil {
 		return nil, err
 	}
 
-	a.setReqHeaders(req, false)
+	a.setReqHeaders(req, data != nil)
 	if headers != nil {
 		for key, val := range *headers {
 			req.Header.Set(key, val)
 		}
 	}
 
-	return a.client.Do(req)
+	res, err := a.client.Do(req)
+	if err != nil {
+
+		httpLogger(req).Debugf("Network Error: %s", err)
+		return nil, err
+	}
+	return res, err
+}
+
+func (a *Api) RawGet(url string, headers *map[string]string) (*http.Response, error) {
+	return a.rawMethod(http.MethodGet, url, nil, headers)
 }
 
 func (a *Api) Get(url string) (*[]byte, error) {
-	res, err := a.RawGet(url, nil)
-
-	log := logrus.WithFields(logrus.Fields{"url": url, "method": "GET"})
-	if err != nil {
-		log.Debugf("Network Error: %s", err)
+	if res, err := a.RawGet(url, nil); err != nil {
 		return nil, err
+	} else {
+		return readResponse(res)
 	}
+}
 
-	return readResponse(res)
+func (a *Api) RawPatch(url string, data []byte, headers *map[string]string) (*http.Response, error) {
+	return a.rawMethod(http.MethodPatch, url, data, headers)
 }
 
 func (a *Api) Patch(url string, data []byte) (*[]byte, error) {
-	req, err := http.NewRequest(http.MethodPatch, url, bytes.NewBuffer(data))
-	if err != nil {
+	if res, err := a.RawPatch(url, data, nil); err != nil {
 		return nil, err
+	} else {
+		return readResponse(res)
 	}
-
-	a.setReqHeaders(req, true)
-
-	log := httpLogger(req)
-	res, err := a.client.Do(req)
-	if err != nil {
-		log.Debugf("Network Error: %s", err)
-		return nil, err
-	}
-
-	return readResponse(res)
 }
 
 func (a *Api) RawPost(url string, data []byte, headers *map[string]string) (*http.Response, error) {
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(data))
-	if err != nil {
-		return nil, err
-	}
-
-	a.setReqHeaders(req, true)
-	if headers != nil {
-		for k, v := range *headers {
-			req.Header.Set(k, v)
-		}
-	}
-
-	return a.client.Do(req)
+	return a.rawMethod(http.MethodPost, url, data, headers)
 }
 
 func (a *Api) Post(url string, data []byte) (*[]byte, error) {
-	log := logrus.WithFields(logrus.Fields{"url": url, "method": "POST"})
-	res, err := a.RawPost(url, data, nil)
-	if err != nil {
-		log.Debugf("Network Error: %s", err)
+	if res, err := a.RawPost(url, data, nil); err != nil {
 		return nil, err
+	} else {
+		return readResponse(res)
 	}
-	return readResponse(res)
+}
+
+func (a *Api) RawPut(url string, data []byte, headers *map[string]string) (*http.Response, error) {
+	return a.rawMethod(http.MethodPut, url, data, headers)
 }
 
 func (a *Api) Put(url string, data []byte) (*[]byte, error) {
-	req, err := http.NewRequest(http.MethodPut, url, bytes.NewBuffer(data))
-	if err != nil {
+	if res, err := a.RawPut(url, data, nil); err != nil {
 		return nil, err
+	} else {
+		return readResponse(res)
 	}
+}
 
-	a.setReqHeaders(req, true)
-
-	log := httpLogger(req)
-	res, err := a.client.Do(req)
-	if err != nil {
-		log.Debugf("Network Error: %s", err)
-		return nil, err
-	}
-
-	return readResponse(res)
+func (a *Api) RawDelete(url string, data []byte, headers *map[string]string) (*http.Response, error) {
+	return a.rawMethod(http.MethodDelete, url, data, headers)
 }
 
 func (a *Api) Delete(url string, data []byte) (*[]byte, error) {
-	req, err := http.NewRequest(http.MethodDelete, url, bytes.NewBuffer(data))
-	if err != nil {
+	if res, err := a.RawDelete(url, data, nil); err != nil {
 		return nil, err
+	} else {
+		return readResponse(res)
 	}
-
-	a.setReqHeaders(req, true)
-
-	log := httpLogger(req)
-	res, err := a.client.Do(req)
-	if err != nil {
-		log.Debugf("Network Error: %s", err)
-		return nil, err
-	}
-
-	return readResponse(res)
 }
 
 func (a *Api) DeviceGet(factory, device string) (*Device, error) {
