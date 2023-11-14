@@ -21,6 +21,7 @@ import (
 	"github.com/foundriesio/fioctl/subcommands/events"
 	"github.com/foundriesio/fioctl/subcommands/factories"
 	"github.com/foundriesio/fioctl/subcommands/git"
+	"github.com/foundriesio/fioctl/subcommands/http"
 	"github.com/foundriesio/fioctl/subcommands/keys"
 	"github.com/foundriesio/fioctl/subcommands/login"
 	"github.com/foundriesio/fioctl/subcommands/logout"
@@ -95,8 +96,8 @@ func init() {
 	rootCmd.AddCommand(targets.NewCommand())
 	rootCmd.AddCommand(version.NewCommand())
 	rootCmd.AddCommand(waves.NewCommand())
-	rootCmd.AddCommand(subcommands.NewGetCommand())
-	rootCmd.AddCommand(subcommands.NewPostCommand())
+	rootCmd.AddCommand(http.NewGetCommand())
+	rootCmd.AddCommand(http.NewPostCommand())
 
 	rootCmd.AddCommand(docsRstCmd)
 	rootCmd.AddCommand(docsMdCmd)
