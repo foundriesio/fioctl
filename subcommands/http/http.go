@@ -60,13 +60,13 @@ func NewCommand() *cobra.Command {
 
 	for _, cmd := range []*cobra.Command{postCmd, putCmd, patchCmd, deleteCmd} {
 		cmd.Example = fmt.Sprintf(`# Do HTTP %s with data directly form CLI:
-fioctl %s -d '{"key": "value"}' https://... content-type=application/json
+fioctl %s -d '{"key": "value"}' https://...
 
 # Do HTTP %s with data from a file:
-fioctl %s -d @/tmp/tmp.json  https://... content-type=application/json
+fioctl %s -d @/tmp/tmp.json  https://...
 
 # Do HTTP %s with data from STDIN:
-echo '{"key": "value"}' | fioctl %s -d - https://... content-type=application/json
+echo '{"key": "value"}' | fioctl %s -d - https://...
 `, cmd.Name(), cmd.Name(), cmd.Name(), cmd.Name(), cmd.Name(), cmd.Name())
 		cmd.Flags().StringP("data", "d", "", "HTTP POST data")
 	}
