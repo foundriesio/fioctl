@@ -28,30 +28,48 @@ func NewCommand() *cobra.Command {
 	httpCmd.PersistentFlags().StringP("token", "t", "", "API token from https://app.foundries.io/settings/tokens/")
 
 	getCmd := &cobra.Command{
-		Use:   "get https://api.foundries.io/ota.... [header=val..]",
-		Short: "Do an authenticated HTTP GET",
-		Run:   doGet,
-		Args:  cobra.MinimumNArgs(1),
+		Use: "get https://api.foundries.io/ota.... [header=val..]",
+		Run: doGet,
 	}
-	httpCmd.AddCommand(getCmd)
 
 	postCmd := &cobra.Command{
-		Use:   "post https://api.foundries.io/ota.... [header=val..]",
-		Short: "Do an authenticated HTTP POST",
-		Run:   doPost,
-		Args:  cobra.MinimumNArgs(1),
-		Example: `# Post data directly from CLI:
-fioctl post -d '{"key": "value"}' https://... content-type=application/json
-
-# Post data from a file:
-fioctl post -d @/tmp/tmp.json  https://... content-type=application/json
-
-# Post data from STDIN:
-echo '{"key": "value"}' | fioctl post -d - https://... content-type=application/json
-`,
+		Use: "post https://api.foundries.io/ota.... [header=val..]",
+		Run: doPost,
 	}
-	postCmd.Flags().StringP("data", "d", "", "HTTP POST data")
-	httpCmd.AddCommand(postCmd)
+
+	putCmd := &cobra.Command{
+		Use: "put https://api.foundries.io/ota.... [header=val..]",
+		Run: doPut,
+	}
+
+	patchCmd := &cobra.Command{
+		Use: "patch https://api.foundries.io/ota.... [header=val..]",
+		Run: doPatch,
+	}
+
+	deleteCmd := &cobra.Command{
+		Use: "delete https://api.foundries.io/ota.... [header=val..]",
+		Run: doDelete,
+	}
+
+	for _, cmd := range []*cobra.Command{getCmd, postCmd, putCmd, patchCmd, deleteCmd} {
+		cmd.Short = fmt.Sprintf("Do an authenticated HTTP %s", cmd.Name())
+		cmd.Args = cobra.MinimumNArgs(1)
+		httpCmd.AddCommand(cmd)
+	}
+
+	for _, cmd := range []*cobra.Command{postCmd, putCmd, patchCmd, deleteCmd} {
+		cmd.Example = fmt.Sprintf(`# Do HTTP %s with data directly form CLI:
+fioctl %s -d '{"key": "value"}' https://... content-type=application/json
+
+# Do HTTP %s with data from a file:
+fioctl %s -d @/tmp/tmp.json  https://... content-type=application/json
+
+# Do HTTP %s with data from STDIN:
+echo '{"key": "value"}' | fioctl %s -d - https://... content-type=application/json
+`, cmd.Name(), cmd.Name(), cmd.Name(), cmd.Name(), cmd.Name(), cmd.Name())
+		cmd.Flags().StringP("data", "d", "", "HTTP POST data")
+	}
 
 	return httpCmd
 }
@@ -62,6 +80,18 @@ func doGet(cmd *cobra.Command, args []string) {
 
 func doPost(cmd *cobra.Command, args []string) {
 	printResponse(api.RawPost(args[0], readData(cmd), readHeaders(args[1:])))
+}
+
+func doPut(cmd *cobra.Command, args []string) {
+	printResponse(api.RawPut(args[0], readData(cmd), readHeaders(args[1:])))
+}
+
+func doPatch(cmd *cobra.Command, args []string) {
+	printResponse(api.RawPatch(args[0], readData(cmd), readHeaders(args[1:])))
+}
+
+func doDelete(cmd *cobra.Command, args []string) {
+	printResponse(api.RawDelete(args[0], readData(cmd), readHeaders(args[1:])))
 }
 
 func readHeaders(args []string) *map[string]string {
