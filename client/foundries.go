@@ -556,8 +556,9 @@ func httpLogger(req *http.Request) logrus.FieldLogger {
 	return logrus.WithFields(logrus.Fields{"url": req.URL.String(), "method": req.Method})
 }
 
-func readResponse(res *http.Response, log logrus.FieldLogger) (*[]byte, error) {
+func readResponse(res *http.Response) (*[]byte, error) {
 	defer res.Body.Close()
+	log := httpLogger(res.Request)
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		log.Debugf("I/O error reading response: %s", err)
@@ -719,7 +720,7 @@ func (a *Api) Get(url string) (*[]byte, error) {
 		return nil, err
 	}
 
-	return readResponse(res, log)
+	return readResponse(res)
 }
 
 func (a *Api) Patch(url string, data []byte) (*[]byte, error) {
@@ -737,7 +738,7 @@ func (a *Api) Patch(url string, data []byte) (*[]byte, error) {
 		return nil, err
 	}
 
-	return readResponse(res, log)
+	return readResponse(res)
 }
 
 func (a *Api) RawPost(url string, data []byte, headers *map[string]string) (*http.Response, error) {
@@ -763,7 +764,7 @@ func (a *Api) Post(url string, data []byte) (*[]byte, error) {
 		log.Debugf("Network Error: %s", err)
 		return nil, err
 	}
-	return readResponse(res, log)
+	return readResponse(res)
 }
 
 func (a *Api) Put(url string, data []byte) (*[]byte, error) {
@@ -781,7 +782,7 @@ func (a *Api) Put(url string, data []byte) (*[]byte, error) {
 		return nil, err
 	}
 
-	return readResponse(res, log)
+	return readResponse(res)
 }
 
 func (a *Api) Delete(url string, data []byte) (*[]byte, error) {
@@ -799,7 +800,7 @@ func (a *Api) Delete(url string, data []byte) (*[]byte, error) {
 		return nil, err
 	}
 
-	return readResponse(res, log)
+	return readResponse(res)
 }
 
 func (a *Api) DeviceGet(factory, device string) (*Device, error) {
