@@ -33,13 +33,6 @@ func loadKeyFromFile(fn string) crypto.Signer {
 	return key
 }
 
-func loadCertFromFile(fn string) *x509.Certificate {
-	crtPem := parseOnePemBlock(readFile(fn))
-	crt, err := x509.ParseCertificate(crtPem.Bytes)
-	subcommands.DieNotNil(err)
-	return crt
-}
-
 func (s *fileStorage) genAndSaveKey() crypto.Signer {
 	return genAndSaveKeyToFile(s.Filename)
 }
