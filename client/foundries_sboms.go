@@ -58,8 +58,7 @@ func (a *Api) SbomDownload(factory, targetName, path, contentType string) ([]byt
 	if err != nil {
 		return nil, err
 	}
-	log := logrus.WithFields(logrus.Fields{"url": url, "method": "GET"})
-	buf, err := readResponse(res, log)
+	buf, err := readResponse(res)
 	if err != nil {
 		return nil, err
 	}
