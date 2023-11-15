@@ -45,7 +45,12 @@ func doLogin(cmd *cobra.Command, args []string) {
 		subcommands.SaveOauthConfig(creds.Config)
 		return
 	}
-
+	if !cmd.Flag("oauth-url").Changed {
+		authURL = subcommands.Config.ClientCredentials.URL
+	}
+	if len(authURL) == 0 {
+		authURL = client.OauthURL
+	}
 	u, err := url.Parse(authURL)
 	subcommands.DieNotNil(err)
 	subcommands.Config.ClientCredentials.URL = authURL
