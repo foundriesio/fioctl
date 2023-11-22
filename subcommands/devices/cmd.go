@@ -55,7 +55,7 @@ fioctl devices updates <device> $(fioctl devices updates <device> -n1 | tail -n1
 func NewCommand() *cobra.Command {
 	subcommands.RequireFactory(cmd)
 
-	updatesCmd.Flags().IntVarP(&listLimit, "limit", "n", 0, "Limit the number of updates displayed.")
+	updatesCmd.Flags().IntVarP(&listLimit, "limit", "n", 0, "Limit the number of updates displayed (max 10)")
 
 	cmd.AddCommand(configCmd)
 	cmd.AddCommand(updatesCmd)
