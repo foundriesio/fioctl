@@ -25,6 +25,9 @@ func doConfigLog(cmd *cobra.Command, args []string) {
 	listLimit, _ := cmd.Flags().GetInt("limit")
 	group, _ := cmd.Flags().GetString("group")
 
+	lookups, err := api.UsersGetLookups(factory)
+	subcommands.DieNotNil(err)
+
 	if group == "" {
 		logrus.Debugf("Showing config history for %s", factory)
 		subcommands.LogConfigs(&subcommands.LogConfigsOptions{
@@ -33,6 +36,7 @@ func doConfigLog(cmd *cobra.Command, args []string) {
 				return api.FactoryListConfig(factory)
 			},
 			ListContFunc: api.FactoryListConfigCont,
+			UserLookup:   lookups,
 		})
 	} else {
 		logrus.Debugf("Showing config history for %s group %s", factory, group)
@@ -42,6 +46,7 @@ func doConfigLog(cmd *cobra.Command, args []string) {
 				return api.GroupListConfig(factory, group)
 			},
 			ListContFunc: api.GroupListConfigCont,
+			UserLookup:   lookups,
 		})
 	}
 }

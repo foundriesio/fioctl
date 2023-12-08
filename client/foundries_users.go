@@ -31,6 +31,18 @@ func (a *Api) UsersList(factory string) ([]FactoryUser, error) {
 	return users, nil
 }
 
+func (a *Api) UsersGetLookups(factory string) (map[string]FactoryUser, error) {
+	list, err := a.UsersList(factory)
+	if err != nil {
+		return nil, err
+	}
+	lookups := make(map[string]FactoryUser, len(list))
+	for _, user := range list {
+		lookups[user.PolisId] = user
+	}
+	return lookups, nil
+}
+
 func (a *Api) UserAccessDetails(factory string, user_id string) (*FactoryUserAccessDetails, error) {
 	url := a.serverUrl + "/ota/factories/" + factory + "/users/" + user_id + "/"
 	body, err := a.Get(url)
