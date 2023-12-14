@@ -196,33 +196,6 @@ func (a ComposeApp) Name() string {
 	return parts[0][nameStartIndx+1:]
 }
 
-type FactoryUser struct {
-	PolisId string `json:"polis-id"`
-	Name    string `json:"name"`
-	Role    string `json:"role"`
-}
-
-type FactoryUserAccessDetails struct {
-	PolisId         string               `json:"polis-id"`
-	Name            string               `json:"name"`
-	Role            string               `json:"role"`
-	Teams           []FactoryTeamDetails `json:"teams-ext"`
-	EffectiveScopes []string             `json:"effective-scopes"`
-}
-
-type FactoryTeam struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-}
-
-type FactoryTeamDetails struct {
-	Name        string        `json:"name"`
-	Description string        `json:"description"`
-	Scopes      []string      `json:"scopes"`
-	Groups      []string      `json:"groups"`
-	Members     []FactoryUser `json:"members"`
-}
-
 type JobservBuild struct {
 	ID int `json:"build_id"`
 }
@@ -1595,66 +1568,6 @@ func (a *Api) FactoryUpdateTrigger(factory string, t ProjectTrigger) error {
 		_, err := a.Patch(url, data)
 		return err
 	}
-}
-
-func (a *Api) UsersList(factory string) ([]FactoryUser, error) {
-	url := a.serverUrl + "/ota/factories/" + factory + "/users/"
-	body, err := a.Get(url)
-	if err != nil {
-		return nil, err
-	}
-
-	var users []FactoryUser
-	err = json.Unmarshal(*body, &users)
-	if err != nil {
-		return nil, err
-	}
-	return users, nil
-}
-
-func (a *Api) UserAccessDetails(factory string, user_id string) (*FactoryUserAccessDetails, error) {
-	url := a.serverUrl + "/ota/factories/" + factory + "/users/" + user_id + "/"
-	body, err := a.Get(url)
-	if err != nil {
-		return nil, err
-	}
-
-	var user FactoryUserAccessDetails
-	err = json.Unmarshal(*body, &user)
-	if err != nil {
-		return nil, err
-	}
-	return &user, nil
-}
-
-func (a *Api) TeamsList(factory string) ([]FactoryTeam, error) {
-	url := a.serverUrl + "/ota/factories/" + factory + "/teams/"
-	body, err := a.Get(url)
-	if err != nil {
-		return nil, err
-	}
-
-	var teams []FactoryTeam
-	err = json.Unmarshal(*body, &teams)
-	if err != nil {
-		return nil, err
-	}
-	return teams, nil
-}
-
-func (a *Api) TeamDetails(factory string, team_name string) (*FactoryTeamDetails, error) {
-	url := a.serverUrl + "/ota/factories/" + factory + "/teams/" + team_name
-	body, err := a.Get(url)
-	if err != nil {
-		return nil, err
-	}
-
-	var team FactoryTeamDetails
-	err = json.Unmarshal(*body, &team)
-	if err != nil {
-		return nil, err
-	}
-	return &team, nil
 }
 
 func (a *Api) FactoryCreateWave(factory string, wave *WaveCreate) error {

@@ -26,6 +26,9 @@ func doConfigLog(cmd *cobra.Command, args []string) {
 	listLimit, _ := cmd.Flags().GetInt("limit")
 	logrus.Debugf("Showing device config log for %s", device)
 
+	lookups, err := api.UsersGetLookups(factory)
+	subcommands.DieNotNil(err)
+
 	subcommands.LogConfigs(&subcommands.LogConfigsOptions{
 		Limit:         listLimit,
 		ShowAppliedAt: true,
@@ -33,5 +36,6 @@ func doConfigLog(cmd *cobra.Command, args []string) {
 			return api.DeviceListConfig(factory, device)
 		},
 		ListContFunc: api.DeviceListConfigCont,
+		UserLookup:   lookups,
 	})
 }

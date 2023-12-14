@@ -78,14 +78,6 @@ type LogConfigsOptions struct {
 	ListContFunc  func(string) (*client.DeviceConfigList, error)
 }
 
-func (opts *LogConfigsOptions) GetUsersLookupById(api *client.Api, factory string) {
-	list, err := api.UsersList(factory)
-	DieNotNil(err)
-	for _, user := range list {
-		opts.UserLookup[user.PolisId] = user
-	}
-}
-
 func LogConfigs(opts *LogConfigsOptions) {
 	var dcl *client.DeviceConfigList
 	listLimit := opts.Limit
