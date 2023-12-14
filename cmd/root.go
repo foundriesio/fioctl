@@ -47,7 +47,7 @@ var rootCmd = &cobra.Command{
 }
 
 func Execute() {
-	if os.Args[0] == docker.DOCKER_CREDS_HELPER {
+	if strings.Contains(os.Args[0], docker.DOCKER_CREDS_HELPER) {
 		if len(os.Args) != 2 || os.Args[1] != "get" {
 			fmt.Printf("Usage: %s get\n", os.Args[0])
 			os.Exit(1)
