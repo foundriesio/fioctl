@@ -50,6 +50,14 @@ All such CAs will be added to the list of device CAs trusted by the device gatew
 	cmd.Flags().StringVarP(&hsmTokenLabel, "hsm-token-label", "", "", "The label of the HSM token containing the root CA key")
 }
 
+func assertFileName(flagName, value string) {
+	if len(value) > 0 {
+		if strings.ContainsRune(value, os.PathSeparator) {
+			subcommands.DieNotNil(fmt.Errorf("The `%s` argument must be filename and not a path: %s", flagName, value))
+		}
+	}
+}
+
 func doAddDeviceCa(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 	createLocalCA, _ := cmd.Flags().GetBool("local-ca")
@@ -59,6 +67,8 @@ func doAddDeviceCa(cmd *cobra.Command, args []string) {
 	if !createLocalCA && !createOnlineCA {
 		subcommands.DieNotNil(errors.New("At least one of --online-ca or --local-ca must be true"))
 	}
+
+	assertFileName("--local-ca-filename", localCaFilename)
 
 	subcommands.DieNotNil(os.Chdir(args[0]))
 	hsm, err := x509.ValidateHsmArgs(

@@ -120,6 +120,9 @@ func doRevokeDeviceCa(cmd *cobra.Command, args []string) {
 	if len(caFiles)+len(caSerials) == 0 {
 		subcommands.DieNotNil(errors.New("At least one of --ca-file or --ca-serial must be provided"))
 	}
+	for _, v := range caFiles {
+		assertFileName("--ca-file", v)
+	}
 
 	subcommands.DieNotNil(os.Chdir(args[0]))
 	hsm, err := x509.ValidateHsmArgs(
