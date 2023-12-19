@@ -24,9 +24,9 @@ var (
 	deviceInactiveHours int
 	deviceUuid          string
 	showColumns         []string
-	showPage            int
-	paginationLimit     int
-	paginationLimits    []int
+	showPage            uint64
+	paginationLimit     uint64
+	paginationLimits    []uint64
 )
 
 type column struct {
@@ -90,17 +90,17 @@ var Columns = map[string]column{
 }
 
 func addPaginationFlags(cmd *cobra.Command) {
-	paginationLimits = []int{10, 20, 30, 40, 50, 100, 200, 500, 1000}
+	paginationLimits = []uint64{10, 20, 30, 40, 50, 100, 200, 500, 1000}
 	limitsStr := ""
 	for i, limit := range paginationLimits {
 		if i > 0 {
 			limitsStr += ","
 		}
-		limitsStr += strconv.Itoa(limit)
+		limitsStr += strconv.FormatUint(limit, 10)
 	}
 
-	cmd.Flags().IntVarP(&showPage, "page", "p", 1, "Page of devices to display when pagination is needed")
-	cmd.Flags().IntVarP(&paginationLimit, "limit", "n", 500, "Number of devices to paginate by. Allowed values: "+limitsStr)
+	cmd.Flags().Uint64VarP(&showPage, "page", "p", 1, "Page of devices to display when pagination is needed")
+	cmd.Flags().Uint64VarP(&paginationLimit, "limit", "n", 500, "Number of devices to paginate by. Allowed values: "+limitsStr)
 }
 
 func addSortFlag(cmd *cobra.Command, flag, short, help string) {

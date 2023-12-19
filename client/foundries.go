@@ -770,7 +770,7 @@ func (a *Api) DeviceGet(factory, device string) (*Device, error) {
 }
 
 func (a *Api) DeviceList(
-	mine bool, matchTag, byFactory, byGroup, nameIlike, uuid, byTarget, sortBy string, page, limit int,
+	mine bool, matchTag, byFactory, byGroup, nameIlike, uuid, byTarget, sortBy string, page, limit uint64,
 ) (*DeviceList, error) {
 	mineInt := 0
 	if mine {
@@ -799,7 +799,7 @@ func (a *Api) DeviceListCont(url string) (*DeviceList, error) {
 	return &devices, nil
 }
 
-func (a *Api) DeviceListDenied(factory string, page, limit int) (*DeviceList, error) {
+func (a *Api) DeviceListDenied(factory string, page, limit uint64) (*DeviceList, error) {
 	url := a.serverUrl + "/ota/factories/" + factory + "/denied-devices/"
 	url += fmt.Sprintf("?limit=%d&page=%d", limit, page)
 	return a.DeviceListCont(url)
@@ -1583,8 +1583,9 @@ func (a *Api) FactoryCreateWave(factory string, wave *WaveCreate) error {
 	return err
 }
 
-func (a *Api) FactoryListWaves(factory string, limit uint64, page int) (*WaveList, error) {
-	url := a.serverUrl + "/ota/factories/" + factory + "/waves/?limit=" + strconv.FormatUint(limit, 10) + "&page=" + strconv.Itoa(page)
+func (a *Api) FactoryListWaves(factory string, limit, page uint64) (*WaveList, error) {
+	url := fmt.Sprintf("%s/ota/factories/%s/waves/?limit=%d&page=%d",
+		a.serverUrl, factory, limit, page)
 	logrus.Debugf("Listing factory waves %s", url)
 
 	body, err := a.Get(url)
