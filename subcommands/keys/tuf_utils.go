@@ -454,20 +454,10 @@ func signNewTufRoot(curCiRoot, newCiRoot, newProdRoot *client.AtsTufRoot, creds 
 }
 
 func signProdTargets(
-	factory string, signer TufSigner, excludeFunc func(string, client.AtsTufTargets) bool,
+	signer TufSigner, targetsMap map[string]client.AtsTufTargets,
 ) (map[string][]tuf.Signature, error) {
-	targetsMap, err := api.ProdTargetsList(factory, false)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to fetch production targets: %w", err)
-	} else if targetsMap == nil {
-		return nil, nil
-	}
-
-	signatureMap := make(map[string][]tuf.Signature)
+	signatureMap := make(map[string][]tuf.Signature, len(targetsMap))
 	for tag, targets := range targetsMap {
-		if excludeFunc != nil && excludeFunc(tag, targets) {
-			continue
-		}
 		bytes, err := canonical.MarshalCanonical(targets.Signed)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to marshal targets for tag %s: %w", tag, err)

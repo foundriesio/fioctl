@@ -7,9 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"golang.org/x/exp/slices"
 
-	"github.com/foundriesio/fioctl/client"
 	"github.com/foundriesio/fioctl/subcommands"
 )
 
@@ -68,11 +66,9 @@ For example, add a new offline TUF targets key, before signing production target
 	subcommands.DieNotNil(err)
 
 	fmt.Println("= Signing prod targets")
-	newTargetsSigs, err := signProdTargets(factory, signer,
-		func(tag string, targets client.AtsTufTargets) bool {
-			return tags != nil && !slices.Contains(tags, tag)
-		},
-	)
+	targetsMap, err := api.ProdTargetsList(factory, false, tags...)
+	subcommands.DieNotNil(err, "Failed to fetch production targets:")
+	newTargetsSigs, err := signProdTargets(signer, targetsMap)
 	subcommands.DieNotNil(err)
 
 	fmt.Println("= Uploading new signatures")

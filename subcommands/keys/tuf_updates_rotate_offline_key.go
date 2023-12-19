@@ -185,16 +185,20 @@ func doTufUpdatesRotateOfflineTargetsKey(cmd *cobra.Command) {
 			subcommands.SliceRemove(curCiRoot.Signed.Roles["targets"].KeyIDs, onlineTargetsId))
 		subcommands.DieNotNil(err)
 	}
-	newTargetsSigs, err := signProdTargets(factory, newKey,
-		func(tag string, targets client.AtsTufTargets) bool {
-			for _, sig := range targets.Signatures {
-				if sig.KeyID == oldestKey.Id {
-					return false
-				}
+
+	targetsMap, err := api.ProdTargetsList(factory, false)
+	subcommands.DieNotNil(err, "Failed to fetch production targets:")
+outerLoop:
+	for tag, targets := range targetsMap {
+		for _, sig := range targets.Signatures {
+			if sig.KeyID == oldestKey.Id {
+				continue outerLoop
 			}
-			return true
-		},
-	)
+		}
+		// These targets does not contain a signature by a rotated key - skip them
+		delete(targetsMap, tag)
+	}
+	newTargetsSigs, err := signProdTargets(newKey, targetsMap)
 	subcommands.DieNotNil(err)
 
 	if shouldSign {
