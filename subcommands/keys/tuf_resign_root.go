@@ -53,7 +53,7 @@ func doResignRoot(cmd *cobra.Command, args []string) {
 	signNewTufRoot(curCiRoot, newCiRoot, newProdRoot, creds)
 
 	fmt.Println("= Uploading new TUF root")
-	subcommands.DieNotNil(api.TufRootUpdatesPut(factory, "", newCiRoot, newProdRoot, nil))
+	subcommands.DieNotNil(api.TufRootUpdatesPut(factory, "", newCiRoot, newProdRoot, nil, nil))
 
 	fmt.Println("= Applying staged TUF root changes")
 	tufUpdatesCmd.SetArgs([]string{"apply"})

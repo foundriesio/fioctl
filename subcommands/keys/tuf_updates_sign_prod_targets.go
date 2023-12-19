@@ -72,5 +72,5 @@ For example, add a new offline TUF targets key, before signing production target
 	subcommands.DieNotNil(err)
 
 	fmt.Println("= Uploading new signatures")
-	subcommands.DieNotNil(api.TufRootUpdatesPut(factory, txid, newCiRoot, newProdRoot, newTargetsSigs))
+	subcommands.DieNotNil(api.TufRootUpdatesPut(factory, txid, newCiRoot, newProdRoot, newTargetsSigs, nil))
 }

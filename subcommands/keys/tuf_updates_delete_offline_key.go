@@ -115,5 +115,5 @@ func doTufUpdatesDeleteOfflineKey(cmd *cobra.Command, args []string) {
 	newCiRoot, newProdRoot = finalizeTufRootChanges(newCiRoot, newProdRoot)
 
 	fmt.Println("= Uploading new TUF root")
-	subcommands.DieNotNil(api.TufRootUpdatesPut(factory, txid, newCiRoot, newProdRoot, nil))
+	subcommands.DieNotNil(api.TufRootUpdatesPut(factory, txid, newCiRoot, newProdRoot, nil, nil))
 }

@@ -181,15 +181,16 @@ func (a *Api) TufRootUpdatesInit(
 }
 
 func (a *Api) TufRootUpdatesPut(
-	factory, txid string, ciRoot, prodRoot *AtsTufRoot, targetsSigs map[string][]tuf.Signature,
+	factory, txid string, ciRoot, prodRoot *AtsTufRoot, targetsProdSigs, targetsWaveSigs map[string][]tuf.Signature,
 ) (err error) {
 	url := a.serverUrl + "/ota/repo/" + factory + "/api/v1/user_repo/root/updates"
 	data, _ := json.Marshal(struct {
-		TransactionId     string                     `json:"txid"`
-		CiRoot            *AtsTufRoot                `json:"ci-root"`
-		ProdRoot          *AtsTufRoot                `json:"prod-root"`
-		TargetsSignatures map[string][]tuf.Signature `json:"targets-signatures,omitempty"`
-	}{txid, ciRoot, prodRoot, targetsSigs})
+		TransactionId   string                     `json:"txid"`
+		CiRoot          *AtsTufRoot                `json:"ci-root"`
+		ProdRoot        *AtsTufRoot                `json:"prod-root"`
+		TargetsProdSigs map[string][]tuf.Signature `json:"targets-signatures,omitempty"`
+		TargetsWaveSigs map[string][]tuf.Signature `json:"waves-signatures,omitempty"`
+	}{txid, ciRoot, prodRoot, targetsProdSigs, targetsWaveSigs})
 	_, err = a.Put(url, data)
 	return
 }

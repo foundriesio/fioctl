@@ -79,5 +79,5 @@ func doTufUpdatesSetThreshold(cmd *cobra.Command, args []string) {
 	}
 
 	fmt.Println("= Uploading new TUF root")
-	subcommands.DieNotNil(api.TufRootUpdatesPut(factory, txid, newCiRoot, newProdRoot, nil))
+	subcommands.DieNotNil(api.TufRootUpdatesPut(factory, txid, newCiRoot, newProdRoot, nil, nil))
 }

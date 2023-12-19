@@ -85,7 +85,7 @@ func doTufUpdatesAddOfflineKey(cmd *cobra.Command, args []string) {
 
 	fmt.Println("= Uploading new TUF root")
 	tmpFile := saveTempTufCreds(keysFile, creds)
-	err = api.TufRootUpdatesPut(factory, txid, newCiRoot, newProdRoot, nil)
+	err = api.TufRootUpdatesPut(factory, txid, newCiRoot, newProdRoot, nil, nil)
 	handleTufRootUpdatesUpload(tmpFile, keysFile, err)
 }
 

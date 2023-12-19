@@ -110,7 +110,7 @@ func doTufUpdatesRotateOfflineRootKey(cmd *cobra.Command) {
 
 	fmt.Println("= Uploading new TUF root")
 	tmpFile := saveTempTufCreds(keysFile, newCreds)
-	err = api.TufRootUpdatesPut(factory, txid, newCiRoot, newProdRoot, nil)
+	err = api.TufRootUpdatesPut(factory, txid, newCiRoot, newProdRoot, nil, nil)
 	handleTufRootUpdatesUpload(tmpFile, keysFile, err)
 }
 
@@ -207,7 +207,7 @@ outerLoop:
 
 	fmt.Println("= Uploading new TUF root")
 	tmpFile := saveTempTufCreds(targetsKeysFile, newCreds)
-	err = api.TufRootUpdatesPut(factory, txid, newCiRoot, newProdRoot, newTargetsSigs)
+	err = api.TufRootUpdatesPut(factory, txid, newCiRoot, newProdRoot, newTargetsSigs, nil)
 	handleTufRootUpdatesUpload(tmpFile, targetsKeysFile, err)
 }
 
