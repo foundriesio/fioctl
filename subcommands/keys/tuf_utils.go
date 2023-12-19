@@ -354,6 +354,7 @@ func removeUnusedTufKeys(root *client.AtsTufRoot) {
 		if !found {
 			fmt.Println("= Removing unused key:", k)
 			delete(root.Signed.Keys, k)
+			delete(root.Signed.KeyOwners, k)
 		}
 	}
 }
