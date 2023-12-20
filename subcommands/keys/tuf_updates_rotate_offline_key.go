@@ -186,19 +186,16 @@ func doTufUpdatesRotateOfflineTargetsKey(cmd *cobra.Command) {
 		subcommands.DieNotNil(err)
 	}
 
-	targetsMap, err := api.ProdTargetsList(factory, false)
+	targetsProdMap, err := api.ProdTargetsList(factory, false)
 	subcommands.DieNotNil(err, "Failed to fetch production targets:")
-outerLoop:
-	for tag, targets := range targetsMap {
-		for _, sig := range targets.Signatures {
-			if sig.KeyID == oldestKey.Id {
-				continue outerLoop
-			}
-		}
-		// These targets does not contain a signature by a rotated key - skip them
-		delete(targetsMap, tag)
-	}
-	newTargetsSigs, err := signProdTargets(newKey, targetsMap)
+	excludeTargetsWithoutKeySigInplace(targetsProdMap, oldestKey.Id)
+	newTargetsProdSigs, err := signProdTargets(newKey, targetsProdMap)
+	subcommands.DieNotNil(err)
+
+	targetsWaveMap, err := api.WaveTargetsList(factory, false)
+	subcommands.DieNotNil(err, "Failed to fetch production wave targets:")
+	excludeTargetsWithoutKeySigInplace(targetsWaveMap, oldestKey.Id)
+	newTargetsWaveSigs, err := signProdTargets(newKey, targetsWaveMap)
 	subcommands.DieNotNil(err)
 
 	if shouldSign {
@@ -207,8 +204,21 @@ outerLoop:
 
 	fmt.Println("= Uploading new TUF root")
 	tmpFile := saveTempTufCreds(targetsKeysFile, newCreds)
-	err = api.TufRootUpdatesPut(factory, txid, newCiRoot, newProdRoot, newTargetsSigs, nil)
+	err = api.TufRootUpdatesPut(factory, txid, newCiRoot, newProdRoot, newTargetsProdSigs, newTargetsWaveSigs)
 	handleTufRootUpdatesUpload(tmpFile, targetsKeysFile, err)
+}
+
+func excludeTargetsWithoutKeySigInplace(targetsMap map[string]client.AtsTufTargets, mustHaveSigKeyId string) {
+outerLoop:
+	for idx, targets := range targetsMap {
+		for _, sig := range targets.Signatures {
+			if sig.KeyID == mustHaveSigKeyId {
+				continue outerLoop
+			}
+		}
+		// These targets does not contain a signature by a rotated key - skip them
+		delete(targetsMap, idx)
+	}
 }
 
 func replaceOfflineRootKey(
