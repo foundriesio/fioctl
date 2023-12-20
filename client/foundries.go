@@ -1682,7 +1682,16 @@ func (a *Api) FactoryWaveStatus(factory string, wave string, inactiveThreshold i
 func (a *Api) ProdTargetsList(factory string, failNotExist bool, tags ...string) (map[string]AtsTufTargets, error) {
 	url := a.serverUrl + "/ota/factories/" + factory + "/prod-targets/?tag=" + strings.Join(tags, ",")
 	logrus.Debugf("Fetching factory production targets %s", url)
+	return a.prodTargetsList(url, failNotExist)
+}
 
+func (a *Api) WaveTargetsList(factory string, failNotExist bool, names ...string) (map[string]AtsTufTargets, error) {
+	url := a.serverUrl + "/ota/factories/" + factory + "/wave-targets/?name=" + strings.Join(names, ",")
+	logrus.Debugf("Fetching factory production wave targets %s", url)
+	return a.prodTargetsList(url, failNotExist)
+}
+
+func (a *Api) prodTargetsList(url string, failNotExist bool) (map[string]AtsTufTargets, error) {
 	body, err := a.Get(url)
 	if err != nil {
 		if !failNotExist {
