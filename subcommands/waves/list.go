@@ -19,6 +19,7 @@ func init() {
 	listCmd.Flags().Uint64P("limit", "n", 20, "Limit the number of results displayed.")
 	listCmd.Flags().Uint64P("page", "p", 1, "Page of waves to display when pagination is needed")
 	listCmd.Flags().StringP("status", "S", "", "Only show waves with a given status; one of (active, complete, canceled)")
+	listCmd.Flags().StringP("tag", "T", "", "Only show waves with a given tag")
 }
 
 func doListWaves(cmd *cobra.Command, args []string) {
@@ -26,9 +27,10 @@ func doListWaves(cmd *cobra.Command, args []string) {
 	limit, _ := cmd.Flags().GetUint64("limit")
 	showPage, _ := cmd.Flags().GetUint64("page")
 	status, _ := cmd.Flags().GetString("status")
+	tag, _ := cmd.Flags().GetString("tag")
 	logrus.Debugf("Showing a list of waves for %s", factory)
 
-	lst, err := api.FactoryListWaves(factory, limit, showPage, status)
+	lst, err := api.FactoryListWaves(factory, limit, showPage, status, tag)
 	subcommands.DieNotNil(err)
 
 	t := tabby.New()
