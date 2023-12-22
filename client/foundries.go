@@ -1583,9 +1583,12 @@ func (a *Api) FactoryCreateWave(factory string, wave *WaveCreate) error {
 	return err
 }
 
-func (a *Api) FactoryListWaves(factory string, limit, page uint64, onlyActive bool) (*WaveList, error) {
-	url := fmt.Sprintf("%s/ota/factories/%s/waves/?limit=%d&page=%d&only-active=%t",
-		a.serverUrl, factory, limit, page, onlyActive)
+func (a *Api) FactoryListWaves(factory string, limit, page uint64, status string) (*WaveList, error) {
+	url := fmt.Sprintf("%s/ota/factories/%s/waves/?limit=%d&page=%d",
+		a.serverUrl, factory, limit, page)
+	if len(status) > 0 {
+		url += "&status=" + status
+	}
 	logrus.Debugf("Listing factory waves %s", url)
 
 	body, err := a.Get(url)
