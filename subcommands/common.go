@@ -269,7 +269,7 @@ func FindWritableDirInPath(helperPath string) string {
 	return ""
 }
 
-func ShowPages(showPage int, next *string) {
+func ShowPages(showPage uint64, next *string) {
 	if next != nil {
 		fmt.Print("\nNext page can be viewed with: ")
 		found := false

@@ -7,9 +7,8 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"golang.org/x/exp/slices"
+	tuf "github.com/theupdateframework/notary/tuf/data"
 
-	"github.com/foundriesio/fioctl/client"
 	"github.com/foundriesio/fioctl/subcommands"
 )
 
@@ -34,6 +33,7 @@ There are 3 use cases when this command comes handy:
 	_ = signCmd.MarkFlagFilename("keys")
 	_ = signCmd.MarkFlagRequired("keys")
 	signCmd.Flags().StringP("tags", "", "", "A comma-separated list of tags to sign; default: all tags.")
+	signCmd.Flags().StringP("waves", "", "", "A comma-separated list of waves to sign; default: all active waves.")
 	tufUpdatesCmd.AddCommand(signCmd)
 }
 
@@ -42,9 +42,13 @@ func doTufUpdatesSignProdTargets(cmd *cobra.Command, args []string) {
 	txid, _ := cmd.Flags().GetString("txid")
 	keysFile, _ := cmd.Flags().GetString("keys")
 	tagsStr, _ := cmd.Flags().GetString("tags")
-	var tags []string
+	wavesStr, _ := cmd.Flags().GetString("waves")
+	var tags, waveNames []string
 	if tagsStr != "" {
 		tags = strings.Split(tagsStr, ",")
+	}
+	if wavesStr != "" {
+		waveNames = strings.Split(wavesStr, ",")
 	}
 
 	creds, err := GetOfflineCreds(keysFile)
@@ -67,14 +71,25 @@ For example, add a new offline TUF targets key, before signing production target
 		subcommands.SliceRemove(newCiRoot.Signed.Roles["targets"].KeyIDs, onlineTargetsId))
 	subcommands.DieNotNil(err)
 
+	var newTargetsProdSigs, newTargetsWaveSigs map[string][]tuf.Signature
+
 	fmt.Println("= Signing prod targets")
-	newTargetsSigs, err := signProdTargets(factory, signer,
-		func(tag string, targets client.AtsTufTargets) bool {
-			return tags != nil && !slices.Contains(tags, tag)
-		},
-	)
-	subcommands.DieNotNil(err)
+	// If both wave names and tags specified, or none specified - re-sign both prod and wave targets.
+	// If only wave names or only tags specified - re-sign only what was specified (either wave names or tags).
+	if len(tags) > 0 || len(waveNames) == 0 {
+		targetsProdMap, err := api.ProdTargetsList(factory, true, tags...)
+		subcommands.DieNotNil(err, "Failed to fetch production targets:")
+		newTargetsProdSigs, err = signProdTargets(signer, targetsProdMap)
+		subcommands.DieNotNil(err)
+	}
+	if len(waveNames) > 0 || len(tags) == 0 {
+		targetsWaveMap, err := api.WaveTargetsList(factory, true, waveNames...)
+		subcommands.DieNotNil(err, "Failed to fetch production wave targets:")
+		newTargetsWaveSigs, err = signProdTargets(signer, targetsWaveMap)
+		subcommands.DieNotNil(err)
+	}
 
 	fmt.Println("= Uploading new signatures")
-	subcommands.DieNotNil(api.TufRootUpdatesPut(factory, txid, newCiRoot, newProdRoot, newTargetsSigs))
+	subcommands.DieNotNil(api.TufRootUpdatesPut(
+		factory, txid, newCiRoot, newProdRoot, newTargetsProdSigs, newTargetsWaveSigs))
 }

@@ -43,5 +43,5 @@ func doTufUpdatesSign(cmd *cobra.Command, args []string) {
 	signNewTufRoot(curCiRoot, newCiRoot, newProdRoot, creds)
 
 	fmt.Println("= Uploading new TUF root")
-	subcommands.DieNotNil(api.TufRootUpdatesPut(factory, txid, newCiRoot, newProdRoot, nil))
+	subcommands.DieNotNil(api.TufRootUpdatesPut(factory, txid, newCiRoot, newProdRoot, nil, nil))
 }

@@ -770,7 +770,7 @@ func (a *Api) DeviceGet(factory, device string) (*Device, error) {
 }
 
 func (a *Api) DeviceList(
-	mine bool, matchTag, byFactory, byGroup, nameIlike, uuid, byTarget, sortBy string, page, limit int,
+	mine bool, matchTag, byFactory, byGroup, nameIlike, uuid, byTarget, sortBy string, page, limit uint64,
 ) (*DeviceList, error) {
 	mineInt := 0
 	if mine {
@@ -799,7 +799,7 @@ func (a *Api) DeviceListCont(url string) (*DeviceList, error) {
 	return &devices, nil
 }
 
-func (a *Api) DeviceListDenied(factory string, page, limit int) (*DeviceList, error) {
+func (a *Api) DeviceListDenied(factory string, page, limit uint64) (*DeviceList, error) {
 	url := a.serverUrl + "/ota/factories/" + factory + "/denied-devices/"
 	url += fmt.Sprintf("?limit=%d&page=%d", limit, page)
 	return a.DeviceListCont(url)
@@ -1583,8 +1583,9 @@ func (a *Api) FactoryCreateWave(factory string, wave *WaveCreate) error {
 	return err
 }
 
-func (a *Api) FactoryListWaves(factory string, limit uint64, page int) (*WaveList, error) {
-	url := a.serverUrl + "/ota/factories/" + factory + "/waves/?limit=" + strconv.FormatUint(limit, 10) + "&page=" + strconv.Itoa(page)
+func (a *Api) FactoryListWaves(factory string, limit, page uint64, onlyActive bool) (*WaveList, error) {
+	url := fmt.Sprintf("%s/ota/factories/%s/waves/?limit=%d&page=%d&only-active=%t",
+		a.serverUrl, factory, limit, page, onlyActive)
 	logrus.Debugf("Listing factory waves %s", url)
 
 	body, err := a.Get(url)
@@ -1681,7 +1682,16 @@ func (a *Api) FactoryWaveStatus(factory string, wave string, inactiveThreshold i
 func (a *Api) ProdTargetsList(factory string, failNotExist bool, tags ...string) (map[string]AtsTufTargets, error) {
 	url := a.serverUrl + "/ota/factories/" + factory + "/prod-targets/?tag=" + strings.Join(tags, ",")
 	logrus.Debugf("Fetching factory production targets %s", url)
+	return a.prodTargetsList(url, failNotExist)
+}
 
+func (a *Api) WaveTargetsList(factory string, failNotExist bool, names ...string) (map[string]AtsTufTargets, error) {
+	url := a.serverUrl + "/ota/factories/" + factory + "/wave-targets/?name=" + strings.Join(names, ",")
+	logrus.Debugf("Fetching factory production wave targets %s", url)
+	return a.prodTargetsList(url, failNotExist)
+}
+
+func (a *Api) prodTargetsList(url string, failNotExist bool) (map[string]AtsTufTargets, error) {
 	body, err := a.Get(url)
 	if err != nil {
 		if !failNotExist {
