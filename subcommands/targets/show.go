@@ -384,12 +384,13 @@ func doDownloadSboms(factory, targetName, downloadPath, format string, args []st
 		buildRun := sbom.CiBuild + "/" + sbom.CiRun + "/" + sbom.Artifact
 		if len(filter) == 0 || strings.HasPrefix(buildRun, filter) {
 			dst := filepath.Join(downloadPath, sbom.CiBuild, sbom.CiRun, sbom.Artifact)
-			// dst will have .spdx.json - determine a better extension by content-type:
+			// dst will have .spdx.json or .spdx.tar.zst - determine a better extension by content-type:
 			parts := strings.SplitN(format, "/", 2)
 			extension := "." + parts[1]
 			dst = strings.Replace(dst, ".spdx.json", extension, 1)
+			dst = strings.Replace(dst, ".spdx.tar.zst", extension, 1)
 			subcommands.DieNotNil(os.MkdirAll(filepath.Dir(dst), st.Mode()))
-			fmt.Printf("Downloading %s/%s/%s ...", sbom.CiBuild, sbom.CiRun, sbom.Artifact)
+			fmt.Printf("Downloading %s/%s/%s\n |-> %s...", sbom.CiBuild, sbom.CiRun, sbom.Artifact, dst)
 			bytes, err := api.SbomDownload(factory, targetName, buildRun, format)
 			fmt.Println()
 			subcommands.DieNotNil(err)
