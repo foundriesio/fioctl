@@ -378,6 +378,11 @@ func doDownloadSboms(factory, targetName, downloadPath, format string, args []st
 		filter = fmt.Sprintf("%s/%s", args[1], args[2])
 	}
 
+	prefixMsg := "Downloading"
+	if format != "application/spdx.json" {
+		prefixMsg = "Converting"
+	}
+
 	sboms, err := api.TargetSboms(factory, targetName)
 	subcommands.DieNotNil(err)
 	for _, sbom := range sboms {
@@ -390,7 +395,7 @@ func doDownloadSboms(factory, targetName, downloadPath, format string, args []st
 			dst = strings.Replace(dst, ".spdx.json", extension, 1)
 			dst = strings.Replace(dst, ".spdx.tar.zst", extension, 1)
 			subcommands.DieNotNil(os.MkdirAll(filepath.Dir(dst), st.Mode()))
-			fmt.Printf("Downloading %s/%s/%s\n |-> %s...", sbom.CiBuild, sbom.CiRun, sbom.Artifact, dst)
+			fmt.Printf("%s %s/%s/%s\n |-> %s...", prefixMsg, sbom.CiBuild, sbom.CiRun, sbom.Artifact, dst)
 			bytes, err := api.SbomDownload(factory, targetName, buildRun, format)
 			fmt.Println()
 			subcommands.DieNotNil(err)
