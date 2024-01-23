@@ -69,7 +69,7 @@ For example, add a new offline TUF targets key, before signing production target
 	}
 	signer, err := FindOneTufSigner(newCiRoot, creds,
 		subcommands.SliceRemove(newCiRoot.Signed.Roles["targets"].KeyIDs, onlineTargetsId))
-	subcommands.DieNotNil(err)
+	subcommands.DieNotNil(err, ErrMsgReadingTufKey(tufRoleNameTargets, "current"))
 
 	var newTargetsProdSigs, newTargetsWaveSigs map[string][]tuf.Signature
 

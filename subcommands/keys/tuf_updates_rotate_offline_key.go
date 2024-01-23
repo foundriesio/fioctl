@@ -183,7 +183,7 @@ func doTufUpdatesRotateOfflineTargetsKey(cmd *cobra.Command) {
 		// Seaching for old key in curCiRoot supports several rotations in one transaction.
 		oldestKey, err = FindOneTufSigner(curCiRoot, targetsCreds,
 			subcommands.SliceRemove(curCiRoot.Signed.Roles["targets"].KeyIDs, onlineTargetsId))
-		subcommands.DieNotNil(err)
+		subcommands.DieNotNil(err, ErrMsgReadingTufKey(tufRoleNameTargets, "current"))
 	}
 
 	targetsProdMap, err := api.ProdTargetsList(factory, false)
@@ -226,7 +226,7 @@ func replaceOfflineRootKey(
 ) (TufSigner, OfflineCreds) {
 	oldKids := root.Signed.Roles["root"].KeyIDs
 	oldKey, err := FindOneTufSigner(root, creds, oldKids)
-	subcommands.DieNotNil(err)
+	subcommands.DieNotNil(err, ErrMsgReadingTufKey(tufRoleNameRoot, "current"))
 	oldKids = subcommands.SliceRemove(oldKids, oldKey.Id)
 
 	kp := genTufKeyPair(keyType)
@@ -242,7 +242,7 @@ func replaceOfflineTargetsKey(
 	oldKids := root.Signed.Roles["targets"].KeyIDs
 	if len(oldKids) > 1 {
 		oldKey, err := FindOneTufSigner(root, creds, subcommands.SliceRemove(oldKids, onlineTargetsId))
-		subcommands.DieNotNil(err)
+		subcommands.DieNotNil(err, ErrMsgReadingTufKey(tufRoleNameTargets, "current"))
 		oldKids = subcommands.SliceRemove(oldKids, oldKey.Id)
 	}
 
