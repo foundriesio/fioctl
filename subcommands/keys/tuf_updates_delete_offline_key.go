@@ -104,7 +104,7 @@ func doTufUpdatesDeleteOfflineKey(cmd *cobra.Command, args []string) {
 	fmt.Println("= Delete keyid:", keyId)
 	if keyId == "" {
 		oldKey, err := FindOneTufSigner(newCiRoot, creds, validKeyIds)
-		subcommands.DieNotNil(err)
+		subcommands.DieNotNil(err, ErrMsgReadingTufKey(roleName, "current"))
 		keyId = oldKey.Id
 	} else if !slices.Contains(validKeyIds, keyId) {
 		subcommands.DieNotNil(fmt.Errorf(

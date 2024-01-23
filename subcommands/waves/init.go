@@ -222,7 +222,7 @@ Please, run "fioctl keys tuf rotate-offline-key --role=targets" in order to crea
 	}
 
 	signer, err := keys.FindOneTufSigner(root, offlineKeys, signerKids)
-	subcommands.DieNotNil(err)
+	subcommands.DieNotNil(err, keys.ErrMsgReadingTufKey("targets", "current"))
 	signatures, err := keys.SignTufMeta(meta, signer)
 	subcommands.DieNotNil(err, "Failed to sign new targets")
 	return signatures

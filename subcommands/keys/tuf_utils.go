@@ -24,7 +24,7 @@ import (
 	"github.com/foundriesio/fioctl/subcommands"
 )
 
-var errFoundNoKey = errors.New("Found no active signing key")
+var errFoundNoKey = errors.New("Found no private key")
 
 type OfflineCreds map[string][]byte
 
@@ -40,6 +40,10 @@ type TufKeyPair struct {
 	atsPrivBytes []byte
 	atsPub       client.AtsKey
 	atsPubBytes  []byte
+}
+
+func ErrMsgReadingTufKey(role, treat string) string {
+	return fmt.Sprintf("Error reading %s TUF %s private key from a specified file:\n", treat, role)
 }
 
 func ParseTufKeyType(s string) TufKeyType {
@@ -232,9 +236,9 @@ func FindOneTufSigner(root *client.AtsTufRoot, creds OfflineCreds, keyids []stri
 	var signers []TufSigner
 	if signers, err = findTufSigners(root, creds, keyids); err == nil {
 		if len(signers) == 0 {
-			err = fmt.Errorf("%w for: %v.", errFoundNoKey, keyids)
+			err = fmt.Errorf("%w for key IDs: %v.", errFoundNoKey, keyids)
 		} else if len(signers) > 1 {
-			err = fmt.Errorf(`Found more than one active signing key for: %v.
+			err = fmt.Errorf(`Found more than one active private key for key IDs: %v.
 This is an unsupported and insecure way to store private keys.
 Please, provide a keys file which contains a single active signing key.`, keyids)
 		} else {
@@ -248,7 +252,7 @@ func checkNoTufSigner(root *client.AtsTufRoot, creds OfflineCreds, keyids []stri
 	var signers []TufSigner
 	if signers, err = findTufSigners(root, creds, keyids); err == nil {
 		if len(signers) > 0 {
-			err = errors.New("It is not allowed to store more than one active signing key into one file")
+			err = errors.New("It is not allowed to store more than one active private key into one file.")
 		}
 	}
 	return
@@ -432,12 +436,12 @@ func signNewTufRoot(curCiRoot, newCiRoot, newProdRoot *client.AtsTufRoot, creds 
 	signers := make([]TufSigner, 0, 2)
 	newKey, newErr := FindOneTufSigner(newCiRoot, creds, newCiRoot.Signed.Roles["root"].KeyIDs)
 	if !errors.Is(newErr, errFoundNoKey) {
-		subcommands.DieNotNil(newErr)
+		subcommands.DieNotNil(newErr, ErrMsgReadingTufKey(tufRoleNameRoot, "new"))
 		signers = append(signers, newKey)
 	}
 	oldKey, oldErr := FindOneTufSigner(curCiRoot, creds, curCiRoot.Signed.Roles["root"].KeyIDs)
 	if !errors.Is(oldErr, errFoundNoKey) {
-		subcommands.DieNotNil(oldErr)
+		subcommands.DieNotNil(oldErr, ErrMsgReadingTufKey(tufRoleNameRoot, "current"))
 		if len(signers) == 0 || oldKey.Id != newKey.Id {
 			signers = append(signers, oldKey)
 		}
@@ -445,7 +449,12 @@ func signNewTufRoot(curCiRoot, newCiRoot, newProdRoot *client.AtsTufRoot, creds 
 
 	// At this point either oldKey or newKey was found, or both newErr and oldErr are errFoundNoKey
 	if len(signers) == 0 {
-		subcommands.DieNotNil(fmt.Errorf("%s\n%s", oldErr, newErr))
+		if oldErr.Error() == newErr.Error() { // TUF root key is not being rotated
+			subcommands.DieNotNil(oldErr, ErrMsgReadingTufKey(tufRoleNameRoot, "current"))
+		} else { // TUF root key is being rotated
+			subcommands.DieNotNil(fmt.Errorf(
+				"%s %s\n %s", ErrMsgReadingTufKey(tufRoleNameRoot, "current and new"), oldErr, newErr))
+		}
 	}
 
 	fmt.Println("= Signing new TUF root")
