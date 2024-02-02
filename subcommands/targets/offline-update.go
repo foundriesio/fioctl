@@ -13,6 +13,8 @@ import (
 	"strings"
 	"time"
 
+	tuf "github.com/theupdateframework/notary/tuf/data"
+
 	"github.com/foundriesio/fioctl/client"
 	"github.com/foundriesio/fioctl/subcommands"
 	"github.com/spf13/cobra"
@@ -35,15 +37,19 @@ var (
 	ouTufOnly              bool
 	ouNoApps               bool
 	ouAllowMultipleTargets bool
+	ouWave                 string
 )
 
 func init() {
 	offlineUpdateCmd := &cobra.Command{
-		Use:   "offline-update <target-name> <dst> --tag <tag> [--prod] [--expires-in-days <days>] [--tuf-only]",
+		Use:   "offline-update <target-name> <dst> --tag <tag> [--prod | --wave <wave-name>] [--expires-in-days <days>] [--tuf-only]",
 		Short: "Download Target content for an offline update",
 		Run:   doOfflineUpdate,
 		Args:  cobra.ExactArgs(2),
 		Example: `
+	# Download update content of the wave target #1451 for "intel-corei7-64" hardware type
+	fioctl targets offline-update intel-corei7-64-lmp-1451 /mnt/flash-drive/offline-update-content --wave wave-deployment-001
+
 	# Download update content of the production target #1451 tagged by "release-01" for "intel-corei7-64" hardware type
 	fioctl targets offline-update intel-corei7-64-lmp-1451 /mnt/flash-drive/offline-update-content --tag release-01 --prod
 
@@ -57,6 +63,8 @@ func init() {
 		"Target tag")
 	offlineUpdateCmd.Flags().BoolVarP(&ouProd, "prod", "", false,
 		"Instruct to fetch content of production Target")
+	offlineUpdateCmd.Flags().StringVarP(&ouWave, "wave", "", "",
+		"Instruct to fetch content of wave Target; a wave name should be specified")
 	offlineUpdateCmd.Flags().IntVarP(&ouExpiresIn, "expires-in-days", "e", 30,
 		"Desired metadata validity period in days")
 	offlineUpdateCmd.Flags().BoolVarP(&ouTufOnly, "tuf-only", "m", false,
@@ -65,6 +73,8 @@ func init() {
 		"Skip fetching Target Apps")
 	offlineUpdateCmd.Flags().BoolVarP(&ouAllowMultipleTargets, "allow-multiple-targets", "", false,
 		"Allow multiple targets to be stored in the same <dst> directory")
+	offlineUpdateCmd.MarkFlagsMutuallyExclusive("tag", "wave")
+	offlineUpdateCmd.MarkFlagsMutuallyExclusive("prod", "wave")
 }
 
 func doOfflineUpdate(cmd *cobra.Command, args []string) {
@@ -72,18 +82,34 @@ func doOfflineUpdate(cmd *cobra.Command, args []string) {
 	targetName := args[0]
 	dstDir := args[1]
 
-	if len(ouTag) == 0 {
-		subcommands.DieNotNil(errors.New("missing mandatory flag `--tag`"))
+	if len(ouTag) == 0 && len(ouWave) == 0 {
+		subcommands.DieNotNil(errors.New("Either `--tag` or `--wave` should be specified"))
 	}
 
-	fmt.Printf("Checking whether Target exists; target: %s, tag: %s, production: %v\n", targetName, ouTag, ouProd)
-	subcommands.DieNotNil(checkIfTargetExists(factory, targetName, ouTag, ouProd))
-
-	ti, err := getTargetInfo(factory, targetName)
-	subcommands.DieNotNil(err, "Failed to obtain Target's details:")
+	var targetCustomData *tuf.FileMeta
+	var targetGetErr error
+	// Get the wave/prod/CI specific target with the specified tag to check if it is really present
+	if len(ouWave) > 0 {
+		fmt.Printf("Getting Wave Target details; target: %s, wave: %s...\n", targetName, ouWave)
+		_, targetGetErr = getWaveTargetMeta(factory, targetName, ouWave)
+	} else if ouProd {
+		fmt.Printf("Getting production Target details; target: %s, tag: %s...\n", targetName, ouTag)
+		_, targetGetErr = getProdTargetMeta(factory, targetName, ouTag)
+	} else {
+		fmt.Printf("Getting CI Target details; target: %s, tag: %s...\n", targetName, ouTag)
+		_, targetGetErr = getCiTargetMeta(factory, targetName, ouTag)
+	}
+	subcommands.DieNotNil(targetGetErr)
+	// Get the specified target from the list of factory targets to obtain the "original" tag/branch that produced
+	// the target, so we can find out the correct app bundle fetch URL.
+	targetCustomData, targetGetErr = api.TargetGet(factory, targetName)
+	subcommands.DieNotNil(targetGetErr)
+	// Get the target info in order to deduce the ostree and app download URLs
+	ti, err := getTargetInfo(targetCustomData)
+	subcommands.DieNotNil(err)
 
 	fmt.Printf("Refreshing and downloading TUF metadata for Target %s to %s...\n", targetName, path.Join(dstDir, "tuf"))
-	subcommands.DieNotNil(downloadTufRepo(factory, targetName, ouTag, ouProd, ouExpiresIn, path.Join(dstDir, "tuf")), "Failed to download TUF metadata:")
+	subcommands.DieNotNil(downloadTufRepo(factory, targetName, ouTag, ouProd, ouWave, ouExpiresIn, path.Join(dstDir, "tuf")), "Failed to download TUF metadata:")
 	fmt.Println("Successfully refreshed and downloaded TUF metadata")
 
 	if !ouTufOnly {
@@ -110,37 +136,17 @@ Notice that multiple targets in the same directory is only supported in LmP >= v
 	}
 }
 
-func checkIfTargetExists(factory string, targetName string, tag string, prod bool) error {
-	data, err := api.TufMetadataGet(factory, "targets.json", tag, prod)
-	if err != nil {
-		if herr := client.AsHttpError(err); herr != nil && herr.Response.StatusCode == 404 {
-			return fmt.Errorf("the specified Target has not been found; target: %s, tag: %s, production: %v", targetName, ouTag, ouProd)
-		}
-		return fmt.Errorf("failed to check whether Target exists: %s", err.Error())
-	}
-	targets := client.AtsTufTargets{}
-	err = json.Unmarshal(*data, &targets)
-	if err != nil {
-		return fmt.Errorf("failed to check whether Target exists: %s", err.Error())
-	}
-	for tn := range targets.Signed.Targets {
-		if tn == targetName {
-			return nil
-		}
-	}
-	return fmt.Errorf("the specified Target has not been found; target: %s, tag: %s, production: %v", targetName, ouTag, ouProd)
-}
-
-func getTargetInfo(factory string, targetName string) (*ouTargetInfo, error) {
+func getTargetInfo(targetFile *tuf.FileMeta) (*ouTargetInfo, error) {
+	// Since the wave/prod/CI specific target json usually doesn't contain the "original" branch/tag that the apps were fetched for
+	// we do the following to determine where to fetch the target app bundle from.
 	// Getting Target's custom info from the `/ota/factories/<factory>/targets/<target-name>` because:
 	// 1. a target name is unique and represents the same Target across all "tagged" targets set including prod;
 	// 2. only this target version/representation contains an original tag(s)/branch that
 	// the `image-assemble` and apps fetching was performed for (needed for determining where to download Apps from).
-	custom, err := getTargetCustomInfo(factory, targetName)
+	custom, err := api.TargetCustom(*targetFile)
 	if err != nil {
 		return nil, err
 	}
-
 	info := ouTargetInfo{}
 	info.version, err = strconv.Atoi(custom.Version)
 	if err != nil {
@@ -163,6 +169,59 @@ func getTargetInfo(factory string, targetName string) (*ouTargetInfo, error) {
 	return &info, nil
 }
 
+func getWaveTargetMeta(factory string, targetName string, wave string) (*tuf.FileMeta, error) {
+	waveTargets, err := api.WaveTargetsList(factory, true, wave)
+	if err != nil {
+		if herr := client.AsHttpError(err); herr != nil && herr.Response.StatusCode == 404 {
+			return nil, fmt.Errorf("No active Wave with the specified name was found; wave: %s", wave)
+		}
+		return nil, fmt.Errorf("Failed to get Wave Target metadata: %s", err.Error())
+	}
+	if foundTargetMeta, ok := waveTargets[wave].Signed.Targets[targetName]; ok {
+		return &foundTargetMeta, nil
+	} else {
+		return nil, fmt.Errorf("The specified Target is not found among wave targets;"+
+			" target: %s, wave: %s", targetName, wave)
+	}
+}
+
+func getProdTargetMeta(factory string, targetName string, tag string) (*tuf.FileMeta, error) {
+	targets, err := api.ProdTargetsGet(factory, tag, true)
+	if err != nil {
+		if herr := client.AsHttpError(err); herr != nil && herr.Response.StatusCode == 404 {
+			return nil, fmt.Errorf("No production targets were found for the specified tag `%s`", tag)
+		}
+		return nil, fmt.Errorf("Failed to get production Target metadata: %s", err.Error())
+	}
+	if foundTargetMeta, ok := targets.Signed.Targets[targetName]; ok {
+		return &foundTargetMeta, nil
+	} else {
+		return nil, fmt.Errorf("No production target with the given tag is found;"+
+			" target: %s, tag: %s", targetName, tag)
+	}
+}
+
+func getCiTargetMeta(factory string, targetName string, tag string) (*tuf.FileMeta, error) {
+	data, err := api.TufMetadataGet(factory, "targets.json", tag, false)
+	if err != nil {
+		if herr := client.AsHttpError(err); herr != nil && herr.Response.StatusCode == 404 {
+			return nil, fmt.Errorf("No CI targets were found for the specified tag `%s`", tag)
+		}
+		return nil, fmt.Errorf("Failed to get CI Target metadata: %s", err.Error())
+	}
+	targets := client.AtsTufTargets{}
+	err = json.Unmarshal(*data, &targets)
+	if err != nil {
+		return nil, err
+	}
+	if foundTargetMeta, ok := targets.Signed.Targets[targetName]; ok {
+		return &foundTargetMeta, nil
+	} else {
+		return nil, fmt.Errorf("No CI target with the given tag is found;"+
+			" target: %s, tag: %s", targetName, tag)
+	}
+}
+
 func isDstDirClean(dstDir string) bool {
 	for _, subDir := range []string{"ostree_repo", "apps"} {
 		fullPath := path.Join(dstDir, subDir)
@@ -174,7 +233,7 @@ func isDstDirClean(dstDir string) bool {
 	return true
 }
 
-func downloadTufRepo(factory string, target string, tag string, prod bool, expiresIn int, dstDir string) error {
+func downloadTufRepo(factory string, target string, tag string, prod bool, wave string, expiresIn int, dstDir string) error {
 	// v1 - auto-generated by tuf_keyserver (default, on Factory creation);
 	// v2 - auto-generated by ota-lite to take keys online (default, on Factory creation);
 	ver := 3
@@ -210,7 +269,7 @@ func downloadTufRepo(factory string, target string, tag string, prod bool, expir
 		ver += 1
 	}
 
-	meta, err := api.TufTargetMetadataRefresh(factory, target, tag, expiresIn, prod)
+	meta, err := api.TufTargetMetadataRefresh(factory, target, tag, expiresIn, prod, wave)
 	if err != nil {
 		return err
 	}
@@ -252,15 +311,6 @@ func downloadApps(factory string, targetName string, targetVer int, tag string, 
 	return downloadItem(factory, targetVer, runName, artifactPath, func(r io.Reader) error {
 		return untar(r, dstDir)
 	})
-}
-
-func getTargetCustomInfo(factory string, targetName string) (*client.TufCustom, error) {
-	targetFile, err := api.TargetGet(factory, targetName)
-	if err != nil {
-		return nil, err
-	}
-	custom, err := api.TargetCustom(*targetFile)
-	return custom, err
 }
 
 func downloadItem(factory string, targetVer int, runName string, artifactPath string, storeHandler func(r io.Reader) error) error {

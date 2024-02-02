@@ -1159,18 +1159,20 @@ func (a *Api) TufMetadataGet(factory string, metadata string, tag string, prod b
 	return a.Get(url)
 }
 
-func (a *Api) TufTargetMetadataRefresh(factory string, target string, tag string, expiresIn int, prod bool) (map[string]tuf.Signed, error) {
+func (a *Api) TufTargetMetadataRefresh(factory string, target string, tag string, expiresIn int, prod bool, wave string) (map[string]tuf.Signed, error) {
 	url := a.serverUrl + "/ota/factories/" + factory + "/targets/" + target + "/meta/"
 	type targetMeta struct {
 		Tag       string `json:"tag"`
 		ExpiresIn int    `json:"expires-in-days"`
 		Prod      bool   `json:"production"`
+		Wave      string `json:"wave"`
 	}
 
 	b, err := json.Marshal(targetMeta{
 		Tag:       tag,
 		ExpiresIn: expiresIn,
 		Prod:      prod,
+		Wave:      wave,
 	})
 	if err != nil {
 		return nil, err
