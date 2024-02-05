@@ -5,16 +5,19 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"net/url"
 	"os"
 	"os/exec"
 	"os/user"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/foundriesio/fioctl/subcommands"
 	"github.com/mitchellh/go-homedir"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 const DOCKER_CREDS_HELPER = "docker-credential-fio"
@@ -102,13 +105,18 @@ func doDockerCreds(cmd *cobra.Command, args []string) {
 		subcommands.DieNotNil(json.Unmarshal(bytes, &config))
 	}
 
+	apiUrl := viper.GetString("server.url")
+	parts, err := url.Parse(apiUrl)
+	subcommands.DieNotNil(err)
+	hubUrl := strings.Replace(parts.Host, "api.", "hub.", 1)
+
 	helpers, ok := config["credHelpers"]
 	if !ok {
 		config["credHelpers"] = map[string]string{
-			"hub.foundries.io": "fio",
+			hubUrl: "fio",
 		}
 	} else {
-		helpers.(map[string]interface{})["hub.foundries.io"] = "fio"
+		helpers.(map[string]interface{})[hubUrl] = "fio"
 	}
 
 	configBytes, err := subcommands.MarshalIndent(config, "", "  ")
@@ -121,7 +129,7 @@ func doDockerCreds(cmd *cobra.Command, args []string) {
 	fmt.Println("Symlinking", self, "to", dst)
 	subcommands.DieNotNil(os.Symlink(self, dst))
 
-	fmt.Println("Adding hub.foundries.io helper to", dockerConfigFile)
+	fmt.Println("Adding", hubUrl, "helper to", dockerConfigFile)
 	subcommands.DieNotNil(os.WriteFile(dockerConfigFile, configBytes, 0o600))
 }
 
