@@ -3,6 +3,7 @@ package git
 import (
 	"bufio"
 	"fmt"
+	"net/url"
 	"os"
 	"os/exec"
 	"os/user"
@@ -13,6 +14,7 @@ import (
 	"github.com/foundriesio/fioctl/subcommands"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 const GIT_CREDS_HELPER = "git-credential-fio"
@@ -80,16 +82,21 @@ func doGitCreds(cmd *cobra.Command, args []string) {
 		helperName = strings.ReplaceAll(filepath.ToSlash(dst), " ", "\\ ")
 	}
 
+	apiUrl := viper.GetString("server.url")
+	parts, err := url.Parse(apiUrl)
+	subcommands.DieNotNil(err)
+	sourceUrl := strings.Replace(parts.Host, "api.", "source.", 1)
+
 	if len(sudoer) > 0 {
 		u, err := user.Lookup(sudoer)
 		subcommands.DieNotNil(err)
 		execCommand = "su"
-		gitUsernameCommandArgs = []string{u.Username, "-c", "git config --global credential.https://source.foundries.io.username fio-oauth2"}
-		gitHelperCommandArgs = []string{u.Username, "-c", "git config --global credential.https://source.foundries.io.helper " + helperName}
+		gitUsernameCommandArgs = []string{u.Username, "-c", fmt.Sprintf("git config --global credential.%s.username fio-oauth2", sourceUrl)}
+		gitHelperCommandArgs = []string{u.Username, "-c", fmt.Sprintf("git config --global credential.https://%s.helper %s", sourceUrl, helperName)}
 	} else {
 		execCommand = "git"
-		gitUsernameCommandArgs = []string{"config", "--global", "credential.https://source.foundries.io.username", "fio-oauth2"}
-		gitHelperCommandArgs = []string{"config", "--global", "credential.https://source.foundries.io.helper", helperName}
+		gitUsernameCommandArgs = []string{"config", "--global", fmt.Sprintf("credential.https://%s.username", sourceUrl), "fio-oauth2"}
+		gitHelperCommandArgs = []string{"config", "--global", fmt.Sprintf("credential.https://%s.helper", sourceUrl), helperName}
 	}
 	c := exec.Command(execCommand, gitUsernameCommandArgs...)
 	out, err := c.CombinedOutput()
