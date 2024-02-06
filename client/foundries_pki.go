@@ -42,6 +42,9 @@ func (a *Api) FactoryGetCA(factory string) (CaCerts, error) {
 
 	body, err := a.Get(url)
 	if err != nil {
+		if herr := AsHttpError(err); herr != nil && herr.Response.StatusCode == 206 {
+			err = errors.New("Factory PKI is not configured. Please, see `fioctl keys ca create`.")
+		}
 		return resp, err
 	}
 
