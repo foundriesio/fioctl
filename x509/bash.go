@@ -182,7 +182,7 @@ dns=$(openssl req -text -noout -verify -in $csr | grep DNS:)
 echo "signing with dns name: $dns" 1>&2
 
 cat >server.ext <<EOF
-keyUsage=critical, digitalSignature, keyEncipherment, keyAgreement
+keyUsage=critical, digitalSignature
 extendedKeyUsage=critical, serverAuth
 subjectAltName=$dns
 EOF

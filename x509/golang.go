@@ -185,7 +185,7 @@ func genTlsCert(subject pkix.Name, dnsNames []string, pubkey crypto.PublicKey) s
 		NotAfter:     time.Now().AddDate(10, 0, 0),
 
 		IsCA:        false,
-		KeyUsage:    x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment | x509.KeyUsageKeyAgreement,
+		KeyUsage:    x509.KeyUsageDigitalSignature,
 		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 		DNSNames:    dnsNames,
 	}

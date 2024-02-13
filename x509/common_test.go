@@ -112,7 +112,7 @@ func runTest(t *testing.T, verifyFiles func(factoryCa, tlsCert, onlineCa, offlin
 	assert.Equal(t, tlsCertChain, tlsCertChain1)
 
 	assert.Equal(t, false, tlsCert.IsCA)
-	assert.Equal(t, x509.KeyUsageDigitalSignature|x509.KeyUsageKeyEncipherment|x509.KeyUsageKeyAgreement, tlsCert.KeyUsage)
+	assert.Equal(t, x509.KeyUsageDigitalSignature, tlsCert.KeyUsage)
 	assert.Equal(t, testDnsBase, tlsCert.Subject.CommonName)
 	assert.Equal(t, []string{testDnsGateway, testDnsOstree}, tlsCert.DNSNames)
 	assert.Equal(t, [][]*x509.Certificate{{tlsCert, factoryCa}}, tlsCertChain)
@@ -129,7 +129,7 @@ func runTest(t *testing.T, verifyFiles func(factoryCa, tlsCert, onlineCa, offlin
 	assert.Nil(t, err)
 
 	assert.Equal(t, false, estCert.IsCA)
-	assert.Equal(t, x509.KeyUsageDigitalSignature|x509.KeyUsageKeyEncipherment|x509.KeyUsageKeyAgreement, estCert.KeyUsage)
+	assert.Equal(t, x509.KeyUsageDigitalSignature, estCert.KeyUsage)
 	assert.Equal(t, testDnsBase, estCert.Subject.CommonName)
 	assert.Equal(t, []string{testDnsEst}, estCert.DNSNames)
 	assert.Equal(t, [][]*x509.Certificate{{estCert, factoryCa}}, estCertChain)
