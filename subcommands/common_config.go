@@ -223,19 +223,16 @@ func SetUpdatesConfig(opts *SetUpdatesConfigOptions, reportedTag string, reporte
 	configuredApps := sota.GetDefault("pacman.docker_apps", "").(string)
 	configuredTag := sota.GetDefault("pacman.tags", "").(string)
 
-	if len(configuredTag) == 0 && len(reportedTag) > 0 {
-		configuredTag = reportedTag
-	}
-	if len(configuredApps) == 0 && reportedApps != nil {
-		configuredApps = strings.Join(reportedApps, ",")
-	}
-
 	changed := false
 	if opts.UpdateApps != "" && configuredApps != opts.UpdateApps {
 		if strings.TrimSpace(opts.UpdateApps) == "," {
 			opts.UpdateApps = ""
 		}
-		fmt.Printf("Changing apps from: [%s] -> [%s]\n", configuredApps, opts.UpdateApps)
+		fmt.Printf("Currently configured apps: [%s]\n", configuredApps)
+		if reportedApps != nil {
+			fmt.Printf("Apps reported as installed on device: [%s]\n", strings.Join(reportedApps, ","))
+		}
+		fmt.Printf("Setting apps to [%s]\n", opts.UpdateApps)
 		sota.Set("pacman.docker_apps", opts.UpdateApps)
 		sota.Set("pacman.compose_apps", opts.UpdateApps)
 		changed = true
@@ -244,7 +241,11 @@ func SetUpdatesConfig(opts *SetUpdatesConfigOptions, reportedTag string, reporte
 		if strings.TrimSpace(opts.UpdateTag) == "," {
 			opts.UpdateTag = ""
 		}
-		fmt.Printf("Changing tag from: %s -> %s\n", configuredTag, opts.UpdateTag)
+		fmt.Printf("Currently configured tag: %s\n", configuredTag)
+		if len(reportedTag) > 0 {
+			fmt.Printf("Tag reported by device: %s\n", reportedTag)
+		}
+		fmt.Printf("Setting tag to %s\n", opts.UpdateTag)
 		sota.Set("pacman.tags", opts.UpdateTag)
 		changed = true
 	}
