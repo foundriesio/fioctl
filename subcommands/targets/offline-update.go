@@ -91,22 +91,15 @@ func doOfflineUpdate(cmd *cobra.Command, args []string) {
 	// Get the wave/prod/CI specific target with the specified tag to check if it is really present
 	if len(ouWave) > 0 {
 		fmt.Printf("Getting Wave Target details; target: %s, wave: %s...\n", targetName, ouWave)
-		_, targetGetErr = getWaveTargetMeta(factory, targetName, ouWave)
+		targetCustomData, targetGetErr = getWaveTargetMeta(factory, targetName, ouWave)
 	} else if ouProd {
 		fmt.Printf("Getting production Target details; target: %s, tag: %s...\n", targetName, ouTag)
-		_, targetGetErr = getProdTargetMeta(factory, targetName, ouTag)
+		targetCustomData, targetGetErr = getProdTargetMeta(factory, targetName, ouTag)
 	} else {
 		fmt.Printf("Getting CI Target details; target: %s, tag: %s...\n", targetName, ouTag)
-		_, targetGetErr = getCiTargetMeta(factory, targetName, ouTag)
+		targetCustomData, targetGetErr = getCiTargetMeta(factory, targetName, ouTag)
 	}
 	subcommands.DieNotNil(targetGetErr)
-	// Get the specified target from the list of factory targets to obtain the "original" tag/branch that produced
-	// the target, so we can find out the correct app bundle fetch URL.
-	targetCustomData, targetGetErr = api.TargetGet(factory, targetName)
-	subcommands.DieNotNil(targetGetErr)
-	// Get the target info in order to deduce the ostree and app download URLs
-	ti, err := getTargetInfo(targetCustomData)
-	subcommands.DieNotNil(err)
 
 	fmt.Printf("Refreshing and downloading TUF metadata for Target %s to %s...\n", targetName, path.Join(dstDir, "tuf"))
 	subcommands.DieNotNil(downloadTufRepo(factory, targetName, ouTag, ouProd, ouWave, ouExpiresIn, path.Join(dstDir, "tuf")), "Failed to download TUF metadata:")
@@ -121,9 +114,24 @@ Notice that multiple targets in the same directory is only supported in LmP >= v
 			}
 		}
 
+		// Get the target info in order to deduce the ostree and app download URLs
+		ti, err := getTargetInfo(targetCustomData)
+		subcommands.DieNotNil(err)
+
 		fmt.Printf("Downloading an ostree repo from the Target's OE build %d...\n", ti.ostreeVersion)
 		subcommands.DieNotNil(downloadOstree(factory, ti.ostreeVersion, ti.hardwareID, dstDir), "Failed to download Target's ostree repo:")
 		if !ouNoApps {
+			if len(ouWave) > 0 || ouProd {
+				// Get the specified target from the list of factory targets to obtain the "original" tag/branch that produced
+				// the target, so we can find out the correct app bundle fetch URL.
+				targetCustomData, targetGetErr = api.TargetGet(factory, targetName)
+				subcommands.DieNotNil(targetGetErr)
+
+				// Get the target info again in order to extract the "original" tag/branch and deduce the app download URLs
+				ti, err = getTargetInfo(targetCustomData)
+				subcommands.DieNotNil(err)
+			}
+
 			fmt.Printf("Downloading Apps fetched by the `assemble-system-image` run; build number:  %d, tag: %s...\n", ti.version, ti.buildTag)
 			err = downloadApps(factory, targetName, ti.version, ti.buildTag, path.Join(dstDir, "apps"))
 			if herr := client.AsHttpError(err); herr != nil && herr.Response.StatusCode == 404 {
