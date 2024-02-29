@@ -255,6 +255,11 @@ type DeltaStats struct {
 	Size   int    `json:"size"`
 }
 
+type FetchedApps struct {
+	Uri       string `json:"uri"`
+	Shortlist string `json:"shortlist"`
+}
+
 type TufCustom struct {
 	HardwareIds    []string              `json:"hardwareIds,omitempty"`
 	Tags           []string              `json:"tags,omitempty"`
@@ -271,6 +276,7 @@ type TufCustom struct {
 	CreatedAt      string                `json:"createdAt,omitempty"`
 	UpdatedAt      string                `json:"updatedAt,omitempty"`
 	LmpVer         string                `json:"lmp-ver,omitempty"`
+	FetchedApps    *FetchedApps          `json:"fetched-apps,omitempty"`
 }
 
 type Target struct {
