@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path"
 	"strconv"
@@ -27,6 +28,7 @@ type (
 		ostreeVersion int
 		hardwareID    string
 		buildTag      string
+		fetchedApps   *client.FetchedApps
 	}
 )
 
@@ -121,7 +123,7 @@ Notice that multiple targets in the same directory is only supported in LmP >= v
 		fmt.Printf("Downloading an ostree repo from the Target's OE build %d...\n", ti.ostreeVersion)
 		subcommands.DieNotNil(downloadOstree(factory, ti.ostreeVersion, ti.hardwareID, dstDir), "Failed to download Target's ostree repo:")
 		if !ouNoApps {
-			if len(ouWave) > 0 || ouProd {
+			if (len(ouWave) > 0 || ouProd) && ti.fetchedApps == nil {
 				// Get the specified target from the list of factory targets to obtain the "original" tag/branch that produced
 				// the target, so we can find out the correct app bundle fetch URL.
 				targetCustomData, targetGetErr = api.TargetGet(factory, targetName)
@@ -132,8 +134,13 @@ Notice that multiple targets in the same directory is only supported in LmP >= v
 				subcommands.DieNotNil(err)
 			}
 
-			fmt.Printf("Downloading Apps fetched by the `assemble-system-image` run; build number:  %d, tag: %s...\n", ti.version, ti.buildTag)
-			err = downloadApps(factory, targetName, ti.version, ti.buildTag, path.Join(dstDir, "apps"))
+			if ti.fetchedApps == nil {
+				fmt.Printf("Downloading Apps fetched by the `assemble-system-image` run; build number: %d, tag: %s...\n", ti.version, ti.buildTag)
+				err = downloadApps(factory, targetName, ti.version, ti.buildTag, path.Join(dstDir, "apps"))
+			} else {
+				fmt.Printf("Downloading Apps fetched by the `publish-compose-apps` run; apps: %s, uri: %s...\n", ti.fetchedApps.Shortlist, ti.fetchedApps.Uri)
+				err = downloadAppsArchive(ti.fetchedApps.Uri, path.Join(dstDir, "apps"))
+			}
 			if herr := client.AsHttpError(err); herr != nil && herr.Response.StatusCode == 404 {
 				fmt.Println("WARNING: The Target Apps were not fetched by the `assemble` run, make sure that App preloading is enabled if needed. The update won't include any Apps!")
 			} else {
@@ -161,7 +168,10 @@ func getTargetInfo(targetFile *tuf.FileMeta) (*ouTargetInfo, error) {
 		return nil, err
 	}
 	info.hardwareID = custom.HardwareIds[0]
-	info.buildTag = custom.Tags[0] // See the assemble.py script in ci-scripts https://github.com/foundriesio/ci-scripts/blob/18b4fb154c37b6ad1bc6e7b7903a540b7a758f5d/assemble.py#L300
+	info.fetchedApps = custom.FetchedApps
+	if info.fetchedApps == nil {
+		info.buildTag = custom.Tags[0] // See the assemble.py script in ci-scripts https://github.com/foundriesio/ci-scripts/blob/18b4fb154c37b6ad1bc6e7b7903a540b7a758f5d/assemble.py#L300
+	}
 	info.ostreeVersion = info.version
 	if len(custom.OrigUri) > 0 {
 		indx := strings.LastIndexByte(custom.OrigUri, '/')
@@ -321,8 +331,19 @@ func downloadApps(factory string, targetName string, targetVer int, tag string, 
 	})
 }
 
+func downloadAppsArchive(uri string, dstDir string) error {
+	resp, err := api.RawGet(uri, nil)
+	return processDownloadResponse(uri, resp, err, func(r io.Reader) error {
+		return untar(r, dstDir)
+	})
+}
+
 func downloadItem(factory string, targetVer int, runName string, artifactPath string, storeHandler func(r io.Reader) error) error {
 	resp, err := api.JobservRunArtifact(factory, targetVer, runName, artifactPath)
+	return processDownloadResponse(artifactPath, resp, err, storeHandler)
+}
+
+func processDownloadResponse(artifactPath string, resp *http.Response, err error, storeHandler func(r io.Reader) error) error {
 	if err != nil {
 		return err
 	}
