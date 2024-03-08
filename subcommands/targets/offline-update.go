@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	canonical "github.com/docker/go/canonical/json"
 	tuf "github.com/theupdateframework/notary/tuf/data"
 
 	"github.com/foundriesio/fioctl/client"
@@ -286,16 +287,19 @@ func downloadTufRepo(factory string, target string, tag string, prod bool, wave 
 		}
 		ver += 1
 	}
-
-	meta, err := api.TufTargetMetadataRefresh(factory, target, tag, expiresIn, prod, wave)
+	bundleTargets, err := getBundleTargetsMeta(dstDir)
+	if err != nil {
+		return err
+	}
+	meta, err := api.TufTargetMetadataRefresh(factory, target, tag, expiresIn, prod, wave, bundleTargets)
 	if err != nil {
 		return err
 	}
 	metadataNames := []string{
-		"timestamp", "snapshot", "targets",
+		"timestamp", "snapshot", "targets", "bundle-targets",
 	}
 	for _, metaName := range metadataNames {
-		b, err := json.Marshal(meta[metaName])
+		b, err := canonical.MarshalCanonical(meta[metaName])
 		if err != nil {
 			return err
 		}
@@ -395,4 +399,16 @@ func untar(r io.Reader, dstDir string) error {
 	}
 
 	return nil
+}
+
+func getBundleTargetsMeta(bundleTufPath string) (bundleTargets *tuf.Signed, err error) {
+	if b, readErr := os.ReadFile(path.Join(bundleTufPath, "bundle-targets.json")); readErr == nil {
+		var foundBundleTargets tuf.Signed
+		if err = canonical.Unmarshal(b, &foundBundleTargets); err == nil {
+			bundleTargets = &foundBundleTargets
+		}
+	} else if !errors.Is(readErr, os.ErrNotExist) {
+		err = readErr
+	}
+	return
 }
