@@ -286,13 +286,22 @@ func downloadTufRepo(factory string, target string, tag string, prod bool, wave 
 		}
 		ver += 1
 	}
-
-	meta, err := api.TufTargetMetadataRefresh(factory, target, tag, expiresIn, prod, wave)
+	var bundleTargets tuf.Signed
+	var bundleTargetsPointer *tuf.Signed = nil
+	if b, err := os.ReadFile(path.Join(dstDir, "bundle-targets.json")); err == nil {
+		if err = json.Unmarshal(b, &bundleTargets); err != nil {
+			return err
+		}
+		bundleTargetsPointer = &bundleTargets
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	meta, err := api.TufTargetMetadataRefresh(factory, target, tag, expiresIn, prod, wave, bundleTargetsPointer)
 	if err != nil {
 		return err
 	}
 	metadataNames := []string{
-		"timestamp", "snapshot", "targets",
+		"timestamp", "snapshot", "targets", "bundle-targets",
 	}
 	for _, metaName := range metadataNames {
 		b, err := json.Marshal(meta[metaName])
