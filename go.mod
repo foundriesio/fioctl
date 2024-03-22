@@ -1,6 +1,6 @@
 module github.com/foundriesio/fioctl
 
-go 1.19
+go 1.20
 
 require (
 	cloud.google.com/go/pubsub v1.36.1
