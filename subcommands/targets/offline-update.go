@@ -16,8 +16,10 @@ import (
 
 	tuf "github.com/theupdateframework/notary/tuf/data"
 
+	canonical "github.com/docker/go/canonical/json"
 	"github.com/foundriesio/fioctl/client"
 	"github.com/foundriesio/fioctl/subcommands"
+	"github.com/foundriesio/fioctl/subcommands/keys"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -29,6 +31,24 @@ type (
 		hardwareID    string
 		buildTag      string
 		fetchedApps   *client.FetchedApps
+	}
+
+	bundleTargets struct {
+		Type    string   `json:"type"`
+		Tag     string   `json:"tag"`
+		Targets []string `json:"targets"`
+	}
+
+	bundleTargetsMeta struct {
+		Type    string        `json:"_type"`
+		Expires string        `json:"expires"`
+		Version int           `json:"version"`
+		Targets bundleTargets `json:"x-fio-offline-bundle"`
+	}
+
+	signedBundleTargets struct {
+		Signed     bundleTargetsMeta `json:"signed"`
+		Signatures []tuf.Signature   `json:"signatures"`
 	}
 )
 
@@ -77,6 +97,61 @@ func init() {
 		"Allow multiple targets to be stored in the same <dst> directory")
 	offlineUpdateCmd.MarkFlagsMutuallyExclusive("tag", "wave")
 	offlineUpdateCmd.MarkFlagsMutuallyExclusive("prod", "wave")
+	initSignCmd(offlineUpdateCmd)
+}
+
+func initSignCmd(parentCmd *cobra.Command) {
+	signCmd := &cobra.Command{
+		Use:   "sign <path to an offline bundle>",
+		Short: "Sign an offline bundle with a targets role offline key",
+		Long: `Sign an offline bundle with a targets role offline key.
+
+Run this command if your offline update bundle contains production/wave targets.
+In this case, the bundle has to signed by one or more targets role offline keys.
+A number if signatures depends on the threshold number set in the current root role metadata,
+and is printed by this command.`,
+		Run:  doSignBundle,
+		Args: cobra.ExactArgs(1),
+	}
+	signCmd.Flags().StringP("keys", "k", "", "Path to <offline-creds.tgz> used to sign production/wave targets.")
+	_ = signCmd.MarkFlagRequired("keys")
+	parentCmd.AddCommand(signCmd)
+}
+
+func doSignBundle(cmd *cobra.Command, args []string) {
+	offlineKeysFile, _ := cmd.Flags().GetString("keys")
+	offlineKeys, err := keys.GetOfflineCreds(offlineKeysFile)
+	subcommands.DieNotNil(err, "Failed to open offline keys file")
+
+	bundleTufPath := path.Join(args[0], "tuf")
+	bundleTargetsRaw, err := getBundleTargetsMeta(bundleTufPath)
+	subcommands.DieNotNil(err)
+
+	bundleTargets := signedBundleTargets{
+		Signed:     bundleTargetsMeta{},
+		Signatures: bundleTargetsRaw.Signatures,
+	}
+	subcommands.DieNotNil(canonical.Unmarshal(*bundleTargetsRaw.Signed, &bundleTargets.Signed))
+
+	rootMeta, err := getLatestRoot(bundleTufPath)
+	subcommands.DieNotNil(err)
+
+	err = signBundleTargets(rootMeta, &bundleTargets, offlineKeys)
+	subcommands.DieNotNil(err)
+
+	if b, err := canonical.MarshalCanonical(bundleTargets); err == nil {
+		subcommands.DieNotNil(os.WriteFile(path.Join(bundleTufPath, "bundle-targets.json"), b, 0666))
+		numberOfMoreRequiredSignatures := rootMeta.Signed.Roles["targets"].Threshold - len(bundleTargets.Signatures)
+		if numberOfMoreRequiredSignatures > 0 {
+			fmt.Printf("%d more signature(s) is/are required to meet the required threshold (%d)\n",
+				numberOfMoreRequiredSignatures, rootMeta.Signed.Roles["targets"].Threshold)
+		} else {
+			fmt.Printf("The bundle is signed with enough number of signatures (%d) to meet the required threshold (%d)\n",
+				len(bundleTargets.Signatures), rootMeta.Signed.Roles["targets"].Threshold)
+		}
+	} else {
+		subcommands.DieNotNil(err)
+	}
 }
 
 func doOfflineUpdate(cmd *cobra.Command, args []string) {
@@ -286,14 +361,8 @@ func downloadTufRepo(factory string, target string, tag string, prod bool, wave 
 		}
 		ver += 1
 	}
-	var bundleTargets tuf.Signed
-	var bundleTargetsPointer *tuf.Signed = nil
-	if b, err := os.ReadFile(path.Join(dstDir, "bundle-targets.json")); err == nil {
-		if err = json.Unmarshal(b, &bundleTargets); err != nil {
-			return err
-		}
-		bundleTargetsPointer = &bundleTargets
-	} else if !errors.Is(err, os.ErrNotExist) {
+	bundleTargetsPointer, err := getBundleTargetsMeta(dstDir)
+	if err != nil {
 		return err
 	}
 	meta, err := api.TufTargetMetadataRefresh(factory, target, tag, expiresIn, prod, wave, bundleTargetsPointer)
@@ -304,7 +373,7 @@ func downloadTufRepo(factory string, target string, tag string, prod bool, wave 
 		"timestamp", "snapshot", "targets", "bundle-targets",
 	}
 	for _, metaName := range metadataNames {
-		b, err := json.Marshal(meta[metaName])
+		b, err := canonical.Marshal(meta[metaName])
 		if err != nil {
 			return err
 		}
@@ -403,5 +472,67 @@ func untar(r io.Reader, dstDir string) error {
 		}
 	}
 
+	return nil
+}
+
+func getBundleTargetsMeta(bundleTufPath string) (bundleTargets *tuf.Signed, err error) {
+	if b, readErr := os.ReadFile(path.Join(bundleTufPath, "bundle-targets.json")); readErr == nil {
+		var foundBundleTargets tuf.Signed
+		if err = json.Unmarshal(b, &foundBundleTargets); err == nil {
+			bundleTargets = &foundBundleTargets
+		}
+	} else if !errors.Is(readErr, os.ErrNotExist) {
+		err = readErr
+	}
+	return
+}
+
+func getLatestRoot(bundleTufPath string) (*client.AtsTufRoot, error) {
+	var latestVersionBytes []byte
+	var readErr error
+
+	curVer := 3
+	for {
+
+		latestVersionPath := path.Join(bundleTufPath, fmt.Sprintf("%d.root.json", curVer))
+		if b, err := os.ReadFile(latestVersionPath); err != nil {
+			readErr = err
+			break
+		} else {
+			latestVersionBytes = b
+			curVer += 1
+		}
+	}
+	if !errors.Is(readErr, os.ErrNotExist) {
+		return nil, readErr
+	}
+
+	rootMeta := client.AtsTufRoot{}
+	if err := json.Unmarshal(latestVersionBytes, &rootMeta); err != nil {
+		return nil, err
+	}
+	return &rootMeta, nil
+}
+
+func signBundleTargets(rootMeta *client.AtsTufRoot, bundleTargetsMeta *signedBundleTargets, offlineKeys keys.OfflineCreds) error {
+	signer, err := keys.FindOneTufSigner(rootMeta, offlineKeys, rootMeta.Signed.Roles["targets"].KeyIDs)
+	if err != nil {
+		return err
+	}
+	for _, signature := range bundleTargetsMeta.Signatures {
+		if signature.KeyID == signer.Id {
+			return fmt.Errorf("the bundle is already signed by the provided key: %s", signer.Id)
+		}
+	}
+	fmt.Printf("Signing the bundle with a new key; ID: %s, type: %s\n", signer.Id, signer.Type.Name())
+	bytes, err := canonical.MarshalCanonical(bundleTargetsMeta.Signed)
+	if err != nil {
+		return err
+	}
+	signatures, err := keys.SignTufMeta(bytes, signer)
+	if err != nil {
+		return err
+	}
+	bundleTargetsMeta.Signatures = append(bundleTargetsMeta.Signatures, signatures[0])
 	return nil
 }
