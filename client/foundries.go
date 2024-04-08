@@ -506,6 +506,13 @@ func NewApiClient(serverUrl string, config Config, caCertPath string, version st
 		InsecureSkipVerify: config.InsecureSkipVerify,
 	}
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = tlsCfg
+	// targets/artifacts.go needs to know the Content-Length in order to
+	// compute the download progress. If certain services like CloudFlare
+	// see the client accepts compressed responsed (content-encoding not
+	// content-type) then it will give a compressed response. Golang will
+	// automagically decompress as you read the response *and* set
+	// content-length to -1 thereby breaking our download progress logic
+	http.DefaultTransport.(*http.Transport).DisableCompression = true
 	if len(caCertPath) > 0 {
 		rootCAs, _ := x509.SystemCertPool()
 		if rootCAs == nil {
