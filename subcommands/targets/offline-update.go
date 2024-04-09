@@ -198,6 +198,7 @@ Notice that multiple targets in the same directory is only supported in LmP >= v
 		}
 		fmt.Println("Successfully downloaded offline update content")
 	}
+	doShowBundle(cmd, []string{dstDir})
 }
 
 func getTargetInfo(targetFile *tuf.FileMeta) (*ouTargetInfo, error) {
@@ -489,6 +490,7 @@ func doSignBundle(cmd *cobra.Command, args []string) {
 	} else {
 		subcommands.DieNotNil(err)
 	}
+	doShowBundle(cmd, args)
 }
 
 func getLatestRoot(bundleTufPath string) (*client.AtsTufRoot, error) {
