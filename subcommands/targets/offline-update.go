@@ -32,6 +32,16 @@ type (
 		buildTag      string
 		fetchedApps   *client.FetchedApps
 	}
+
+	ouBundleMeta struct {
+		Type    string   `json:"type"`
+		Tag     string   `json:"tag"`
+		Targets []string `json:"targets"`
+	}
+	ouBundleTufMeta struct {
+		tuf.SignedCommon
+		ouBundleMeta `json:"x-fio-offline-bundle"`
+	}
 )
 
 var (
@@ -80,6 +90,7 @@ func init() {
 	offlineUpdateCmd.MarkFlagsMutuallyExclusive("tag", "wave")
 	offlineUpdateCmd.MarkFlagsMutuallyExclusive("prod", "wave")
 	initSignCmd(offlineUpdateCmd)
+	initShowCmd(offlineUpdateCmd)
 }
 
 func initSignCmd(parentCmd *cobra.Command) {
@@ -100,6 +111,21 @@ and is printed by this command.`,
 			"This is the same key used to sign prod & wave TUF targets.")
 	_ = signCmd.MarkFlagRequired("keys")
 	parentCmd.AddCommand(signCmd)
+}
+
+func initShowCmd(parentCmd *cobra.Command) {
+	showCmd := &cobra.Command{
+		Use:   "show <path to an offline bundle>",
+		Short: "Parse and print the specified bundle metadata",
+		Long: `Parse and print the specified bundle metadata.
+
+Run this command if you would like to get information about an offline bundle.
+Specifically, what targets it includes, what the type of the targets (CI or production),
+a bundle's expiration time', etc.`,
+		Run:  doShowBundle,
+		Args: cobra.ExactArgs(1),
+	}
+	parentCmd.AddCommand(showCmd)
 }
 
 func doOfflineUpdate(cmd *cobra.Command, args []string) {
@@ -309,7 +335,7 @@ func downloadTufRepo(factory string, target string, tag string, prod bool, wave 
 		}
 		ver += 1
 	}
-	bundleTargets, err := getBundleTargetsMeta(dstDir)
+	bundleTargets, err := getBundleTargetsMeta(dstDir, false)
 	if err != nil {
 		return err
 	}
@@ -423,13 +449,13 @@ func untar(r io.Reader, dstDir string) error {
 	return nil
 }
 
-func getBundleTargetsMeta(bundleTufPath string) (bundleTargets *tuf.Signed, err error) {
+func getBundleTargetsMeta(bundleTufPath string, errIfNotExist bool) (bundleTargets *tuf.Signed, err error) {
 	if b, readErr := os.ReadFile(path.Join(bundleTufPath, "bundle-targets.json")); readErr == nil {
 		var foundBundleTargets tuf.Signed
 		if err = canonical.Unmarshal(b, &foundBundleTargets); err == nil {
 			bundleTargets = &foundBundleTargets
 		}
-	} else if !errors.Is(readErr, os.ErrNotExist) {
+	} else if errIfNotExist || !errors.Is(readErr, os.ErrNotExist) {
 		err = readErr
 	}
 	return
@@ -441,7 +467,7 @@ func doSignBundle(cmd *cobra.Command, args []string) {
 	subcommands.DieNotNil(err, "Failed to open offline keys file")
 
 	bundleTufPath := path.Join(args[0], "tuf")
-	bundleTargets, err := getBundleTargetsMeta(bundleTufPath)
+	bundleTargets, err := getBundleTargetsMeta(bundleTufPath, true)
 	subcommands.DieNotNil(err)
 
 	rootMeta, err := getLatestRoot(bundleTufPath)
@@ -512,4 +538,37 @@ func signBundleTargets(rootMeta *client.AtsTufRoot, bundleTargetsMeta *tuf.Signe
 	}
 	bundleTargetsMeta.Signatures = append(bundleTargetsMeta.Signatures, signatures[0])
 	return nil
+}
+
+func doShowBundle(cmd *cobra.Command, args []string) {
+	tufMetaPath := path.Join(args[0], "tuf")
+	bundleTufMeta, err := getBundleTargetsMeta(tufMetaPath, true)
+	subcommands.DieNotNil(err)
+	bundleMeta := ouBundleTufMeta{}
+	subcommands.DieNotNil(json.Unmarshal(*bundleTufMeta.Signed, &bundleMeta))
+	fmt.Println("Bundle targets info:")
+	fmt.Printf("\tType:\t\t%s\n", bundleMeta.ouBundleMeta.Type)
+	fmt.Printf("\tTag:\t\t%s\n", bundleMeta.Tag)
+	fmt.Printf("\tExpires:\t%s\n", bundleMeta.SignedCommon.Expires)
+	fmt.Println("\tTargets:")
+	for _, target := range bundleMeta.Targets {
+		fmt.Printf("\t\t\t%s\n", target)
+	}
+	fmt.Println("\tSignatures:")
+	for _, sig := range bundleTufMeta.Signatures {
+		fmt.Printf("\t\t\t- %s\n", sig.KeyID)
+	}
+
+	rootMeta, err := getLatestRoot(tufMetaPath)
+	subcommands.DieNotNil(err)
+	fmt.Println("\tAllowed keys:")
+	for _, key := range rootMeta.Signed.Roles["targets"].KeyIDs {
+		fmt.Printf("\t\t\t- %s\n", key)
+	}
+	fmt.Printf("\tThreshold:\t%d\n", rootMeta.Signed.Roles["targets"].Threshold)
+	numberOfMissingSignatures := rootMeta.Signed.Roles["targets"].Threshold - len(bundleTufMeta.Signatures)
+	if numberOfMissingSignatures > 0 {
+		fmt.Printf("\tMissing:\t%d (the number of required additional signatures;"+
+			" run the `sign` sub-command to sign the bundle)\n", numberOfMissingSignatures)
+	}
 }
