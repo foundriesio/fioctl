@@ -512,7 +512,10 @@ func getLatestRoot(bundleTufPath string) (*client.AtsTufRoot, error) {
 	if !errors.Is(readErr, os.ErrNotExist) {
 		return nil, readErr
 	}
-
+	if latestVersionBytes == nil {
+		// None of the N.root.json where N starts from 3 was found in the bundle
+		return nil, os.ErrNotExist
+	}
 	rootMeta := client.AtsTufRoot{}
 	if err := json.Unmarshal(latestVersionBytes, &rootMeta); err != nil {
 		return nil, err
@@ -562,6 +565,12 @@ func doShowBundle(cmd *cobra.Command, args []string) {
 	}
 
 	rootMeta, err := getLatestRoot(tufMetaPath)
+	if errors.Is(err, os.ErrNotExist) && bundleMeta.ouBundleMeta.Type == "ci" {
+		// If no any N.root.json is found in the bundle and this is the "ci" bundle,
+		// then this is the valid case - a user has not taken their TUF targets key offline.
+		// Therefore, instead of failing the command fetches the root meta from the backend.
+		rootMeta, err = api.TufRootGet(viper.GetString("factory"))
+	}
 	subcommands.DieNotNil(err)
 	fmt.Println("\tAllowed keys:")
 	for _, key := range rootMeta.Signed.Roles["targets"].KeyIDs {
