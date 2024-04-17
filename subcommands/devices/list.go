@@ -18,6 +18,8 @@ import (
 
 var (
 	deviceMine          bool
+	deviceOnlyProd      bool
+	deviceOnlyNonProd   bool
 	deviceByTag         string
 	deviceByTarget      string
 	deviceByGroup       string
@@ -142,6 +144,8 @@ func init() {
 	}
 	cmd.AddCommand(listCmd)
 	listCmd.Flags().BoolVarP(&deviceMine, "just-mine", "", false, "Only include devices owned by you")
+	listCmd.Flags().BoolVarP(&deviceOnlyProd, "only-prod", "", false, "Only include production devices")
+	listCmd.Flags().BoolVarP(&deviceOnlyNonProd, "only-non-prod", "", false, "Only include non-production devices")
 	listCmd.Flags().StringVarP(&deviceByTag, "by-tag", "", "", "Only list devices configured with the given tag")
 	listCmd.Flags().StringVarP(&deviceByTarget, "by-target", "", "", "Only list devices updated to the given target name")
 	listCmd.Flags().StringVarP(&deviceByGroup, "by-group", "g", "", "Only list devices belonging to this group (factory is mandatory)")
@@ -151,6 +155,7 @@ func init() {
 	addPaginationFlags(listCmd)
 	addSortFlag(listCmd, "sort-by-name", "", "Sort by name (asc, desc); default sort is by owner and name")
 	addSortFlag(listCmd, "sort-by-last-seen", "", "Sort by last-seen (asc, desc); default sort is by owner and name")
+	listCmd.MarkFlagsMutuallyExclusive("only-prod", "only-non-prod")
 	listCmd.MarkFlagsMutuallyExclusive("sort-by-name", "sort-by-last-seen")
 }
 
@@ -221,6 +226,8 @@ func doList(cmd *cobra.Command, args []string) {
 	}
 	dl, err := api.DeviceList(
 		deviceMine,
+		deviceOnlyProd,
+		deviceOnlyNonProd,
 		deviceByTag,
 		factory,
 		deviceByGroup,
