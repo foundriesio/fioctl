@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	netUrl "net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -784,10 +785,14 @@ func (a *Api) DeviceGet(factory, device string) (*Device, error) {
 
 func (a *Api) DeviceList(filterBy map[string]string, sortBy string, page, limit uint64) (*DeviceList, error) {
 	url := a.serverUrl + "/ota/devices/?"
+	query := netUrl.Values{}
 	for key, val := range filterBy {
-		url += fmt.Sprintf("%s=%s&", key, val)
+		query.Set(key, val)
 	}
-	url += fmt.Sprintf("sortby=%s&page=%d&limit=%d", sortBy, page, limit)
+	query.Set("sortby", sortBy)
+	query.Set("page", strconv.FormatUint(page, 10))
+	query.Set("limit", strconv.FormatUint(limit, 10))
+	url += query.Encode()
 	logrus.Debugf("DeviceList with url: %s", url)
 	return a.DeviceListCont(url)
 }
