@@ -159,22 +159,6 @@ func init() {
 	listCmd.MarkFlagsMutuallyExclusive("sort-by-name", "sort-by-last-seen")
 }
 
-// We allow pattern matching using filepath.Match type * and ?
-// ie * matches everything and ? matches a single character.
-// In sql we need * and ? to maps to % and _ respectively
-// Since _ is a special character we need to escape that. And
-//
-// Soo... a pattern like: H?st_b* would become: H_st\_b%
-// and would match stuff like host_b and hast_FOOO
-func sqlLikeIfy(filePathLike string) string {
-	// %25 = urlencode("%")
-	sql := strings.Replace(filePathLike, "*", "%25", -1)
-	sql = strings.Replace(sql, "_", "\\_", -1)
-	sql = strings.Replace(sql, "?", "_", -1)
-	logrus.Debugf("Converted query(%s) -> %s", filePathLike, sql)
-	return sql
-}
-
 func assertPagination() {
 	// hack until: https://github.com/spf13/pflag/issues/236
 	for _, x := range paginationLimits {
@@ -228,7 +212,7 @@ func doList(cmd *cobra.Command, args []string) {
 		"uuid":        deviceUuid,
 	}
 	if len(args) == 1 {
-		filterBy["name_ilike"] = sqlLikeIfy(args[0])
+		filterBy["name"] = args[0]
 	}
 	if deviceMine {
 		filterBy["mine"] = "1"
