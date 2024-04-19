@@ -787,10 +787,16 @@ func (a *Api) DeviceList(filterBy map[string]string, sortBy string, page, limit 
 	url := a.serverUrl + "/ota/devices/?"
 	query := netUrl.Values{}
 	for key, val := range filterBy {
-		query.Set(key, val)
+		if len(val) > 0 {
+			query.Set(key, val)
+		}
 	}
-	query.Set("sortby", sortBy)
-	query.Set("page", strconv.FormatUint(page, 10))
+	if len(sortBy) > 0 {
+		query.Set("sortby", sortBy)
+	}
+	if page > 1 {
+		query.Set("page", strconv.FormatUint(page, 10))
+	}
 	query.Set("limit", strconv.FormatUint(limit, 10))
 	url += query.Encode()
 	logrus.Debugf("DeviceList with url: %s", url)
