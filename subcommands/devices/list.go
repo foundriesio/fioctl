@@ -220,24 +220,26 @@ func doList(cmd *cobra.Command, args []string) {
 	sortBy = appendSortFlagValue(sortBy, cmd, "sort-by-last-seen", "last_seen")
 	sortBy = appendSortFlagValue(sortBy, cmd, "sort-by-name", "name")
 
-	name_ilike := ""
-	if len(args) == 1 {
-		name_ilike = sqlLikeIfy(args[0])
+	filterBy := map[string]string{
+		"factory":     factory,
+		"group":       deviceByGroup,
+		"match_tag":   deviceByTag,
+		"target_name": deviceByTarget,
+		"uuid":        deviceUuid,
 	}
-	dl, err := api.DeviceList(
-		deviceMine,
-		deviceOnlyProd,
-		deviceOnlyNonProd,
-		deviceByTag,
-		factory,
-		deviceByGroup,
-		name_ilike,
-		deviceUuid,
-		deviceByTarget,
-		strings.Join(sortBy, ","),
-		showPage,
-		paginationLimit,
-	)
+	if len(args) == 1 {
+		filterBy["name_ilike"] = sqlLikeIfy(args[0])
+	}
+	if deviceMine {
+		filterBy["mine"] = "1"
+	}
+	if deviceOnlyProd {
+		filterBy["prod"] = "1"
+	} else if deviceOnlyNonProd {
+		filterBy["prod"] = "0"
+	}
+
+	dl, err := api.DeviceList(filterBy, strings.Join(sortBy, ","), showPage, paginationLimit)
 	subcommands.DieNotNil(err)
 	showDeviceList(dl, showColumns)
 }

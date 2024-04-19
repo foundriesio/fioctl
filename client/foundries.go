@@ -782,26 +782,12 @@ func (a *Api) DeviceGet(factory, device string) (*Device, error) {
 	return &d, nil
 }
 
-func (a *Api) DeviceList(
-	mine, prod, nonProd bool, matchTag, byFactory, byGroup, nameIlike, uuid, byTarget, sortBy string, page, limit uint64,
-) (*DeviceList, error) {
-	var (
-		mineInt int
-		prodStr string
-	)
-	if mine {
-		mineInt = 1
-	}
-	switch {
-	case prod:
-		prodStr = "1"
-	case nonProd:
-		prodStr = "0"
-	}
+func (a *Api) DeviceList(filterBy map[string]string, sortBy string, page, limit uint64) (*DeviceList, error) {
 	url := a.serverUrl + "/ota/devices/?"
-	url += fmt.Sprintf(
-		"mine=%d&prod=%s&match_tag=%s&name_ilike=%s&factory=%s&uuid=%s&group=%s&target_name=%s&sortby=%s&page=%d&limit=%d",
-		mineInt, prodStr, matchTag, nameIlike, byFactory, uuid, byGroup, byTarget, sortBy, page, limit)
+	for key, val := range filterBy {
+		url += fmt.Sprintf("%s=%s&", key, val)
+	}
+	url += fmt.Sprintf("sortby=%s&page=%d&limit=%d", sortBy, page, limit)
 	logrus.Debugf("DeviceList with url: %s", url)
 	return a.DeviceListCont(url)
 }
