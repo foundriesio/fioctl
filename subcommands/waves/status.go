@@ -138,7 +138,7 @@ func doShowWaveStatus(cmd *cobra.Command, args []string) {
 
 func showGroupStatusTargets(group client.RolloutGroupStatus, status *client.WaveStatus) {
 	fmt.Printf("\n## Device Group: %s\n", group.Name)
-	t := subcommands.Tabby(1, "TARGET", "DEVICES", "INSTALLING", "DETAILS")
+	t := subcommands.Tabby(1, "TARGET", "DEVICES", "DETAILS")
 	for _, tgt := range group.Targets {
 		var mark, details string
 		if tgt.Version == status.Version {
@@ -149,7 +149,7 @@ func showGroupStatusTargets(group client.RolloutGroupStatus, status *client.Wave
 		if tgt.Version > 0 {
 			details = fmt.Sprintf("`fioctl targets show %d`", tgt.Version)
 		}
-		t.AddLine(fmt.Sprintf("%-6d%2s", tgt.Version, mark), tgt.Devices, tgt.Reinstalling, details)
+		t.AddLine(fmt.Sprintf("%-6d%2s", tgt.Version, mark), tgt.Devices, details)
 	}
 	t.Print()
 }

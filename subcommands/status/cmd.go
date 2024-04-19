@@ -83,7 +83,7 @@ func printTargetStatus(tagPrefix string, tagStatus []client.TagStatus) {
 			name = "(Untagged)"
 		}
 		fmt.Printf("\n## %s Tag: %s\n", tagPrefix, name)
-		t := subcommands.Tabby(1, "TARGET", "DEVICES", "INSTALLING", "DETAILS")
+		t := subcommands.Tabby(1, "TARGET", "DEVICES", "DETAILS")
 		for _, tgt := range tag.Targets {
 			var orphan, details string
 			if tgt.IsOrphan {
@@ -92,15 +92,15 @@ func printTargetStatus(tagPrefix string, tagStatus []client.TagStatus) {
 			if tgt.Version > 0 {
 				details = fmt.Sprintf("`fioctl targets show %d`", tgt.Version)
 			}
-			t.AddLine(fmt.Sprintf("%-6d%-1s", tgt.Version, orphan), tgt.Devices, tgt.Reinstalling, details)
+			t.AddLine(fmt.Sprintf("%-6d%-1s", tgt.Version, orphan), tgt.Devices, details)
 		}
 		t.Print()
 		fmt.Println()
 
-		t = subcommands.Tabby(1, "DEVICE GROUP", "DEVICES", "ON LATEST", "ONLINE", "INSTALLING")
+		t = subcommands.Tabby(1, "DEVICE GROUP", "DEVICES", "ON LATEST", "ONLINE")
 		if len(tag.DeviceGroups) > 0 {
 			for _, g := range tag.DeviceGroups {
-				t.AddLine(g.Name, g.DevicesTotal, g.DevicesOnLatest, g.DevicesOnline, g.Reinstalling)
+				t.AddLine(g.Name, g.DevicesTotal, g.DevicesOnLatest, g.DevicesOnline)
 			}
 		}
 		t.Print()

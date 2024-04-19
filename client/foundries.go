@@ -207,10 +207,9 @@ type JobservRun struct {
 }
 
 type TargetStatus struct {
-	Version      int  `json:"version"`
-	Devices      int  `json:"devices"`
-	Reinstalling int  `json:"(re-)installing"`
-	IsOrphan     bool `json:"is-orphan"`
+	Version  int  `json:"version"`
+	Devices  int  `json:"devices"`
+	IsOrphan bool `json:"is-orphan"`
 }
 
 type DeviceGroupStatus struct {
@@ -219,7 +218,6 @@ type DeviceGroupStatus struct {
 	DevicesOnline   int    `json:"devices-online"`
 	DevicesOnLatest int    `json:"devices-on-latest"`
 	DevicesOnOrphan int    `json:"devices-on-orphan"`
-	Reinstalling    int    `json:"(re-)installing"`
 }
 
 type TagStatus struct {
