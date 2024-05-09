@@ -159,22 +159,6 @@ func init() {
 	listCmd.MarkFlagsMutuallyExclusive("sort-by-name", "sort-by-last-seen")
 }
 
-// We allow pattern matching using filepath.Match type * and ?
-// ie * matches everything and ? matches a single character.
-// In sql we need * and ? to maps to % and _ respectively
-// Since _ is a special character we need to escape that. And
-//
-// Soo... a pattern like: H?st_b* would become: H_st\_b%
-// and would match stuff like host_b and hast_FOOO
-func sqlLikeIfy(filePathLike string) string {
-	// %25 = urlencode("%")
-	sql := strings.Replace(filePathLike, "*", "%25", -1)
-	sql = strings.Replace(sql, "_", "\\_", -1)
-	sql = strings.Replace(sql, "?", "_", -1)
-	logrus.Debugf("Converted query(%s) -> %s", filePathLike, sql)
-	return sql
-}
-
 func assertPagination() {
 	// hack until: https://github.com/spf13/pflag/issues/236
 	for _, x := range paginationLimits {
@@ -220,24 +204,26 @@ func doList(cmd *cobra.Command, args []string) {
 	sortBy = appendSortFlagValue(sortBy, cmd, "sort-by-last-seen", "last_seen")
 	sortBy = appendSortFlagValue(sortBy, cmd, "sort-by-name", "name")
 
-	name_ilike := ""
-	if len(args) == 1 {
-		name_ilike = sqlLikeIfy(args[0])
+	filterBy := map[string]string{
+		"factory":     factory,
+		"group":       deviceByGroup,
+		"match_tag":   deviceByTag,
+		"target_name": deviceByTarget,
+		"uuid":        deviceUuid,
 	}
-	dl, err := api.DeviceList(
-		deviceMine,
-		deviceOnlyProd,
-		deviceOnlyNonProd,
-		deviceByTag,
-		factory,
-		deviceByGroup,
-		name_ilike,
-		deviceUuid,
-		deviceByTarget,
-		strings.Join(sortBy, ","),
-		showPage,
-		paginationLimit,
-	)
+	if len(args) == 1 {
+		filterBy["name"] = args[0]
+	}
+	if deviceMine {
+		filterBy["mine"] = "1"
+	}
+	if deviceOnlyProd {
+		filterBy["prod"] = "1"
+	} else if deviceOnlyNonProd {
+		filterBy["prod"] = "0"
+	}
+
+	dl, err := api.DeviceList(filterBy, strings.Join(sortBy, ","), showPage, paginationLimit)
 	subcommands.DieNotNil(err)
 	showDeviceList(dl, showColumns)
 }

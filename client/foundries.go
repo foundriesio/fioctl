@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	netUrl "net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -780,26 +781,22 @@ func (a *Api) DeviceGet(factory, device string) (*Device, error) {
 	return &d, nil
 }
 
-func (a *Api) DeviceList(
-	mine, prod, nonProd bool, matchTag, byFactory, byGroup, nameIlike, uuid, byTarget, sortBy string, page, limit uint64,
-) (*DeviceList, error) {
-	var (
-		mineInt int
-		prodStr string
-	)
-	if mine {
-		mineInt = 1
-	}
-	switch {
-	case prod:
-		prodStr = "1"
-	case nonProd:
-		prodStr = "0"
-	}
+func (a *Api) DeviceList(filterBy map[string]string, sortBy string, page, limit uint64) (*DeviceList, error) {
 	url := a.serverUrl + "/ota/devices/?"
-	url += fmt.Sprintf(
-		"mine=%d&prod=%s&match_tag=%s&name_ilike=%s&factory=%s&uuid=%s&group=%s&target_name=%s&sortby=%s&page=%d&limit=%d",
-		mineInt, prodStr, matchTag, nameIlike, byFactory, uuid, byGroup, byTarget, sortBy, page, limit)
+	query := netUrl.Values{}
+	for key, val := range filterBy {
+		if len(val) > 0 {
+			query.Set(key, val)
+		}
+	}
+	if len(sortBy) > 0 {
+		query.Set("sortby", sortBy)
+	}
+	if page > 1 {
+		query.Set("page", strconv.FormatUint(page, 10))
+	}
+	query.Set("limit", strconv.FormatUint(limit, 10))
+	url += query.Encode()
 	logrus.Debugf("DeviceList with url: %s", url)
 	return a.DeviceListCont(url)
 }
