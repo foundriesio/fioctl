@@ -22,7 +22,7 @@ require (
 	github.com/theupdateframework/notary v0.7.0
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9
 	golang.org/x/sys v0.20.0
-	google.golang.org/api v0.179.0
+	google.golang.org/api v0.180.0
 	gopkg.in/yaml.v2 v2.4.0
 )
 
