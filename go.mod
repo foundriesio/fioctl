@@ -7,7 +7,7 @@ require (
 	github.com/ThalesIgnite/crypto11 v1.2.5
 	github.com/cheynewallace/tabby v1.1.1
 	github.com/docker/go v1.5.1-1.0.20160303222718-d30aec9fd63c
-	github.com/fatih/color v1.16.0
+	github.com/fatih/color v1.17.0
 	github.com/foundriesio/go-ecies v0.3.0
 	github.com/hashicorp/go-version v1.6.0
 	github.com/karrick/godiff v0.0.2
