@@ -187,8 +187,13 @@ Notice that multiple targets in the same directory is only supported in LmP >= v
 				fmt.Printf("Downloading Apps fetched by the `assemble-system-image` run; build number: %d, tag: %s...\n", ti.version, ti.buildTag)
 				err = downloadApps(factory, targetName, ti.version, ti.buildTag, path.Join(dstDir, "apps"))
 			} else {
-				fmt.Printf("Downloading Apps fetched by the `publish-compose-apps` run; apps: %s, uri: %s...\n", ti.fetchedApps.Shortlist, ti.fetchedApps.Uri)
-				err = downloadAppsArchive(ti.fetchedApps.Uri, path.Join(dstDir, "apps"))
+				if len(ti.fetchedApps.Uri) > 0 {
+					fmt.Printf("Downloading Apps fetched by the `publish-compose-apps` run; apps: %s, uri: %s...\n", ti.fetchedApps.Shortlist, ti.fetchedApps.Uri)
+					err = downloadAppsArchive(ti.fetchedApps.Uri, path.Join(dstDir, "apps"))
+				} else {
+					fmt.Println("No apps found to fetch for an offline update to a given target. " +
+						"The bundle will update only rootfs/ostree. Check your factory configuration if this is not your intention.")
+				}
 			}
 			if herr := client.AsHttpError(err); herr != nil && herr.Response.StatusCode == 404 {
 				fmt.Println("WARNING: The Target Apps were not fetched by the `assemble` run, make sure that App preloading is enabled if needed. The update won't include any Apps!")
