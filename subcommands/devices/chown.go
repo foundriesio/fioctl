@@ -24,5 +24,6 @@ func doChown(cmd *cobra.Command, args []string) {
 	device := args[0]
 	owner := args[1]
 
-	subcommands.DieNotNil(api.DeviceChown(factory, device, owner))
+	d := api.DeviceApiByName(factory, device)
+	subcommands.DieNotNil(d.Chown(owner))
 }

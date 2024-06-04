@@ -119,6 +119,22 @@ type Device struct {
 	AppsState *AppsState `json:"apps-state,omitempty"`
 }
 
+type DeviceApi struct {
+	api     *Api
+	factory string
+	id      string
+	byUuid  bool
+}
+
+func (a *Api) DeviceApiByName(factory, name string) DeviceApi {
+	return DeviceApi{
+		api:     a,
+		factory: factory,
+		id:      name,
+		byUuid:  false,
+	}
+}
+
 type DeviceList struct {
 	Devices []Device `json:"devices"`
 	Total   int      `json:"total"`
@@ -217,14 +233,23 @@ func (a *Api) DeviceListDenied(factory string, page, limit uint64) (*DeviceList,
 	return a.DeviceListCont(url)
 }
 
-func (a *Api) DeviceChown(factory, name, owner string) error {
+func (d *DeviceApi) url(resource string) string {
+	url := d.api.serverUrl + "/ota/devices/" + d.id
+	url += resource
+	url += "?factory=" + d.factory
+	if d.byUuid {
+		url += "&by-uuid=1"
+	}
+	return url
+}
+
+func (d *DeviceApi) Chown(owner string) error {
 	body := map[string]string{"owner": owner}
 	data, err := json.Marshal(body)
 	if err != nil {
 		return err
 	}
-	url := a.serverUrl + "/ota/devices/" + name + "/?factory=" + factory
-	_, err = a.Patch(url, data)
+	_, err = d.api.Patch(d.url("/"), data)
 	return err
 }
 
