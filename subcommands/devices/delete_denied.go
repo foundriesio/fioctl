@@ -27,7 +27,8 @@ func doDeleteDenied(cmd *cobra.Command, args []string) {
 
 	for _, uuid := range args {
 		fmt.Printf("Deleting %s .. ", uuid)
-		subcommands.DieNotNil(api.DeviceDeleteDenied(factory, uuid))
+		d := api.DeviceApiByUuid(factory, uuid)
+		subcommands.DieNotNil(d.DeleteDenied())
 		fmt.Println("ok")
 	}
 }

@@ -2,6 +2,7 @@ package client
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	netUrl "net/url"
 	"strconv"
@@ -132,6 +133,15 @@ func (a *Api) DeviceApiByName(factory, name string) DeviceApi {
 		factory: factory,
 		id:      name,
 		byUuid:  false,
+	}
+}
+
+func (a *Api) DeviceApiByUuid(factory, uuid string) DeviceApi {
+	return DeviceApi{
+		api:     a,
+		factory: factory,
+		id:      uuid,
+		byUuid:  true,
 	}
 }
 
@@ -279,10 +289,13 @@ func (d *DeviceApi) Delete() error {
 	return err
 }
 
-func (a *Api) DeviceDeleteDenied(factory, uuid string) error {
+func (d *DeviceApi) DeleteDenied() error {
+	if !d.byUuid {
+		return errors.New("DeviceApi for DeleteDenied requires a UUID and not a name")
+	}
 	bytes := []byte{}
-	url := a.serverUrl + "/ota/factories/" + factory + "/denied-devices/" + uuid + "/"
-	_, err := a.Delete(url, bytes)
+	url := d.api.serverUrl + "/ota/factories/" + d.factory + "/denied-devices/" + d.id + "/"
+	_, err := d.api.Delete(url, bytes)
 	return err
 }
 
