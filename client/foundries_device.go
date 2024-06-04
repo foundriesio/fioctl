@@ -273,10 +273,9 @@ func (d *DeviceApi) SetGroup(group string) error {
 	return err
 }
 
-func (a *Api) DeviceDelete(factory, device string) error {
+func (d *DeviceApi) Delete() error {
 	bytes := []byte{}
-	url := a.serverUrl + "/ota/devices/" + device + "/?factory=" + factory
-	_, err := a.Delete(url, bytes)
+	_, err := d.api.Delete(d.url("/"), bytes)
 	return err
 }
 
