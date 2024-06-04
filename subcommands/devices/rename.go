@@ -22,7 +22,8 @@ func doRename(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 	logrus.Debugf("Renaming %s -> %s", args[0], args[1])
 
-	if err := api.DeviceRename(factory, args[0], args[1]); err != nil {
+	d := api.DeviceApiByName(factory, args[0])
+	if err := d.Rename(args[1]); err != nil {
 		fmt.Printf("failed\n%s", err)
 		os.Exit(1)
 	}

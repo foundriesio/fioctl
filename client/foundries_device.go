@@ -253,14 +253,13 @@ func (d *DeviceApi) Chown(owner string) error {
 	return err
 }
 
-func (a *Api) DeviceRename(factory, curName, newName string) error {
+func (d *DeviceApi) Rename(newName string) error {
 	body := map[string]string{"name": newName}
 	data, err := json.Marshal(body)
 	if err != nil {
 		return err
 	}
-	url := a.serverUrl + "/ota/devices/" + curName + "/?factory=" + factory
-	_, err = a.Patch(url, data)
+	_, err = d.api.Patch(d.url("/"), data)
 	return err
 }
 
