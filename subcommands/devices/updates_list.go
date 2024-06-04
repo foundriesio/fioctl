@@ -27,14 +27,15 @@ func doListUpdates(cmd *cobra.Command, args []string) {
 	logrus.Debug("Showing device updates")
 	t := tabby.New()
 	t.AddHeader("ID", "TIME", "VERSION", "TARGET")
+	d := api.DeviceApiByName(factory, args[0])
 	var ul *client.UpdateList
 	for {
 		var err error
 		if ul == nil {
-			ul, err = api.DeviceListUpdates(factory, args[0])
+			ul, err = d.ListUpdates()
 		} else {
 			if ul.Next != nil {
-				ul, err = api.DeviceListUpdatesCont(*ul.Next)
+				ul, err = d.ListUpdatesCont(*ul.Next)
 			} else {
 				break
 			}

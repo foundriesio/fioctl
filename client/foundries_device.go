@@ -299,13 +299,12 @@ func (d *DeviceApi) DeleteDenied() error {
 	return err
 }
 
-func (a *Api) DeviceListUpdates(factory, device string) (*UpdateList, error) {
-	url := a.serverUrl + "/ota/devices/" + device + "/updates/?factory=" + factory
-	return a.DeviceListUpdatesCont(url)
+func (d *DeviceApi) ListUpdates() (*UpdateList, error) {
+	return d.ListUpdatesCont(d.url("/updates/"))
 }
 
-func (a *Api) DeviceListUpdatesCont(url string) (*UpdateList, error) {
-	body, err := a.Get(url)
+func (d *DeviceApi) ListUpdatesCont(url string) (*UpdateList, error) {
+	body, err := d.api.Get(url)
 	if err != nil {
 		return nil, err
 	}
