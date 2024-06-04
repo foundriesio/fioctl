@@ -317,10 +317,9 @@ func (d *DeviceApi) ListUpdatesCont(url string) (*UpdateList, error) {
 	return &updates, nil
 }
 
-func (a *Api) DeviceUpdateEvents(factory, device, correlationId string) ([]UpdateEvent, error) {
+func (d *DeviceApi) UpdateEvents(correlationId string) ([]UpdateEvent, error) {
 	var events []UpdateEvent
-	url := a.serverUrl + "/ota/devices/" + device + "/updates/" + correlationId + "/?factory=" + factory
-	body, err := a.Get(url)
+	body, err := d.api.Get(d.url("/updates/" + correlationId + "/"))
 	if err != nil {
 		return nil, err
 	}

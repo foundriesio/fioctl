@@ -24,7 +24,8 @@ func init() {
 func doShowUpdate(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 	logrus.Debug("Showing device update")
-	events, err := api.DeviceUpdateEvents(factory, args[0], args[1])
+	d := api.DeviceApiByName(factory, args[0])
+	events, err := d.UpdateEvents(args[1])
 	subcommands.DieNotNil(err)
 	for _, event := range events {
 		fmt.Printf("%s : %s(%s)", event.Time, event.Type.Id, event.Detail.TargetName)
