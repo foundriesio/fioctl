@@ -263,14 +263,13 @@ func (d *DeviceApi) Rename(newName string) error {
 	return err
 }
 
-func (a *Api) DeviceSetGroup(factory, device, group string) error {
+func (d *DeviceApi) SetGroup(group string) error {
 	body := map[string]string{"group": group}
 	data, err := json.Marshal(body)
 	if err != nil {
 		return err
 	}
-	url := a.serverUrl + "/ota/devices/" + device + "/?factory=" + factory
-	_, err = a.Patch(url, data)
+	_, err = d.api.Patch(d.url("/"), data)
 	return err
 }
 

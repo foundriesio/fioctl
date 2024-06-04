@@ -40,6 +40,7 @@ func doConfigGroup(cmd *cobra.Command, args []string) {
 		logrus.Debugf("Assigning device %s to group %s", device, group)
 	}
 
-	err := api.DeviceSetGroup(factory, device, group)
+	d := api.DeviceApiByName(factory, device)
+	err := d.SetGroup(group)
 	subcommands.DieNotNil(err)
 }
