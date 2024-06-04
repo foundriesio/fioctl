@@ -21,5 +21,6 @@ func doConfigDelete(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 	logrus.Debug("Deleting file from device config")
 
-	subcommands.DieNotNil(api.DeviceDeleteConfig(factory, args[0], args[1]))
+	d := api.DeviceApiByName(factory, args[0])
+	subcommands.DieNotNil(d.DeleteConfig(args[1]))
 }

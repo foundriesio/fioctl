@@ -60,8 +60,8 @@ func (w *WireguardClientConfig) Unmarshall(configVal string) {
 	}
 }
 
-func loadWireguardClientConfig(factory, device string) WireguardClientConfig {
-	dcl, err := api.DeviceListConfig(factory, device)
+func loadWireguardClientConfig(d client.DeviceApi) WireguardClientConfig {
+	dcl, err := d.ListConfig()
 	wcc := WireguardClientConfig{}
 	if err != nil {
 		return wcc
@@ -132,8 +132,10 @@ func doConfigWireguard(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 	logrus.Debug("Configuring wireguard")
 
+	d := api.DeviceApiByName(factory, args[0])
+
 	// Ensure the device has a public key we can encrypt with
-	wcc := loadWireguardClientConfig(factory, args[0])
+	wcc := loadWireguardClientConfig(d)
 	if len(args) == 1 {
 		fmt.Println("Enabled:", wcc.Enabled)
 		if len(wcc.Address) > 0 {
@@ -173,5 +175,5 @@ func doConfigWireguard(cmd *cobra.Command, args []string) {
 		wcc.Enabled = false
 	}
 	cfg.Files[0].Value = wcc.Marshall()
-	subcommands.DieNotNil(api.DevicePatchConfig(factory, args[0], cfg, false))
+	subcommands.DieNotNil(d.PatchConfig(cfg, false))
 }

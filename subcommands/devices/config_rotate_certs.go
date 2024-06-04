@@ -51,7 +51,8 @@ func doConfigRotate(cmd *cobra.Command, args []string) {
 	logrus.Debugf("Rotating device certs for %s", name)
 
 	// Quick sanity check for device
-	_, err := api.DeviceGet(factory, name)
+	d, err := api.DeviceGet(factory, name)
+	dapi := api.DeviceApiByUuid(factory, d.Uuid)
 	subcommands.DieNotNil(err, "Failed to fetch a device:")
 
 	var url string
@@ -76,5 +77,5 @@ func doConfigRotate(cmd *cobra.Command, args []string) {
 		fmt.Println(ccr.Files[0].Value)
 		return
 	}
-	subcommands.DieNotNil(api.DevicePatchConfig(factory, name, ccr, false))
+	subcommands.DieNotNil(dapi.PatchConfig(ccr, false))
 }

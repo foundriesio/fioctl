@@ -54,6 +54,7 @@ func doConfigUpdates(cmd *cobra.Command, args []string) {
 	logrus.Debugf("Configuring device updates for %s", name)
 
 	device, err := api.DeviceGet(factory, name)
+	dapi := api.DeviceApiByUuid(factory, device.Uuid)
 	subcommands.DieNotNil(err, "Failed to fetch a device:")
 
 	subcommands.SetUpdatesConfig(&subcommands.SetUpdatesConfigOptions{
@@ -63,10 +64,10 @@ func doConfigUpdates(cmd *cobra.Command, args []string) {
 		IsForced:   isForced,
 		Device:     device,
 		ListFunc: func() (*client.DeviceConfigList, error) {
-			return api.DeviceListConfig(factory, name)
+			return dapi.ListConfig()
 		},
 		SetFunc: func(cfg client.ConfigCreateRequest, force bool) error {
-			return api.DevicePatchConfig(factory, name, cfg, force)
+			return dapi.PatchConfig(cfg, force)
 		},
 	},
 		device.Tag, device.DockerApps)

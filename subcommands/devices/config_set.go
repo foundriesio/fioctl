@@ -103,6 +103,7 @@ func doConfigSet(cmd *cobra.Command, args []string) {
 	logrus.Debugf("Creating new device config for %s", name)
 	// Ensure the device has a public key we can encrypt with
 	device, err := api.DeviceGet(factory, name)
+	dapi := api.DeviceApiByUuid(factory, device.Uuid)
 	subcommands.DieNotNil(err)
 	if len(device.PublicKey) == 0 {
 		subcommands.DieNotNil(fmt.Errorf("Device has no public key to encrypt with"))
@@ -115,9 +116,9 @@ func doConfigSet(cmd *cobra.Command, args []string) {
 		IsRawFile: isRaw,
 		SetFunc: func(cfg client.ConfigCreateRequest) error {
 			if shouldCreate {
-				return api.DeviceCreateConfig(factory, device.Name, cfg)
+				return dapi.CreateConfig(cfg)
 			} else {
-				return api.DevicePatchConfig(factory, device.Name, cfg, false)
+				return dapi.PatchConfig(cfg, false)
 			}
 		},
 		EncryptFunc: func(value string) string {

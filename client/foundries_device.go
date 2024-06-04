@@ -330,37 +330,35 @@ func (d *DeviceApi) UpdateEvents(correlationId string) ([]UpdateEvent, error) {
 	return events, nil
 }
 
-func (a *Api) DeviceCreateConfig(factory, device string, cfg ConfigCreateRequest) error {
+func (d *DeviceApi) CreateConfig(cfg ConfigCreateRequest) error {
 	data, err := json.Marshal(cfg)
 	if err != nil {
 		return err
 	}
-
-	url := a.serverUrl + "/ota/devices/" + device + "/config/?factory=" + factory
 	logrus.Debug("Creating new device config")
-	_, err = a.Post(url, data)
+	_, err = d.api.Post(d.url("/config/"), data)
 	return err
 }
 
-func (a *Api) DevicePatchConfig(factory, device string, cfg ConfigCreateRequest, force bool) error {
+func (d *DeviceApi) PatchConfig(cfg ConfigCreateRequest, force bool) error {
 	data, err := json.Marshal(cfg)
 	if err != nil {
 		return err
 	}
 
-	url := a.serverUrl + "/ota/devices/" + device + "/config/?factory=" + factory
+	url := d.url("/config/")
 	if force {
 		url += "&force=1"
 	}
 	logrus.Debug("Patching device config")
-	_, err = a.Patch(url, data)
+	_, err = d.api.Patch(url, data)
 	return err
 }
 
-func (a *Api) DeviceListConfig(factory, device string) (*DeviceConfigList, error) {
-	url := a.serverUrl + "/ota/devices/" + device + "/config/?factory=" + factory
+func (d *DeviceApi) ListConfig() (*DeviceConfigList, error) {
+	url := d.url("/config/")
 	logrus.Debugf("DeviceListConfig with url: %s", url)
-	return a.DeviceListConfigCont(url)
+	return d.api.DeviceListConfigCont(url)
 }
 
 func (a *Api) DeviceListConfigCont(url string) (*DeviceConfigList, error) {
@@ -377,10 +375,10 @@ func (a *Api) DeviceListConfigCont(url string) (*DeviceConfigList, error) {
 	return &config, nil
 }
 
-func (a *Api) DeviceDeleteConfig(factory, device, filename string) error {
-	url := a.serverUrl + "/ota/devices/" + device + "/config/" + filename + "/?factory=" + factory
+func (d *DeviceApi) DeleteConfig(filename string) error {
+	url := d.url("/config/" + filename + "/")
 	logrus.Debugf("Deleting config file: %s", url)
-	_, err := a.Delete(url, nil)
+	_, err := d.api.Delete(url, nil)
 	return err
 }
 
