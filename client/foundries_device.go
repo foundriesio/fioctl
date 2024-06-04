@@ -384,9 +384,8 @@ func (a *Api) DeviceDeleteConfig(factory, device, filename string) error {
 	return err
 }
 
-func (a *Api) DeviceGetAppsStates(factory, device string) (*AppsStates, error) {
-	url := a.serverUrl + "/ota/devices/" + device + "/apps-states/?factory=" + factory
-	body, err := a.Get(url)
+func (d *DeviceApi) GetAppsStates() (*AppsStates, error) {
+	body, err := d.api.Get(d.url("/apps-states/"))
 	if err != nil {
 		return nil, err
 	}

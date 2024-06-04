@@ -27,7 +27,8 @@ func init() {
 
 func doListStates(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
-	states, err := api.DeviceGetAppsStates(factory, args[0])
+	d := api.DeviceApiByName(factory, args[0])
+	states, err := d.GetAppsStates()
 	subcommands.DieNotNil(err)
 
 	printAppsState := func(appsState map[string]client.AppState, stateFilter string, filterIn bool) {
