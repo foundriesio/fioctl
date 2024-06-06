@@ -11,7 +11,6 @@ import (
 	ecies "github.com/foundriesio/go-ecies"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 
 	"github.com/foundriesio/fioctl/client"
 	"github.com/foundriesio/fioctl/subcommands"
@@ -94,7 +93,6 @@ func eciesEncrypt(content string, pubkey *ecies.PublicKey) string {
 }
 
 func doConfigSet(cmd *cobra.Command, args []string) {
-	factory := viper.GetString("factory")
 	name := args[0]
 	reason, _ := cmd.Flags().GetString("reason")
 	isRaw, _ := cmd.Flags().GetBool("raw")
@@ -102,9 +100,7 @@ func doConfigSet(cmd *cobra.Command, args []string) {
 
 	logrus.Debugf("Creating new device config for %s", name)
 	// Ensure the device has a public key we can encrypt with
-	device, err := api.DeviceGet(factory, name)
-	dapi := api.DeviceApiByUuid(factory, device.Uuid)
-	subcommands.DieNotNil(err)
+	device := getDevice(cmd, name)
 	if len(device.PublicKey) == 0 {
 		subcommands.DieNotNil(fmt.Errorf("Device has no public key to encrypt with"))
 	}
@@ -116,9 +112,9 @@ func doConfigSet(cmd *cobra.Command, args []string) {
 		IsRawFile: isRaw,
 		SetFunc: func(cfg client.ConfigCreateRequest) error {
 			if shouldCreate {
-				return dapi.CreateConfig(cfg)
+				return device.Api.CreateConfig(cfg)
 			} else {
-				return dapi.PatchConfig(cfg, false)
+				return device.Api.PatchConfig(cfg, false)
 			}
 		},
 		EncryptFunc: func(value string) string {
