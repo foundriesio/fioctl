@@ -5,7 +5,6 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 
 	"github.com/foundriesio/fioctl/subcommands"
 )
@@ -22,7 +21,6 @@ func init() {
 }
 
 func doConfigGroup(cmd *cobra.Command, args []string) {
-	factory := viper.GetString("factory")
 	device := args[0]
 	unset, _ := cmd.Flags().GetBool("unset")
 	var group string
@@ -40,7 +38,7 @@ func doConfigGroup(cmd *cobra.Command, args []string) {
 		logrus.Debugf("Assigning device %s to group %s", device, group)
 	}
 
-	d := api.DeviceApiByName(factory, device)
+	d := getDeviceApi(cmd, device)
 	err := d.SetGroup(group)
 	subcommands.DieNotNil(err)
 }
