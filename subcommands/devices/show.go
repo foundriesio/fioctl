@@ -7,7 +7,6 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 
 	"github.com/foundriesio/fioctl/subcommands"
 )
@@ -30,10 +29,8 @@ func init() {
 }
 
 func doShow(cmd *cobra.Command, args []string) {
-	factory := viper.GetString("factory")
 	logrus.Debug("Showing device")
-	device, err := api.DeviceGet(factory, args[0])
-	subcommands.DieNotNil(err)
+	device := getDevice(cmd, args[0])
 
 	fmt.Printf("UUID:\t\t%s\n", device.Uuid)
 	fmt.Printf("Name:\t\t%s\n", device.Name)
@@ -131,7 +128,7 @@ func doShow(cmd *cobra.Command, args []string) {
 	if device.ActiveConfig != nil {
 		fmt.Println("Active Config:")
 		if len(device.ActiveConfig.CreatedBy) > 0 {
-			user, err := api.UserAccessDetails(factory, device.ActiveConfig.CreatedBy)
+			user, err := api.UserAccessDetails(device.Factory, device.ActiveConfig.CreatedBy)
 			if err != nil {
 				device.ActiveConfig.CreatedBy = fmt.Sprintf("%s / ?", device.ActiveConfig.CreatedBy)
 			} else {
