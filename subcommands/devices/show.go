@@ -36,6 +36,7 @@ func doShow(cmd *cobra.Command, args []string) {
 	subcommands.DieNotNil(err)
 
 	fmt.Printf("UUID:\t\t%s\n", device.Uuid)
+	fmt.Printf("Name:\t\t%s\n", device.Name)
 	fmt.Printf("Owner:\t\t%s\n", device.Owner)
 	fmt.Printf("Factory:\t%s\n", device.Factory)
 	if device.Group != nil {
