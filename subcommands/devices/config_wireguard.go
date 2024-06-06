@@ -132,7 +132,7 @@ func doConfigWireguard(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 	logrus.Debug("Configuring wireguard")
 
-	d := api.DeviceApiByName(factory, args[0])
+	d := getDeviceApi(cmd, args[0])
 
 	// Ensure the device has a public key we can encrypt with
 	wcc := loadWireguardClientConfig(d)
