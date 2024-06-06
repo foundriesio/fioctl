@@ -1,6 +1,10 @@
 package devices
 
 import (
+	"fmt"
+
+	"golang.org/x/exp/slices"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
@@ -60,10 +64,31 @@ func NewCommand() *cobra.Command {
 
 	cmd.AddCommand(configCmd)
 	cmd.AddCommand(updatesCmd)
+
+	addUuidFlagToChildren(cmd)
+
 	return cmd
 }
 
-func getDeviceApi(_ *cobra.Command, name string) client.DeviceApi {
+func addUuidFlagToChildren(c *cobra.Command) {
+	ignores := []string{"list-denied", "list", "delete-denied"}
+	for _, child := range c.Commands() {
+		if child.HasSubCommands() {
+			addUuidFlagToChildren(child)
+		} else if !slices.Contains(ignores, child.Name()) {
+			child.Flags().BoolP("by-uuid", "u", false, "Look up device by UUID rather than name")
+		}
+	}
+}
+
+func getDeviceApi(cmd *cobra.Command, name string) client.DeviceApi {
+	byUuid, err := cmd.Flags().GetBool("by-uuid")
+	if err != nil {
+		fmt.Println("ERROR:", err)
+	}
+	if byUuid && err == nil {
+		return api.DeviceApiByUuid(viper.GetString("factory"), name)
+	}
 	return api.DeviceApiByName(viper.GetString("factory"), name)
 }
 
