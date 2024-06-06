@@ -2,6 +2,7 @@ package devices
 
 import (
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 
 	"github.com/foundriesio/fioctl/client"
 	"github.com/foundriesio/fioctl/subcommands"
@@ -60,4 +61,15 @@ func NewCommand() *cobra.Command {
 	cmd.AddCommand(configCmd)
 	cmd.AddCommand(updatesCmd)
 	return cmd
+}
+
+func getDeviceApi(_ *cobra.Command, name string) client.DeviceApi {
+	return api.DeviceApiByName(viper.GetString("factory"), name)
+}
+
+func getDevice(cmd *cobra.Command, name string) *client.Device {
+	dapi := getDeviceApi(cmd, name)
+	d, err := dapi.Get()
+	subcommands.DieNotNil(err)
+	return d
 }

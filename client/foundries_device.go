@@ -89,6 +89,8 @@ type AppsStates struct {
 }
 
 type Device struct {
+	Api DeviceApi `json:"-"`
+
 	Uuid          string           `json:"uuid"`
 	Name          string           `json:"name"`
 	Owner         string           `json:"owner"`
@@ -188,6 +190,7 @@ func (d Device) Online(inactiveHoursThreshold int) bool {
 	return true
 }
 
+// TODO remove at end of PR
 func (a *Api) DeviceGet(factory, device string) (*Device, error) {
 	url := a.serverUrl + "/ota/devices/" + device + "/?factory=" + factory
 	body, err := a.Get(url)
@@ -199,6 +202,20 @@ func (a *Api) DeviceGet(factory, device string) (*Device, error) {
 	if err != nil {
 		return nil, err
 	}
+	return &d, nil
+}
+
+func (a *DeviceApi) Get() (*Device, error) {
+	body, err := a.api.Get(a.url("/"))
+	if err != nil {
+		return nil, err
+	}
+	d := Device{}
+	err = json.Unmarshal(*body, &d)
+	if err != nil {
+		return nil, err
+	}
+	d.Api = a.api.DeviceApiByUuid(d.Factory, d.Uuid)
 	return &d, nil
 }
 
