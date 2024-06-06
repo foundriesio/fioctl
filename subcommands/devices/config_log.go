@@ -29,7 +29,7 @@ func doConfigLog(cmd *cobra.Command, args []string) {
 	lookups, err := api.UsersGetLookups(factory)
 	subcommands.DieNotNil(err)
 
-	d := api.DeviceApiByName(factory, device)
+	d := getDeviceApi(cmd, device)
 
 	subcommands.LogConfigs(&subcommands.LogConfigsOptions{
 		Limit:         listLimit,
