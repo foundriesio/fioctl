@@ -3,7 +3,6 @@ package devices
 import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 
 	"github.com/foundriesio/fioctl/client"
 	"github.com/foundriesio/fioctl/subcommands"
@@ -40,7 +39,6 @@ currently configured and reporting.`,
 }
 
 func doConfigUpdates(cmd *cobra.Command, args []string) {
-	factory := viper.GetString("factory")
 	name := args[0]
 	updateApps, _ := cmd.Flags().GetString("apps")
 	updateTag, _ := cmd.Flags().GetString("tag")
@@ -53,8 +51,7 @@ func doConfigUpdates(cmd *cobra.Command, args []string) {
 
 	logrus.Debugf("Configuring device updates for %s", name)
 
-	device, err := api.DeviceGet(factory, name)
-	subcommands.DieNotNil(err, "Failed to fetch a device:")
+	device := getDevice(cmd, name)
 
 	subcommands.SetUpdatesConfig(&subcommands.SetUpdatesConfigOptions{
 		UpdateApps: updateApps,
@@ -63,10 +60,10 @@ func doConfigUpdates(cmd *cobra.Command, args []string) {
 		IsForced:   isForced,
 		Device:     device,
 		ListFunc: func() (*client.DeviceConfigList, error) {
-			return api.DeviceListConfig(factory, name)
+			return device.Api.ListConfig()
 		},
 		SetFunc: func(cfg client.ConfigCreateRequest, force bool) error {
-			return api.DevicePatchConfig(factory, name, cfg, force)
+			return device.Api.PatchConfig(cfg, force)
 		},
 	},
 		device.Tag, device.DockerApps)

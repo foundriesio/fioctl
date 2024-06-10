@@ -6,7 +6,6 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 
 	"github.com/foundriesio/fioctl/subcommands"
 )
@@ -34,7 +33,6 @@ This command will only work for devices running LmP version 90 and later.`,
 }
 
 func doConfigRotate(cmd *cobra.Command, args []string) {
-	factory := viper.GetString("factory")
 	name := args[0]
 	estResource, _ := cmd.Flags().GetString("est-resource")
 	estPort, _ := cmd.Flags().GetInt("est-port")
@@ -51,14 +49,14 @@ func doConfigRotate(cmd *cobra.Command, args []string) {
 	logrus.Debugf("Rotating device certs for %s", name)
 
 	// Quick sanity check for device
-	_, err := api.DeviceGet(factory, name)
-	subcommands.DieNotNil(err, "Failed to fetch a device:")
+	d := getDevice(cmd, name)
 
+	var err error
 	var url string
 	if len(serverName) > 0 {
 		url = fmt.Sprintf("https://%s:%d%s", serverName, estPort, estResource)
 	} else {
-		url, err = api.FactoryEstUrl(factory, estPort, estResource)
+		url, err = api.FactoryEstUrl(d.Factory, estPort, estResource)
 		subcommands.DieNotNil(err)
 	}
 	logrus.Debugf("Using EST server: %s", url)
@@ -76,5 +74,5 @@ func doConfigRotate(cmd *cobra.Command, args []string) {
 		fmt.Println(ccr.Files[0].Value)
 		return
 	}
-	subcommands.DieNotNil(api.DevicePatchConfig(factory, name, ccr, false))
+	subcommands.DieNotNil(d.Api.PatchConfig(ccr, false))
 }

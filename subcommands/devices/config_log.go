@@ -29,11 +29,13 @@ func doConfigLog(cmd *cobra.Command, args []string) {
 	lookups, err := api.UsersGetLookups(factory)
 	subcommands.DieNotNil(err)
 
+	d := getDeviceApi(cmd, device)
+
 	subcommands.LogConfigs(&subcommands.LogConfigsOptions{
 		Limit:         listLimit,
 		ShowAppliedAt: true,
 		ListFunc: func() (*client.DeviceConfigList, error) {
-			return api.DeviceListConfig(factory, device)
+			return d.ListConfig()
 		},
 		ListContFunc: api.DeviceListConfigCont,
 		UserLookup:   lookups,

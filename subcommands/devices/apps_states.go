@@ -7,7 +7,6 @@ import (
 	"github.com/foundriesio/fioctl/client"
 	"github.com/foundriesio/fioctl/subcommands"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 var (
@@ -26,8 +25,8 @@ func init() {
 }
 
 func doListStates(cmd *cobra.Command, args []string) {
-	factory := viper.GetString("factory")
-	states, err := api.DeviceGetAppsStates(factory, args[0])
+	d := getDeviceApi(cmd, args[0])
+	states, err := d.GetAppsStates()
 	subcommands.DieNotNil(err)
 
 	printAppsState := func(appsState map[string]client.AppState, stateFilter string, filterIn bool) {
