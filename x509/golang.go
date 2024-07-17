@@ -21,68 +21,6 @@ type KeyStorage interface {
 	loadKey() crypto.Signer
 }
 
-func genRandomSerialNumber() *big.Int {
-	// Generate a 160 bits serial number (20 octets)
-	max := big.NewInt(0).Exp(big.NewInt(2), big.NewInt(160), nil)
-	serial, err := rand.Int(rand.Reader, max)
-	subcommands.DieNotNil(err)
-	return serial
-}
-
-func genCertificate(
-	crtTemplate *x509.Certificate, caCrt *x509.Certificate, pub crypto.PublicKey, signerKey crypto.Signer,
-) string {
-	certRaw, err := x509.CreateCertificate(rand.Reader, crtTemplate, caCrt, pub, signerKey)
-	subcommands.DieNotNil(err)
-
-	certPemBlock := pem.Block{Type: "CERTIFICATE", Bytes: certRaw}
-	var certRow bytes.Buffer
-	err = pem.Encode(&certRow, &certPemBlock)
-	subcommands.DieNotNil(err)
-
-	return certRow.String()
-}
-
-func parsePemCertificateRequest(csrPem string) *x509.CertificateRequest {
-	pemBlock := parseOnePemBlock(csrPem)
-	clientCSR, err := x509.ParseCertificateRequest(pemBlock.Bytes)
-	subcommands.DieNotNil(err)
-	err = clientCSR.CheckSignature()
-	subcommands.DieNotNil(err)
-	return clientCSR
-}
-
-func marshalSubject(cn string, ou string) pkix.Name {
-	// In it's simpler form, this function would be replaced by
-	// pkix.Name{CommonName: cn, OrganizationalUnit: []string{ou}}
-	// However, x509 library uses PrintableString instead of UTF8String
-	// as ASN.1 field type. This function forces UTF8String instead, to
-	// avoid compatibility issues when using a device certificate created
-	// with libraries such as MbedTLS.
-	// x509 library also encodes OU and CN in a different order if compared
-	// to OpenSSL, which is less of an issue, but still worth to adjust
-	// while we are at it.
-	cnBytes, err := asn1.MarshalWithParams(cn, "utf8")
-	subcommands.DieNotNil(err)
-	ouBytes, err := asn1.MarshalWithParams(ou, "utf8")
-	subcommands.DieNotNil(err)
-	var (
-		oidCommonName         = []int{2, 5, 4, 3}
-		oidOrganizationalUnit = []int{2, 5, 4, 11}
-	)
-	pkixAttrTypeValue := []pkix.AttributeTypeAndValue{
-		{
-			Type:  oidCommonName,
-			Value: asn1.RawValue{FullBytes: cnBytes},
-		},
-		{
-			Type:  oidOrganizationalUnit,
-			Value: asn1.RawValue{FullBytes: ouBytes},
-		},
-	}
-	return pkix.Name{ExtraNames: pkixAttrTypeValue}
-}
-
 func CreateFactoryCa(ou string) string {
 	priv := factoryCaKeyStorage.genAndSaveKey()
 	crtTemplate := x509.Certificate{
@@ -208,4 +146,66 @@ func genCaCert(subject pkix.Name, pubkey crypto.PublicKey) string {
 		KeyUsage:              x509.KeyUsageCertSign,
 	}
 	return genCertificate(&crtTemplate, factoryCa, pubkey, factoryKey)
+}
+
+func genCertificate(
+	crtTemplate *x509.Certificate, caCrt *x509.Certificate, pub crypto.PublicKey, signerKey crypto.Signer,
+) string {
+	certRaw, err := x509.CreateCertificate(rand.Reader, crtTemplate, caCrt, pub, signerKey)
+	subcommands.DieNotNil(err)
+
+	certPemBlock := pem.Block{Type: "CERTIFICATE", Bytes: certRaw}
+	var certRow bytes.Buffer
+	err = pem.Encode(&certRow, &certPemBlock)
+	subcommands.DieNotNil(err)
+
+	return certRow.String()
+}
+
+func parsePemCertificateRequest(csrPem string) *x509.CertificateRequest {
+	pemBlock := parseOnePemBlock(csrPem)
+	clientCSR, err := x509.ParseCertificateRequest(pemBlock.Bytes)
+	subcommands.DieNotNil(err)
+	err = clientCSR.CheckSignature()
+	subcommands.DieNotNil(err)
+	return clientCSR
+}
+
+func marshalSubject(cn string, ou string) pkix.Name {
+	// In it's simpler form, this function would be replaced by
+	// pkix.Name{CommonName: cn, OrganizationalUnit: []string{ou}}
+	// However, x509 library uses PrintableString instead of UTF8String
+	// as ASN.1 field type. This function forces UTF8String instead, to
+	// avoid compatibility issues when using a device certificate created
+	// with libraries such as MbedTLS.
+	// x509 library also encodes OU and CN in a different order if compared
+	// to OpenSSL, which is less of an issue, but still worth to adjust
+	// while we are at it.
+	cnBytes, err := asn1.MarshalWithParams(cn, "utf8")
+	subcommands.DieNotNil(err)
+	ouBytes, err := asn1.MarshalWithParams(ou, "utf8")
+	subcommands.DieNotNil(err)
+	var (
+		oidCommonName         = []int{2, 5, 4, 3}
+		oidOrganizationalUnit = []int{2, 5, 4, 11}
+	)
+	pkixAttrTypeValue := []pkix.AttributeTypeAndValue{
+		{
+			Type:  oidCommonName,
+			Value: asn1.RawValue{FullBytes: cnBytes},
+		},
+		{
+			Type:  oidOrganizationalUnit,
+			Value: asn1.RawValue{FullBytes: ouBytes},
+		},
+	}
+	return pkix.Name{ExtraNames: pkixAttrTypeValue}
+}
+
+func genRandomSerialNumber() *big.Int {
+	// Generate a 160 bits serial number (20 octets)
+	max := big.NewInt(0).Exp(big.NewInt(2), big.NewInt(160), nil)
+	serial, err := rand.Int(rand.Reader, max)
+	subcommands.DieNotNil(err)
+	return serial
 }
