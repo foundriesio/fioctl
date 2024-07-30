@@ -18,6 +18,7 @@ type CaCerts struct {
 
 	CaRevokeCrl string   `json:"ca-revoke-crl,omitempty"`
 	CaDisabled  []string `json:"disabled-ca-serials,omitempty"` // readonly
+	ActiveRoot  string   `json:"active-root-serial,omitempty"`
 
 	ChangeMeta ChangeMeta `json:"change-meta"`
 }

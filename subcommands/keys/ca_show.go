@@ -75,9 +75,12 @@ func doShowCA(cmd *cobra.Command, args []string) {
 		fmt.Println("Updated by:", resp.ChangeMeta.UpdatedBy)
 	}
 
-	fmt.Println("## Factory root certificate")
+	fmt.Println("\n## Factory root certificates")
 	printOneCert(resp.RootCrt)
-	fmt.Println("## Server TLS Certificate")
+	if len(resp.ActiveRoot) > 0 {
+		fmt.Println("Active factory root serial number:", resp.ActiveRoot)
+	}
+	fmt.Println("\n## Server TLS Certificate")
 	printOneCert(resp.TlsCrt)
 	fmt.Println("\n## Device Authentication Certificate(s)")
 	printOneCert(resp.CaCrt)
