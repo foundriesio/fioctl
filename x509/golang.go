@@ -23,20 +23,20 @@ type KeyStorage interface {
 
 func CreateFactoryCa(ou string) string {
 	priv := factoryCaKeyStorage.genAndSaveKey()
-	crtTemplate := x509.Certificate{
-		SerialNumber: genRandomSerialNumber(),
-		Subject:      marshalSubject(factoryCaName, ou),
-		NotBefore:    time.Now(),
-		NotAfter:     time.Now().AddDate(20, 0, 0),
-
-		BasicConstraintsValid: true,
-		IsCA:                  true,
-		KeyUsage:              x509.KeyUsageCertSign | x509.KeyUsageCRLSign,
-		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},
-	}
-	factoryCaString := genCertificate(&crtTemplate, &crtTemplate, priv.Public(), priv)
+	crtTemplate := genFactoryCaTemplate(marshalSubject(factoryCaName, ou))
+	factoryCaString := genCertificate(crtTemplate, crtTemplate, priv.Public(), priv)
 	writeFile(FactoryCaCertFile, factoryCaString)
 	return factoryCaString
+}
+
+func CreateFactoryCrossCa(ou string, pubkey crypto.PublicKey) string {
+	// Cross-signed factory CA has all the same properties as a factory CA, but is signed by another factory CA.
+	// This function does an inverse: produces a factory CA with a public key "borrowed" from another factory CA.
+	// The end result is the same, but we don't need to export the internal key storage interface.
+	// This certificate is not written to disk, as it is only needed intermittently.
+	priv := factoryCaKeyStorage.loadKey()
+	crtTemplate := genFactoryCaTemplate(marshalSubject(factoryCaName, ou))
+	return genCertificate(crtTemplate, crtTemplate, pubkey, priv)
 }
 
 func CreateDeviceCa(cn, ou string) string {
@@ -45,21 +45,21 @@ func CreateDeviceCa(cn, ou string) string {
 
 func CreateDeviceCaExt(cn, ou, keyFile, certFile string) string {
 	priv := genAndSaveKeyToFile(keyFile)
-	crtPem := genCaCert(marshalSubject(cn, ou), priv.Public())
+	crtPem := genDeviceCaCert(marshalSubject(cn, ou), priv.Public())
 	writeFile(certFile, crtPem)
 	return crtPem
 }
 
 func SignCaCsr(csrPem string) string {
 	csr := parsePemCertificateRequest(csrPem)
-	crtPem := genCaCert(csr.Subject, csr.PublicKey)
+	crtPem := genDeviceCaCert(csr.Subject, csr.PublicKey)
 	writeFile(OnlineCaCertFile, crtPem)
 	return crtPem
 }
 
 func SignEl2GoCsr(csrPem string) string {
 	csr := parsePemCertificateRequest(csrPem)
-	return genCaCert(csr.Subject, csr.PublicKey)
+	return genDeviceCaCert(csr.Subject, csr.PublicKey)
 }
 
 func SignTlsCsr(csrPem string) string {
@@ -112,6 +112,20 @@ func CreateCrl(serials map[string]int) string {
 	return pemBuffer.String()
 }
 
+func genFactoryCaTemplate(subject pkix.Name) *x509.Certificate {
+	return &x509.Certificate{
+		SerialNumber: genRandomSerialNumber(),
+		Subject:      subject,
+		NotBefore:    time.Now(),
+		NotAfter:     time.Now().AddDate(20, 0, 0),
+
+		BasicConstraintsValid: true,
+		IsCA:                  true,
+		KeyUsage:              x509.KeyUsageCertSign | x509.KeyUsageCRLSign,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},
+	}
+}
+
 func genTlsCert(subject pkix.Name, dnsNames []string, pubkey crypto.PublicKey) string {
 	factoryKey := factoryCaKeyStorage.loadKey()
 	factoryCa := LoadCertFromFile(FactoryCaCertFile)
@@ -130,7 +144,7 @@ func genTlsCert(subject pkix.Name, dnsNames []string, pubkey crypto.PublicKey) s
 	return genCertificate(&crtTemplate, factoryCa, pubkey, factoryKey)
 }
 
-func genCaCert(subject pkix.Name, pubkey crypto.PublicKey) string {
+func genDeviceCaCert(subject pkix.Name, pubkey crypto.PublicKey) string {
 	factoryKey := factoryCaKeyStorage.loadKey()
 	factoryCa := LoadCertFromFile(FactoryCaCertFile)
 	crtTemplate := x509.Certificate{
