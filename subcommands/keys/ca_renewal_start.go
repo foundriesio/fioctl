@@ -13,6 +13,12 @@ import (
 	"github.com/foundriesio/fioctl/x509"
 )
 
+var (
+	hsmOldModule     string
+	hsmOldPin        string
+	hsmOldTokenLabel string
+)
+
 func init() {
 	cmd := &cobra.Command{
 		Use:   "start <New PKI Directory> <Old PKI Directory>",
@@ -35,6 +41,16 @@ This extreme level of isolation is necessary to prevent an accidental rewrite of
 Once this command completes successfully, a root of trust renewal process is started.`,
 	}
 	caRenewalCmd.AddCommand(cmd)
+	// HSM variable descriptions differ from the standard defined in addStandardHsmFlags
+	cmd.Flags().StringVarP(&hsmModule, "hsm-module", "", "", "Create a root CA key on a PKCS#11 compatible HSM using this module")
+	cmd.Flags().StringVarP(&hsmPin, "hsm-pin", "", "", "The PKCS#11 PIN to log into the HSM")
+	cmd.Flags().StringVarP(&hsmTokenLabel, "hsm-token-label", "", "", "The label of the HSM token created for the root CA key")
+	cmd.Flags().StringVarP(&hsmOldModule, "hsm-old-module", "", "",
+		"A PKCS#11 compatible HSM module storing an old root CA key. By default use --hsm-module.")
+	cmd.Flags().StringVarP(&hsmOldPin, "hsm-old-pin", "", "",
+		"The PKCS#11 PIN to log into the HSM storing an old root CA key. By default use --hsm-pin.")
+	cmd.Flags().StringVarP(&hsmOldTokenLabel, "hsm-old-token-label", "", "",
+		"The label of the HSM token containing an old root CA key.")
 }
 
 func doStartCaRenewal(cmd *cobra.Command, args []string) {
@@ -49,6 +65,18 @@ This ensures that no sensitive data can be accidentally tampered or erased.`))
 
 	cwd, err := os.Getwd()
 	subcommands.DieNotNil(err)
+
+	newHsm, err := validateStandardHsmArgs(hsmModule, hsmPin, hsmTokenLabel)
+	subcommands.DieNotNil(err)
+	oldHsm, err := validateHsmArgs(
+		hsmOldModule, hsmOldPin, hsmOldTokenLabel, "--hsm-old-module", "--hsm-old-pin", "--hsm-old-token-label")
+	subcommands.DieNotNil(err)
+	if hsmModule == hsmOldModule && hsmTokenLabel == hsmOldTokenLabel {
+		subcommands.DieNotNil(errors.New(`When using HSM devices, a new private key must be stored on:
+- either a new HSM device with the same or a different label;
+- or the same HSM device with a different label.
+This warrants that an existing private key is not accidentally overwritten or erased.`))
+	}
 
 	// Phase 1 - Load existing Root CA and check if it is the active one.
 	// Do not check if the user actually has access to its private key - that is verified later by signing certificates.
@@ -74,6 +102,7 @@ This ensures that no sensitive data can be accidentally tampered or erased.`))
 		subcommands.DieNotNil(err)
 	}
 	fmt.Println("Creating new offline root CA for Factory")
+	x509.InitHsm(newHsm)
 	certs.RootCrt += x509.CreateFactoryCa(factory)
 	newRootOnDisk := x509.LoadCertFromFile(x509.FactoryCaCertFile)
 
@@ -85,6 +114,7 @@ This ensures that no sensitive data can be accidentally tampered or erased.`))
 	// New CA cross-signed by an old CA.
 	subcommands.DieNotNil(os.Chdir(cwd))
 	subcommands.DieNotNil(os.Chdir(oldCertsDir))
+	x509.InitHsm(oldHsm)
 	certs.RootCrt += x509.CreateFactoryCrossCa(factory, newRootOnDisk.PublicKey)
 
 	fmt.Println("Uploading signed certs to Foundries")
