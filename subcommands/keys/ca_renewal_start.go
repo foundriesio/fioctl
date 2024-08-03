@@ -117,6 +117,11 @@ This warrants that an existing private key is not accidentally overwritten or er
 	x509.InitHsm(oldHsm)
 	certs.RootCrt += x509.CreateFactoryCrossCa(factory, newRootOnDisk.PublicKey)
 
+	fmt.Printf("Saving new root CA bundle for Factory into %s\n", x509.FactoryCaPackFile)
+	subcommands.DieNotNil(os.Chdir(cwd))
+	subcommands.DieNotNil(os.Chdir(newCertsDir))
+	subcommands.DieNotNil(os.WriteFile(x509.FactoryCaPackFile, []byte(certs.RootCrt), 0400))
+
 	fmt.Println("Uploading signed certs to Foundries")
 	subcommands.DieNotNil(api.FactoryPatchCA(factory, certs))
 }

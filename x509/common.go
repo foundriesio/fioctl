@@ -13,6 +13,7 @@ const (
 	FactoryCaKeyFile  string = "factory_ca.key"
 	FactoryCaKeyLabel string = "root-ca"
 	FactoryCaCertFile string = "factory_ca.pem"
+	FactoryCaPackFile string = "factory_ca.bundle.pem"
 	DeviceCaKeyFile   string = "local-ca.key"
 	DeviceCaCertFile  string = "local-ca.pem"
 	TlsCertFile       string = "tls-crt"
