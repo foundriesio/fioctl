@@ -38,6 +38,15 @@ const (
 	// Renew the previously disabled device CA, so that new device registrations are possible again.
 	// This value is currently not used by Fioctl. It is here for the reference of API integrators.
 	CrlCaRenew = 8 // RFC 5280 - removeFromCRL
+
+	// CRL constants for root CA revokation.
+
+	// Supersede the root CA by another root CA.
+	// This is used to switch the currently active root CA, used to sign/verify device CAs and TLS certificates.
+	// The superseded CA serial be a currently active root CA, and the CRL must be signed by a newly activated root CA.
+	// Otherwise, the API will reject this CRL.
+	// This action can be (re-)applied many times to switch active root CA back and forth.
+	CrlRootSupersede = 4 // RFC 5280 - superseded
 )
 
 func readFile(filename string) string {

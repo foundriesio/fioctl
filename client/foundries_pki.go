@@ -16,9 +16,10 @@ type CaCerts struct {
 	EstCrt  string `json:"est-tls-crt,omitempty"`
 	TlsCrt  string `json:"tls-crt,omitempty"`
 
-	CaRevokeCrl string   `json:"ca-revoke-crl,omitempty"`
-	CaDisabled  []string `json:"disabled-ca-serials,omitempty"` // readonly
-	ActiveRoot  string   `json:"active-root-serial,omitempty"`
+	CaRevokeCrl   string   `json:"ca-revoke-crl,omitempty"`
+	CaDisabled    []string `json:"disabled-ca-serials,omitempty"` // readonly
+	ActiveRoot    string   `json:"active-root-serial,omitempty"`
+	RootRevokeCrl string   `json:"root-revoke-crl,omitempty"`
 
 	RootRenewalCorrelationId string `json:"root-renewal-correlation-id,omitempty"` // readonly
 
