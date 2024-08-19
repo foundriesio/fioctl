@@ -7,6 +7,7 @@ package x509
 
 import (
 	"crypto"
+	"crypto/x509"
 	"os"
 	"os/exec"
 
@@ -162,6 +163,10 @@ func SignCaCsr(csrPem string) string {
 
 func SignEl2GoCsr(csrPem string) string {
 	return signCaCsr("el2g-*", csrPem)
+}
+
+func ReSignCrt(crt *x509.Certificate) string {
+	return neverland()
 }
 
 func CreateCrl(serials map[string]int) string {

@@ -34,6 +34,7 @@ func CreateFactoryCrossCa(ou string, pubkey crypto.PublicKey) string {
 	// This function does an inverse: produces a factory CA with a public key "borrowed" from another factory CA.
 	// The end result is the same, but we don't need to export the internal key storage interface.
 	// This certificate is not written to disk, as it is only needed intermittently.
+	// Cannot use a ReSignCrt as we need a new certificate here (with e.g. a new serial number).
 	priv := factoryCaKeyStorage.loadKey()
 	crtTemplate := genFactoryCaTemplate(marshalSubject(factoryCaName, ou))
 	return genCertificate(crtTemplate, crtTemplate, pubkey, priv)
@@ -72,6 +73,13 @@ func SignTlsCsr(csrPem string) string {
 func SignEstCsr(csrPem string) string {
 	csr := parsePemCertificateRequest(csrPem)
 	return genTlsCert(csr.Subject, csr.DNSNames, csr.PublicKey)
+}
+
+func ReSignCrt(crt *x509.Certificate) string {
+	// Use an input certificate as a template for a new certificate, preserving all its properties except a signature.
+	factoryKey := factoryCaKeyStorage.loadKey()
+	factoryCa := LoadCertFromFile(FactoryCaCertFile)
+	return genCertificate(crt, factoryCa, crt.PublicKey, factoryKey)
 }
 
 var oidExtensionReasonCode = []int{2, 5, 29, 21}
