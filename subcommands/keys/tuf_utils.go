@@ -24,7 +24,7 @@ import (
 	"github.com/foundriesio/fioctl/subcommands"
 )
 
-var errFoundNoKey = errors.New("Found no private key")
+var errFoundNoKey = errors.New("No private key found")
 
 type OfflineCreds map[string][]byte
 
@@ -43,7 +43,7 @@ type TufKeyPair struct {
 }
 
 func ErrMsgReadingTufKey(role, treat string) string {
-	return fmt.Sprintf("Error reading %s TUF %s private key from a specified file:\n", treat, role)
+	return fmt.Sprintf("Error reading %s TUF %s private key from specified file:\n", treat, role)
 }
 
 func ParseTufKeyType(s string) TufKeyType {
@@ -252,7 +252,7 @@ func checkNoTufSigner(root *client.AtsTufRoot, creds OfflineCreds, keyids []stri
 	var signers []TufSigner
 	if signers, err = findTufSigners(root, creds, keyids); err == nil {
 		if len(signers) > 0 {
-			err = errors.New("It is not allowed to store more than one active private key into one file.")
+			err = errors.New("It is not allowed to store more than one active private key per file.")
 		}
 	}
 	return
@@ -469,11 +469,11 @@ func signProdTargets(
 	for tag, targets := range targetsMap {
 		bytes, err := canonical.MarshalCanonical(targets.Signed)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to marshal targets for tag %s: %w", tag, err)
+			return nil, fmt.Errorf("Failed to marshal Targets for tag %s: %w", tag, err)
 		}
 		signatures, err := SignTufMeta(bytes, signer)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to re-sign targets for tag %s: %w", tag, err)
+			return nil, fmt.Errorf("Failed to re-sign Targets for tag %s: %w", tag, err)
 		}
 		signatureMap[tag] = signatures
 	}

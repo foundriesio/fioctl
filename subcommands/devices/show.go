@@ -46,21 +46,21 @@ func doShow(cmd *cobra.Command, args []string) {
 	fmt.Printf("Production:\t%v%s\n", device.IsProd, waveSuffix)
 	fmt.Printf("Up to date:\t%v\n", device.UpToDate)
 	fmt.Printf("Target:\t\t%s / sha256(%s)\n", device.TargetName, device.OstreeHash)
-	fmt.Printf("Ostree Hash:\t%s\n", device.OstreeHash)
+	fmt.Printf("Ostree hash:\t%s\n", device.OstreeHash)
 	if len(device.LmpVer) > 0 {
-		fmt.Printf("LmP Version:\t%s\n", device.LmpVer)
+		fmt.Printf("LmP version:\t%s\n", device.LmpVer)
 	}
-	fmt.Printf("Created At:\t%s\n", device.ChangeMeta.CreatedAt)
+	fmt.Printf("Created at:\t%s\n", device.ChangeMeta.CreatedAt)
 	if len(device.ChangeMeta.CreatedBy) > 0 {
-		fmt.Printf("Created By:\t%s\n", device.ChangeMeta.CreatedBy)
+		fmt.Printf("Created by:\t%s\n", device.ChangeMeta.CreatedBy)
 	}
 	if len(device.ChangeMeta.UpdatedAt) > 0 {
-		fmt.Printf("Updated At:\t%s\n", device.ChangeMeta.UpdatedAt)
+		fmt.Printf("Updated at:\t%s\n", device.ChangeMeta.UpdatedAt)
 	}
 	if len(device.ChangeMeta.UpdatedBy) > 0 {
-		fmt.Printf("Updated By:\t%s\n", device.ChangeMeta.UpdatedBy)
+		fmt.Printf("Updated by:\t%s\n", device.ChangeMeta.UpdatedBy)
 	}
-	fmt.Printf("Last Seen:\t%s\n", device.LastSeen)
+	fmt.Printf("Last seen:\t%s\n", device.LastSeen)
 	if len(device.Tag) > 0 {
 		fmt.Printf("Tag:\t\t%s\n", device.Tag)
 	}
@@ -71,7 +71,7 @@ func doShow(cmd *cobra.Command, args []string) {
 		fmt.Printf("Status:\t\t%s\n", device.Status)
 	}
 	if len(device.CurrentUpdate) > 0 {
-		fmt.Printf("Update Id:\t%s\n", device.CurrentUpdate)
+		fmt.Printf("Update ID:\t%s\n", device.CurrentUpdate)
 	}
 	if device.AppsState != nil && device.AppsState.Apps != nil {
 		var healthyApps []string
@@ -87,7 +87,7 @@ func doShow(cmd *cobra.Command, args []string) {
 		fmt.Printf("Unhealthy Apps:\t%s\n", strings.Join(unhealthyApps, ","))
 	}
 	if device.Network != nil {
-		fmt.Println("Network Info:")
+		fmt.Println("Network info:")
 		fmt.Printf("\tHostname:\t%s\n", device.Network.Hostname)
 		fmt.Printf("\tIP:\t\t%s\n", device.Network.Ipv4)
 		fmt.Printf("\tMAC:\t\t%s\n", device.Network.MAC)
@@ -108,11 +108,11 @@ func doShow(cmd *cobra.Command, args []string) {
 			fmt.Println("Unable to marshall hardware info: ", err)
 		}
 		if showHWInfo {
-			fmt.Printf("Hardware Info:\n\t")
+			fmt.Printf("Hardware info:\n\t")
 			os.Stdout.Write(b)
 			fmt.Println("")
 		} else {
-			fmt.Printf("Hardware Info: (hidden, use --hwinfo)\n")
+			fmt.Printf("Hardware info: (hidden, use --hwinfo)\n")
 		}
 	}
 	if len(device.AktualizrToml) > 0 {
@@ -126,7 +126,7 @@ func doShow(cmd *cobra.Command, args []string) {
 
 	}
 	if device.ActiveConfig != nil {
-		fmt.Println("Active Config:")
+		fmt.Println("Active config:")
 		if len(device.ActiveConfig.CreatedBy) > 0 {
 			user, err := api.UserAccessDetails(device.Factory, device.ActiveConfig.CreatedBy)
 			if err != nil {

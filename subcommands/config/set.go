@@ -12,18 +12,18 @@ import (
 func init() {
 	setCmd := &cobra.Command{
 		Use:   "set file=content <file2=content ...>",
-		Short: "Create a new factory-wide configuration",
-		Long: `Creates a factory wide configuration. The fioconfig daemon running on
-each device will then be able to grab the latest version of the configuration
-and the device's configuration and apply it. Use the --group parameter to 
+		Short: "Create a new Factory-wide configuration",
+		Long: `Creates a Factory wide configuration. The fioconfig daemon running on
+each device will then be able to grab and apply the latest version of the configuration
+and the device's configuration. Use the --group parameter to 
 create a device group wide configuration instead.`,
 		Example: `
   # Basic use
   fioctl config set npmtok="root" githubtok="1234" readme.md==./readme.md
 
-  There are several ways how to pass a file content into this command:
-  - with filename="filecontent" format, a file content is passed directly.
-  - with filename==/path/to/file format, a file content is read from a specified file path.
+  There are several ways to pass a file's content into this command:
+  - with the filename="filecontent" format, content is passed directly.
+  - with the filename==/path/to/file format, content is read from the specified file path.
 
   # The configuration format also allows specifying what command to
   # run after a configuration file is updated on the device. To take
@@ -61,7 +61,7 @@ create a device group wide configuration instead.`,
 	setCmd.Flags().StringP("group", "g", "", "Device group to use")
 	setCmd.Flags().StringP("reason", "m", "", "Add a message to store as the \"reason\" for this change")
 	setCmd.Flags().BoolP("raw", "", false, "Use raw configuration file")
-	setCmd.Flags().BoolP("create", "", false, "Replace the whole config with these values. Default is to merge these values in with the existing config values")
+	setCmd.Flags().BoolP("create", "", false, "Replace the whole config with these values. Default is to merge these values with the existing config values")
 }
 
 func doConfigSet(cmd *cobra.Command, args []string) {

@@ -48,7 +48,7 @@ fioctl keys ca revoke-device-ca /path/to/pki/dir --ca-file /path/to/ca1.pem --ca
 # Revoke two device CAs given their serial numbers:
 fioctl keys ca revoke-device-ca /path/to/pki/dir --ca-serial <base-10-serial-1> --ca-file <base-10-serial-2>
 
-# Revoke a local device CA, when your factory root CA private key is stored on an HSM:
+# Revoke a local device CA, when your Factory root CA private key is stored on an HSM:
 fioctl keys ca revoke-device-ca /path/to/pki/dir --ca-file local-ca \
   --hsm-module /path/to/pkcs11-module.so --hsm-pin 1234 --hsm-token-label <token-label-for-key>
 
@@ -152,11 +152,11 @@ func doRevokeDeviceCa(cmd *cobra.Command, args []string) {
 	}
 	for serial := range toRevoke {
 		if _, ok := validSerials[serial]; !ok {
-			subcommands.DieNotNil(fmt.Errorf("There is no actual device CA with serial %s", serial))
+			subcommands.DieNotNil(fmt.Errorf("There is no active device CA with serial %s", serial))
 		}
 	}
 
-	fmt.Println("Signing CRL by factory root CA")
+	fmt.Println("Signing CRL by Factory root CA")
 	certs := client.CaCerts{CaRevokeCrl: x509.CreateCrl(toRevoke)}
 
 	if dryRun {

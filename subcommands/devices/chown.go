@@ -12,7 +12,7 @@ func init() {
 		Short: "Change the device's owner",
 		Run:   doChown,
 		Args:  cobra.ExactArgs(2),
-		Long: `Change the owner of a device. This command can only be run by factory admins 
+		Long: `Change the owner of a device. This command can only be run by Factory admins 
 and owners. The new owner-id can be found by running 'fioctl users'`,
 	})
 }

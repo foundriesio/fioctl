@@ -53,7 +53,7 @@ func ownerFormatter(d *client.Device) string {
 	if ok {
 		return name
 	}
-	logrus.Debugf("Looking up user %s in factory %s", d.Owner, d.Factory)
+	logrus.Debugf("Looking up user %s in Factory %s", d.Owner, d.Factory)
 	users, err := api.UsersList(d.Factory)
 	if err != nil {
 		logrus.Errorf("Unable to look up users: %s", err)
@@ -137,7 +137,7 @@ func init() {
 	sort.Strings(allCols)
 	listCmd := &cobra.Command{
 		Use:   "list [pattern]",
-		Short: "List devices registered to factories. Optionally include filepath style patterns to limit to device names. eg device-*",
+		Short: "List devices registered to Factories. Optionally, include filepath style patterns to limit to device names. e.g. device-*",
 		Run:   doList,
 		Args:  cobra.MaximumNArgs(1),
 		Long:  "Available columns for display:\n\n  * " + strings.Join(allCols, "\n  * "),
@@ -148,7 +148,7 @@ func init() {
 	listCmd.Flags().BoolVarP(&deviceOnlyNonProd, "only-non-prod", "", false, "Only include non-production devices")
 	listCmd.Flags().StringVarP(&deviceByTag, "by-tag", "", "", "Only list devices configured with the given tag")
 	listCmd.Flags().StringVarP(&deviceByTarget, "by-target", "", "", "Only list devices updated to the given target name")
-	listCmd.Flags().StringVarP(&deviceByGroup, "by-group", "g", "", "Only list devices belonging to this group (factory is mandatory)")
+	listCmd.Flags().StringVarP(&deviceByGroup, "by-group", "g", "", "Only list devices belonging to this group (Factory is mandatory)")
 	listCmd.Flags().IntVarP(&deviceInactiveHours, "offline-threshold", "", 4, "List the device as 'OFFLINE' if not seen in the last X hours")
 	listCmd.Flags().StringVarP(&deviceUuid, "uuid", "", "", "Find device with the given UUID")
 	listCmd.Flags().StringSliceVarP(&showColumns, "columns", "", defCols, "Specify which columns to display")

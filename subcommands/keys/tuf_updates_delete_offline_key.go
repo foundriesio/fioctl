@@ -27,9 +27,9 @@ There are two ways to delete the offline TUF signing key:
 
 When you delete the TUF targets offline signing key:
 
-- if there are production targets in your factory, corresponding signatures are also deleted.
-  if any production targets lack enough signatures - you need to sign them using the "sign-prod-targets" command.
-- if there is an active wave in your factory, the TUF targets key deletion is not allowed.`,
+- For production Targets, the corresponding signatures are also deleted.
+  If any production Targets lack enough signatures, you will need to sign them using the "sign-prod-targets" command.
+- If there is an active Wave, the TUF Targets key deletion is not allowed.`,
 		Example: `
 - Delete offline TUF root key:
   fioctl keys tuf updates delete-offline-key \
@@ -89,11 +89,11 @@ func doTufUpdatesDeleteOfflineKey(cmd *cobra.Command, args []string) {
 		roleToUpdate = newCiRoot.Signed.Roles["targets"]
 		onlineTargetsId := updates.Updated.OnlineKeys["targets"]
 		if onlineTargetsId == "" {
-			subcommands.DieNotNil(errors.New("Unable to find online target key for factory"))
+			subcommands.DieNotNil(errors.New("Unable to find online Target key for Factory"))
 		}
 		if keyId != "" && keyId == onlineTargetsId {
 			subcommands.DieNotNil(fmt.Errorf(
-				"It is not allowed to delete an online TUF targets key: %s", onlineTargetsId,
+				"It is not allowed to delete an online TUF Targets key: %s", onlineTargetsId,
 			))
 		}
 		validKeyIds = subcommands.SliceRemove(roleToUpdate.KeyIDs, onlineTargetsId)

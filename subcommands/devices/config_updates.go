@@ -15,7 +15,7 @@ func init() {
 		Run:   doConfigUpdates,
 		Args:  cobra.ExactArgs(1),
 		Long: `View or change configuration parameters used by aktualizr-lite for updating a device.
-When run with no options, this command will print out how the device is
+When run with no options, this command print out how the device is
 currently configured and reporting.`,
 		Example: `
   # Make a device start taking updates from Targets tagged with "devel"

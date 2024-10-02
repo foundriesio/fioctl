@@ -21,8 +21,8 @@ func init() {
 
 The new offline signing key will be used in both CI and production TUF root.
 
-When you add a new TUF targets offline signing key, existing production targets are not signed by it.
-Please, use the sign-prod-targets subcommand if you want to sign existing production targets with a new key.`,
+When you add a new TUF Targets offline signing key, existing production Targets are not signed by it.
+Use the sign-prod-targets subcommand if you want to sign existing production Targets with a new key.`,
 		Example: `
 - Add offline TUF root key:
   fioctl keys tuf updates add-offline-key \
@@ -75,7 +75,7 @@ func doTufUpdatesAddOfflineKey(cmd *cobra.Command, args []string) {
 	case tufRoleNameTargets:
 		onlineTargetsId := updates.Updated.OnlineKeys["targets"]
 		if onlineTargetsId == "" {
-			subcommands.DieNotNil(errors.New("Unable to find online target key for factory"))
+			subcommands.DieNotNil(errors.New("Unable to find online target key for Factory"))
 		}
 		addOfflineTargetsKey(newCiRoot, creds, keyType, onlineTargetsId)
 	default:

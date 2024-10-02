@@ -23,7 +23,7 @@ func init() {
 		Args:  cobra.ExactArgs(2),
 		Run:   doListen,
 		Long: `Listens to pull queue events. This command is useful for debugging or as a 
-reference implementation of queue listener.`,
+reference implementation of a queue listener.`,
 	})
 }
 

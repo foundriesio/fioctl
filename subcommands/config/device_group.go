@@ -14,7 +14,7 @@ import (
 func init() {
 	groupCmd := &cobra.Command{
 		Use:   "device-group",
-		Short: "Manage factory device groups",
+		Short: "Manage Factory device groups",
 	}
 	cmd.AddCommand(groupCmd)
 
@@ -25,7 +25,7 @@ func init() {
 	})
 	groupCmd.AddCommand(&cobra.Command{
 		Use:   "create <name> [<description>]",
-		Short: "Create a new device groups",
+		Short: "Create a new device group",
 		Run:   doCreateDeviceGroup,
 		Args:  cobra.RangeArgs(1, 2),
 	})
@@ -49,7 +49,7 @@ func init() {
 
 func doListDeviceGroup(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
-	logrus.Debugf("Showing a list of device groups for %s", factory)
+	logrus.Debugf("Showing list of device groups for %s", factory)
 
 	lst, err := api.FactoryListDeviceGroup(factory)
 	subcommands.DieNotNil(err)
@@ -95,7 +95,7 @@ func doUpdateDeviceGroup(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 	old_name := args[0]
 	var new_name, new_desc *string
-	logrus.Debugf("Updating a device group %s for %s", old_name, factory)
+	logrus.Debugf("Updating device group %s for %s", old_name, factory)
 	if cmd.Flags().Changed("name") {
 		s, _ := cmd.Flags().GetString("name")
 		logrus.Debugf("New name: %s", s)

@@ -35,7 +35,7 @@ func doTufUpdatesInit(cmd *cobra.Command, args []string) {
 	if firstTime {
 		if _, err := os.Stat(keysFile); err == nil {
 			subcommands.DieNotNil(errors.New(`Destination file exists.
-Please make sure you aren't accidentally overwriting another factory's keys`))
+Please make sure you aren't accidentally overwriting another Factory's keys`))
 		}
 	}
 

@@ -20,13 +20,13 @@ func init() {
 		Short: "Stage rotation of the offline TUF signing key for the Factory",
 		Long: `Stage rotation of the offline TUF signing key for the Factory.
 
-The new offline signing key will be used in both CI and production TUF root.
+The new offline signing key will be used for both CI and production TUF root.
 
-When you rotate the TUF targets offline signing key:
+When you rotate the TUF Targets offline signing key:
 
-- If there are production targets in your factory, they are re-signed using the new key.
-  This only applies to those production targets that were signed by a key you rotate.
-- If there is an active wave in your factory, the TUF targets rotation is not allowed.`,
+- Production Targets in your Factory are re-signed using the new key.
+  This only applies to those production Targets that were signed by a key you rotate.
+- If there is an active Wave, the TUF targets rotation is not allowed.`,
 		Example: `
 - Rotate offline TUF root key and re-sign the new TUF root with both old and new keys:
   fioctl keys tuf updates rotate-offline-key \
@@ -47,7 +47,7 @@ When you rotate the TUF targets offline signing key:
 	rotate.Flags().StringP("txid", "x", "", "TUF root updates transaction ID.")
 	rotate.Flags().StringP("keys", "k", "", "Path to <tuf-root-keys.tgz> used to sign TUF root.")
 	_ = rotate.MarkFlagFilename("keys")
-	rotate.Flags().StringP("targets-keys", "K", "", "Path to <tuf-targets-keys.tgz> used to sign prod & wave TUF targets.")
+	rotate.Flags().StringP("targets-keys", "K", "", "Path to <tuf-targets-keys.tgz> used to sign prod & Wave TUF Targets.")
 	_ = rotate.MarkFlagFilename("targets-keys")
 	rotate.Flags().StringP("key-type", "y", tufKeyTypeNameEd25519, "Key type, supported: Ed25519, RSA.")
 	rotate.Flags().BoolP("sign", "s", false, "Sign the new TUF root using the offline root keys.")
@@ -128,7 +128,7 @@ func doTufUpdatesRotateOfflineTargetsKey(cmd *cobra.Command) {
 	}
 	if targetsKeysFile == "" {
 		subcommands.DieNotNil(errors.New(
-			"The --keys or --targets-keys option is required to rotate the offline TUF targets key.",
+			"The --keys or --targets-keys option is required to rotate the offline TUF Targets key.",
 		))
 	}
 	if shouldSign && keysFile == "" {
@@ -170,14 +170,14 @@ func doTufUpdatesRotateOfflineTargetsKey(cmd *cobra.Command) {
 	// 4. Re-sign existing production targets.
 	onlineTargetsId := updates.Updated.OnlineKeys["targets"]
 	if onlineTargetsId == "" {
-		subcommands.DieNotNil(errors.New("Unable to find online target key for factory"))
+		subcommands.DieNotNil(errors.New("Unable to find online Target key for Factory"))
 	}
 	subcommands.DieNotNil(err)
 	newKey, newCreds := replaceOfflineTargetsKey(newCiRoot, onlineTargetsId, targetsCreds, keyType)
-	fmt.Println("= New target keyid:", newKey.Id)
+	fmt.Println("= New Target keyid:", newKey.Id)
 	newCiRoot, newProdRoot = finalizeTufRootChanges(newCiRoot, newProdRoot)
 
-	fmt.Println("= Re-signing prod targets")
+	fmt.Println("= Re-signing prod Targets")
 	var oldestKey TufSigner
 	if len(curCiRoot.Signed.Roles["targets"].KeyIDs) > 1 {
 		// Seaching for old key in curCiRoot supports several rotations in one transaction.
@@ -187,13 +187,13 @@ func doTufUpdatesRotateOfflineTargetsKey(cmd *cobra.Command) {
 	}
 
 	targetsProdMap, err := api.ProdTargetsList(factory, false)
-	subcommands.DieNotNil(err, "Failed to fetch production targets:")
+	subcommands.DieNotNil(err, "Failed to fetch production Targets:")
 	excludeTargetsWithoutKeySigInplace(targetsProdMap, oldestKey.Id)
 	newTargetsProdSigs, err := signProdTargets(newKey, targetsProdMap)
 	subcommands.DieNotNil(err)
 
 	targetsWaveMap, err := api.WaveTargetsList(factory, false)
-	subcommands.DieNotNil(err, "Failed to fetch production wave targets:")
+	subcommands.DieNotNil(err, "Failed to fetch production Wave Targets:")
 	excludeTargetsWithoutKeySigInplace(targetsWaveMap, oldestKey.Id)
 	newTargetsWaveSigs, err := signProdTargets(newKey, targetsWaveMap)
 	subcommands.DieNotNil(err)
@@ -261,6 +261,6 @@ func handleTufRootUpdatesUpload(tmpKeysFile, keysFile string, err error) {
 	if err = os.Rename(tmpKeysFile, keysFile); err != nil {
 		fmt.Println("\nERROR: Unable to update offline keys file.", err)
 		fmt.Println("Temp copy still available at:", tmpKeysFile)
-		fmt.Println("This temp file contains your new factory private key. You must copy this file.")
+		fmt.Println("This temp file contains your new Factory private key. You must copy this file.")
 	}
 }

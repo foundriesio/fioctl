@@ -13,7 +13,7 @@ var (
 
 var cmd = &cobra.Command{
 	Use:   "keys",
-	Short: "Manage keys in use by your factory fleet",
+	Short: "Manage keys in use by your Factory fleet",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		api = subcommands.Login(cmd)
 	},
@@ -22,14 +22,14 @@ var cmd = &cobra.Command{
 var caCmd = &cobra.Command{
 	Use:   "ca",
 	Short: "Manage Public Key Infrastructure for your device gateway",
-	Long: `Every factory can have its own dedicated device gateway. This allows customers
-to own the PKI infrastructure of their factory. This infrastructure is used
+	Long: `Every Factory can have its own dedicated device gateway. This allows you
+to own the PKI infrastructure of your Factory. This infrastructure is used
 to manage mutual TLS between your devices and the Foundries.io device gateway.`,
 }
 
 var estCmd = &cobra.Command{
 	Use:   "est",
-	Short: "Manage the Foundries EST server TLS keypair for your factory",
+	Short: "Manage the Foundries EST server TLS keypair for your Factory",
 	Long: `This command allows users to authorize Foundries.io to run an EST 7030 server
 for device certificate renewal.`,
 	Hidden: true,
@@ -37,7 +37,7 @@ for device certificate renewal.`,
 
 var tufCmd = &cobra.Command{
 	Use:   "tuf",
-	Short: "Manage The Update Framework Keys for your factory",
+	Short: "Manage The Update Framework Keys for your Factory",
 	Long: `These sub-commands allow you to manage your Factory's TUF private keys
 to ensure that you are in complete control of your OTA metadata.`,
 }

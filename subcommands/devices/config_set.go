@@ -20,7 +20,7 @@ func init() {
 	setConfigCmd := &cobra.Command{
 		Use:   "set <device> <file1=content> <file2=content ...>",
 		Short: "Create a secure configuration for the device",
-		Long: `Creates a secure configuration for device encrypting the contents each
+		Long: `Creates a secure configuration for the device, encrypting the contents of each
 file using the device's public key. The fioconfig daemon running
 on each device will then be able to grab the latest version of the
 device's configuration and apply it. The maximum size of a config is 1Mb.`,
@@ -68,7 +68,7 @@ device's configuration and apply it. The maximum size of a config is 1Mb.`,
 	configCmd.AddCommand(setConfigCmd)
 	setConfigCmd.Flags().StringP("reason", "m", "", "Add a message to store as the \"reason\" for this change")
 	setConfigCmd.Flags().BoolP("raw", "", false, "Use raw configuration file")
-	setConfigCmd.Flags().BoolP("create", "", false, "Replace the whole config with these values. Default is to merge these values in with the existing config values")
+	setConfigCmd.Flags().BoolP("create", "", false, "Replace the whole config with these values. Default is to merge these values with the existing config values")
 }
 
 func loadEciesPub(pubkey string) *ecies.PublicKey {

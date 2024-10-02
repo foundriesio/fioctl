@@ -27,13 +27,13 @@ This command can add one or both of the following certificates:
 ### online-ca - A Foundries.io owned keypair to support lmp-device-register.
 In order for lmp-device-register to work, Foundries.io needs the ability to sign client certificates for devices.
 If enabled, the factory_ca keypair will sign the certificate signing request returned from the API.
-If the online-ca was already created earlier, a new online-ca will replace it for the registration process.
-Still, the previous online-ca will be present in a list of device CAs trusted by the device gateway,
-so that devices with client certificates issued by it may continue to connect to Foundries.io services.
+If an online-ca was already created, a new one will replace it for the registration process.
+Still, the previous one will be present in a list of device CAs trusted by the device gateway.
+This is so that devices with client certificates issued by it may continue to connect to Foundries.io services.
 
 ### local-ca - A keypair you own that can be used for things like your manufacturing process,
 where you may generate device client certificates without having to communicate with Foundries.io web services.
-You can create as many local-ca files as you need, and use each of them to generate device client certificates.
+You can create as many local-ca files as you need, and use each to generate device client certificates.
 All such CAs will be added to the list of device CAs trusted by the device gateway.`,
 	}
 	caCmd.AddCommand(cmd)

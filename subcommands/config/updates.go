@@ -15,8 +15,7 @@ func init() {
 		Short: "Configure aktualizr-lite settings for how updates are applied to a device group",
 		Run:   doConfigUpdates,
 		Long: `View or change configuration parameters used by aktualizr-lite for updating devices
-in a device group. When run with no options, this command will print out how the 
-group is currently configured.`,
+in a device group. When run without options, prints out the current configuration.`,
 		Example: `
   # Make devices start taking updates from Targets tagged with "devel":
   fioctl config updates --group beta --tag devel

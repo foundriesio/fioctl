@@ -11,7 +11,7 @@ import (
 func init() {
 	cmd.AddCommand(&cobra.Command{
 		Use:   "delete",
-		Short: "Delete a device(s) registered to a factory.",
+		Short: "Delete device(s) registered to a Factory.",
 		Run:   doDelete,
 		Args:  cobra.MinimumNArgs(1),
 	})
