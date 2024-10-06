@@ -4,7 +4,6 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
-	"fmt"
 	"os"
 
 	"github.com/foundriesio/fioctl/subcommands"
@@ -72,19 +71,6 @@ func InitHsm(hsm *HsmInfo) {
 	if hsm != nil {
 		factoryCaKeyStorage = &hsmStorage{*hsm, FactoryCaKeyLabel}
 	}
-}
-
-func ValidateHsmArgs(hsmModule, hsmPin, hsmTokenLabel, moduleArg, pinArg, tokenArg string) (*HsmInfo, error) {
-	if len(hsmModule) > 0 {
-		if len(hsmPin) == 0 {
-			return nil, fmt.Errorf("%s is required with %s", pinArg, moduleArg)
-		}
-		if len(hsmTokenLabel) == 0 {
-			return nil, fmt.Errorf("%s is required with %s", tokenArg, moduleArg)
-		}
-		return &HsmInfo{Module: hsmModule, Pin: hsmPin, TokenLabel: hsmTokenLabel}, nil
-	}
-	return nil, nil
 }
 
 func parseOnePemBlock(pemBlock string) *pem.Block {

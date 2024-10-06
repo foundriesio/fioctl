@@ -74,8 +74,7 @@ func doCreateCA(cmd *cobra.Command, args []string) {
 	certsDir := args[0]
 
 	subcommands.DieNotNil(os.Chdir(certsDir))
-	hsm, err := x509.ValidateHsmArgs(
-		hsmModule, hsmPin, hsmTokenLabel, "--hsm-module", "--hsm-pin", "--hsm-token-label")
+	hsm, err := validateStandardHsmArgs(hsmModule, hsmPin, hsmTokenLabel)
 	subcommands.DieNotNil(err)
 	x509.InitHsm(hsm)
 

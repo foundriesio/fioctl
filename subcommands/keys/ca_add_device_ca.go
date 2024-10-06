@@ -68,8 +68,7 @@ func doAddDeviceCa(cmd *cobra.Command, args []string) {
 	assertFileName("--local-ca-filename", localCaFilename)
 
 	subcommands.DieNotNil(os.Chdir(args[0]))
-	hsm, err := x509.ValidateHsmArgs(
-		hsmModule, hsmPin, hsmTokenLabel, "--hsm-module", "--hsm-pin", "--hsm-token-label")
+	hsm, err := validateStandardHsmArgs(hsmModule, hsmPin, hsmTokenLabel)
 	subcommands.DieNotNil(err)
 	x509.InitHsm(hsm)
 

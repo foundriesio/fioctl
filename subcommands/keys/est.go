@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/foundriesio/fioctl/client"
-	"github.com/foundriesio/fioctl/subcommands"
-	"github.com/foundriesio/fioctl/x509"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
+	"github.com/foundriesio/fioctl/client"
+	"github.com/foundriesio/fioctl/subcommands"
+	"github.com/foundriesio/fioctl/x509"
 )
 
 func init() {
@@ -55,8 +56,7 @@ func doAuthorizeEst(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 
 	subcommands.DieNotNil(os.Chdir(args[0]))
-	hsm, err := x509.ValidateHsmArgs(
-		hsmModule, hsmPin, hsmTokenLabel, "--hsm-module", "--hsm-pin", "--hsm-token-label")
+	hsm, err := validateStandardHsmArgs(hsmModule, hsmPin, hsmTokenLabel)
 	subcommands.DieNotNil(err)
 	x509.InitHsm(hsm)
 
