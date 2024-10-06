@@ -41,6 +41,12 @@ const (
 
 	// CRL constants for root CA revokation.
 
+	// Revoke the root CA, so that it is no longer available in the root CAs list.
+	// Note: the API will revoke the root CA for any reason other than 4, 6, or 8.
+	// Reasons 6 and 8 are ignored.
+	// This action is permanent.
+	CrlRootRevoke = 5 // RFC 5280 - cessationOfOperation
+
 	// Supersede the root CA by another root CA.
 	// This is used to switch the currently active root CA, used to sign/verify device CAs and TLS certificates.
 	// The superseded CA serial be a currently active root CA, and the CRL must be signed by a newly activated root CA.
