@@ -100,10 +100,7 @@ func addRevokeCmdFlags(cmd *cobra.Command, op string) {
 	cmd.Flags().StringArrayP("ca-serial", "", nil,
 		"A serial number (base 10) of the device CA to "+op+". Can be used multiple times to "+op+" several device CAs")
 	_ = cmd.MarkFlagFilename("ca-file")
-	// HSM variables defined in ca_create.go
-	cmd.Flags().StringVarP(&hsmModule, "hsm-module", "", "", "Load a root CA key from a PKCS#11 compatible HSM using this module")
-	cmd.Flags().StringVarP(&hsmPin, "hsm-pin", "", "", "The PKCS#11 PIN to log into the HSM")
-	cmd.Flags().StringVarP(&hsmTokenLabel, "hsm-token-label", "", "", "The label of the HSM token containing the root CA key")
+	addStandardHsmFlags(cmd)
 }
 
 func doRevokeDeviceCa(cmd *cobra.Command, args []string) {
