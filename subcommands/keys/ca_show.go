@@ -6,9 +6,7 @@ import (
 	"crypto/x509"
 	"encoding/asn1"
 	"encoding/hex"
-	"encoding/pem"
 	"fmt"
-	"strings"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -77,9 +75,12 @@ func doShowCA(cmd *cobra.Command, args []string) {
 		fmt.Println("Updated by:", resp.ChangeMeta.UpdatedBy)
 	}
 
-	fmt.Println("## Factory root certificate")
+	fmt.Println("\n## Factory root certificates")
 	printOneCert(resp.RootCrt)
-	fmt.Println("## Server TLS Certificate")
+	if len(resp.ActiveRoot) > 0 {
+		fmt.Println("Active factory root serial number:", resp.ActiveRoot)
+	}
+	fmt.Println("\n## Server TLS Certificate")
 	printOneCert(resp.TlsCrt)
 	fmt.Println("\n## Device Authentication Certificate(s)")
 	printOneCert(resp.CaCrt)
@@ -150,28 +151,6 @@ func extKeyUsage(ext []x509.ExtKeyUsage) string {
 		}
 	}
 	return vals
-}
-
-func parseCertList(pemData string) (certs []*x509.Certificate) {
-	for len(pemData) > 0 {
-		block, remaining := pem.Decode([]byte(pemData))
-		if block == nil {
-			// could be excessive whitespace
-			if pemData = strings.TrimSpace(string(remaining)); len(pemData) == len(remaining) {
-				fmt.Println("Failed to parse remaining certificates: invalid PEM data")
-				break
-			}
-			continue
-		}
-		pemData = string(remaining)
-		c, err := x509.ParseCertificate(block.Bytes)
-		if err != nil {
-			fmt.Println("Failed to parse certificate:" + err.Error())
-			continue
-		}
-		certs = append(certs, c)
-	}
-	return
 }
 
 func prettyPrint(cert string) {

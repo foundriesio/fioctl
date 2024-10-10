@@ -6,6 +6,8 @@
 package x509
 
 import (
+	"crypto"
+	"crypto/x509"
 	"os"
 	"os/exec"
 
@@ -95,6 +97,10 @@ rm ca.cnf
 	return readFile(FactoryCaCertFile)
 }
 
+func CreateFactoryCrossCa(ou string, pubkey crypto.PublicKey) string {
+	return neverland()
+}
+
 func CreateDeviceCa(cn, ou string) string {
 	return CreateDeviceCaExt(cn, ou, DeviceCaKeyFile, DeviceCaCertFile)
 }
@@ -159,7 +165,15 @@ func SignEl2GoCsr(csrPem string) string {
 	return signCaCsr("el2g-*", csrPem)
 }
 
+func ReSignCrt(crt *x509.Certificate) string {
+	return neverland()
+}
+
 func CreateCrl(serials map[string]int) string {
+	return neverland()
+}
+
+func neverland() string {
 	if true {
 		panic("This function is not implemented in Bash implementation")
 	}

@@ -159,6 +159,30 @@ func PrintConfig(cfg *client.DeviceConfig, showAppliedAt, highlightFirstLine boo
 	}
 }
 
+type RenewRootOptions struct {
+	Reason        string
+	CorrelationId string
+	EstServer     string
+}
+
+func (o RenewRootOptions) AsConfig() client.ConfigCreateRequest {
+	b := new(bytes.Buffer)
+	fmt.Fprintf(b, "ESTSERVER=%s\n", o.EstServer)
+	fmt.Fprintf(b, "ROTATIONID=%s\n", o.CorrelationId)
+
+	return client.ConfigCreateRequest{
+		Reason: o.Reason,
+		Files: []client.ConfigFile{
+			{
+				Name:        "fio-renew-root",
+				Value:       b.String(),
+				Unencrypted: true,
+				OnChanged:   []string{"/usr/share/fioconfig/handlers/renew-root-cert"},
+			},
+		},
+	}
+}
+
 type RotateCertOptions struct {
 	Reason    string
 	EstServer string

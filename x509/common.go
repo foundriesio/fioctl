@@ -4,7 +4,6 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
-	"fmt"
 	"os"
 
 	"github.com/foundriesio/fioctl/subcommands"
@@ -14,6 +13,7 @@ const (
 	FactoryCaKeyFile  string = "factory_ca.key"
 	FactoryCaKeyLabel string = "root-ca"
 	FactoryCaCertFile string = "factory_ca.pem"
+	FactoryCaPackFile string = "factory_ca.bundle.pem"
 	DeviceCaKeyFile   string = "local-ca.key"
 	DeviceCaCertFile  string = "local-ca.pem"
 	TlsCertFile       string = "tls-crt"
@@ -38,6 +38,21 @@ const (
 	// Renew the previously disabled device CA, so that new device registrations are possible again.
 	// This value is currently not used by Fioctl. It is here for the reference of API integrators.
 	CrlCaRenew = 8 // RFC 5280 - removeFromCRL
+
+	// CRL constants for root CA revokation.
+
+	// Revoke the root CA, so that it is no longer available in the root CAs list.
+	// Note: the API will revoke the root CA for any reason other than 4, 6, or 8.
+	// Reasons 6 and 8 are ignored.
+	// This action is permanent.
+	CrlRootRevoke = 5 // RFC 5280 - cessationOfOperation
+
+	// Supersede the root CA by another root CA.
+	// This is used to switch the currently active root CA, used to sign/verify device CAs and TLS certificates.
+	// The superseded CA serial be a currently active root CA, and the CRL must be signed by a newly activated root CA.
+	// Otherwise, the API will reject this CRL.
+	// This action can be (re-)applied many times to switch active root CA back and forth.
+	CrlRootSupersede = 4 // RFC 5280 - superseded
 )
 
 func readFile(filename string) string {
@@ -72,19 +87,6 @@ func InitHsm(hsm *HsmInfo) {
 	if hsm != nil {
 		factoryCaKeyStorage = &hsmStorage{*hsm, FactoryCaKeyLabel}
 	}
-}
-
-func ValidateHsmArgs(hsmModule, hsmPin, hsmTokenLabel, moduleArg, pinArg, tokenArg string) (*HsmInfo, error) {
-	if len(hsmModule) > 0 {
-		if len(hsmPin) == 0 {
-			return nil, fmt.Errorf("%s is required with %s", pinArg, moduleArg)
-		}
-		if len(hsmTokenLabel) == 0 {
-			return nil, fmt.Errorf("%s is required with %s", tokenArg, moduleArg)
-		}
-		return &HsmInfo{Module: hsmModule, Pin: hsmPin, TokenLabel: hsmTokenLabel}, nil
-	}
-	return nil, nil
 }
 
 func parseOnePemBlock(pemBlock string) *pem.Block {
