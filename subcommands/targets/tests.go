@@ -18,11 +18,11 @@ import (
 func init() {
 	cmd.AddCommand(&cobra.Command{
 		Use:   "tests [<target> [<test-id> [<artifact name>]]]",
-		Short: "Show testing done against a target",
+		Short: "Show testing done against a Target",
 		Run:   doShowTests,
 		Args:  cobra.RangeArgs(0, 3),
 		Example: `
-  # List all testing performed in factory
+  # List all testing performed in the Factory
   fioctl targets tests
 
   # Show tests run against Target 12
@@ -122,7 +122,7 @@ func doShowTests(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 
 	if len(args) == 0 {
-		logrus.Debugf("Showing all testing done for factory: %s", factory)
+		logrus.Debugf("Showing all testing done for Factory: %s", factory)
 		listAll(factory)
 		os.Exit(0)
 	}
@@ -130,16 +130,16 @@ func doShowTests(cmd *cobra.Command, args []string) {
 	target, err := strconv.Atoi(args[0])
 	subcommands.DieNotNil(err)
 	if len(args) == 1 {
-		logrus.Debugf("Showing target testing for %s %d", factory, target)
+		logrus.Debugf("Showing Target testing for %s %d", factory, target)
 		list(factory, target)
 	} else if len(args) == 2 {
 		testId := args[1]
-		logrus.Debugf("Showing target test results for %s %d - %s", factory, target, testId)
+		logrus.Debugf("Showing Target test results for %s %d - %s", factory, target, testId)
 		show(factory, target, testId)
 	} else {
 		testId := args[1]
 		artifact := args[2]
-		logrus.Debugf("Showing target test artifacts for %s %d - %s / %s", factory, target, testId, artifact)
+		logrus.Debugf("Showing Target test artifacts for %s %d - %s / %s", factory, target, testId, artifact)
 		content, err := api.TargetTestArtifact(factory, target, testId, artifact)
 		subcommands.DieNotNil(err)
 		os.Stdout.Write(*content)

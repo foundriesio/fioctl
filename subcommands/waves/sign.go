@@ -12,16 +12,16 @@ import (
 func init() {
 	signCmd := &cobra.Command{
 		Use:   "sign <wave>",
-		Short: "Sign an existing wave targets with additional key",
-		Long: `Sign an existing wave targets with additional key.
+		Short: "Sign existing Wave Targets with additional key",
+		Long: `Sign existing Wave Targets with additional key.
 
-This command is only needed when your TUF root requires more than 1 signature for production targets.
+This command is only needed when your TUF root requires more than 1 signature for production Targets.
 In this case, you cannot roll out or complete a wave before it has enough signatures.`,
 		Run:  doSignWave,
 		Args: cobra.ExactArgs(1),
 	}
 	cmd.AddCommand(signCmd)
-	signCmd.Flags().StringP("keys", "k", "", "Path to <offline-creds.tgz> used to sign wave targets.")
+	signCmd.Flags().StringP("keys", "k", "", "Path to <offline-creds.tgz> used to sign wave Targets.")
 	_ = signCmd.MarkFlagRequired("keys")
 }
 

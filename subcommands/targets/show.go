@@ -28,18 +28,18 @@ var sbomFormats formats
 func init() {
 	showCmd := &cobra.Command{
 		Use:   "show <version>",
-		Short: "Show details of a specific target.",
+		Short: "Show details of a specific Target.",
 		Run:   doShow,
 		Args:  cobra.ExactArgs(1),
 		Example: `
   # Show details of all Targets with version 42:
   fioctl targets show 42
 
-  # Show a specific Target by name:
+  # Show specific Target by name:
   fioctl targets show intel-corei7-64-lmp-42`,
 	}
 	cmd.AddCommand(showCmd)
-	showCmd.PersistentFlags().String("production-tag", "", "Look up target from the production tag")
+	showCmd.PersistentFlags().String("production-tag", "", "Look up Target from the production tag")
 
 	showAppCmd := &cobra.Command{
 		Use:   "compose-app <version> <app>",
@@ -59,7 +59,7 @@ func init() {
   # Show all SBOM files for Target version 42:
   fioctl targets show sboms 42
 
-  # Show a subset of the SBOMS for this target. In this case, the 32-bit Arm
+  # Show a subset of the SBOMS for the Target. In this case, the 32-bit Arm
   # container SBOMS:
   fioctl targets show sboms 42 41/build-armhf
  
@@ -69,7 +69,7 @@ func init() {
   # Show overview of a specific SBOM as CSV:
   fioctl targets show sboms --format csv 42 41/build-armhf alpine:latest/arm.spdx.json
   
-  # Download all SBOMS for a target to /tmp:
+  # Download all SBOMS for a Target to /tmp:
   fioctl targets show sboms 42 --download /tmp
   
   # Download a filtered list of SBOMs to /tmp:
@@ -78,7 +78,7 @@ func init() {
   # Download a specific SBOM as cyclonedx:
   fioctl targets show sboms 42 41/build-armhf --download /tmp --format cyclonedx
 
-  # Download all SBOMS for a target to /tmp as CSV:
+  # Download all SBOMS for a Target to /tmp as CSV:
   fioctl targets show sboms 42 --download /tmp --format csv`,
 	}
 
@@ -106,7 +106,7 @@ func sortedAppsNames(target client.TufCustom) []string {
 func doShow(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 	version := args[0]
-	logrus.Debugf("Showing targets for %s %s", factory, version)
+	logrus.Debugf("Showing Targets for %s %s", factory, version)
 
 	prodTag, _ := cmd.Flags().GetString("production-tag")
 
@@ -156,7 +156,7 @@ func doShowComposeApp(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 	version := args[0]
 	appName := args[1]
-	logrus.Debugf("Showing target for %s %s %s", factory, version, appName)
+	logrus.Debugf("Showing Target for %s %s %s", factory, version, appName)
 
 	prodTag, _ := cmd.Flags().GetString("production-tag")
 
@@ -164,7 +164,7 @@ func doShowComposeApp(cmd *cobra.Command, args []string) {
 	for name, custom := range targets {
 		_, ok := custom.ComposeApps[appName]
 		if !ok {
-			fmt.Println("ERROR: App not found in target")
+			fmt.Println("ERROR: App not found in Target")
 			os.Exit(1)
 		}
 		appInfo, err := api.TargetComposeApp(factory, name, appName)
@@ -236,11 +236,11 @@ func getTargets(factory string, prodTag string, version string) ([]string, map[s
 		}
 	} else if !byName {
 		var err error
-		logrus.Debug("Looking up targets by version")
+		logrus.Debug("Looking up Targets by version")
 		targets, err = api.TargetsList(factory, version)
 		subcommands.DieNotNil(err)
 	} else {
-		logrus.Debug("Looking up target by name")
+		logrus.Debug("Looking up Target by name")
 		target, err := api.TargetGet(factory, version)
 		subcommands.DieNotNil(err)
 		targets = make(tuf.Files)
@@ -257,7 +257,7 @@ func getTargets(factory string, prodTag string, version string) ([]string, map[s
 			continue
 		}
 		if custom.TargetFormat != "OSTREE" {
-			logrus.Debugf("Skipping non-ostree target: %v", target)
+			logrus.Debugf("Skipping non-ostree Target: %v", target)
 			continue
 		}
 		matches[name] = *custom
@@ -265,7 +265,7 @@ func getTargets(factory string, prodTag string, version string) ([]string, map[s
 		names = append(names, name)
 	}
 	if len(matches) == 0 {
-		fmt.Println("ERROR: no target found for this version")
+		fmt.Println("ERROR: no Target found for version")
 		os.Exit(1)
 	}
 	sort.Strings(names)
@@ -334,7 +334,7 @@ func getSbomTargetName(factory, prodTag, version string) string {
 	for name := range targets {
 		return name
 	}
-	subcommands.DieNotNil(fmt.Errorf("Unable to find target for version: %s", version))
+	subcommands.DieNotNil(fmt.Errorf("Unable to find Target for version: %s", version))
 	return "" // Make compiler happy
 }
 

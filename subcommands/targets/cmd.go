@@ -11,7 +11,7 @@ var api *client.Api
 
 var cmd = &cobra.Command{
 	Use:   "targets",
-	Short: "Manage factory's TUF targets",
+	Short: "Manage Factory TUF targets",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		api = subcommands.Login(cmd)
 	},
