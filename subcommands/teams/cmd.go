@@ -13,7 +13,7 @@ import (
 func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "teams [<team_name>]",
-		Short: "List teams belonging to a FoundriesFactory",
+		Short: "List teams belonging to a Factory",
 		Args:  cobra.RangeArgs(0, 1),
 		Run:   doTeamsCommand,
 	}
@@ -31,7 +31,7 @@ func doTeamsCommand(cmd *cobra.Command, args []string) {
 }
 
 func doList(api *client.Api, factory string) {
-	logrus.Debugf("Listing FoundriesFactory teams for %s", factory)
+	logrus.Debugf("Listing teams for %s", factory)
 
 	teams, err := api.TeamsList(factory)
 	subcommands.DieNotNil(err)

@@ -23,28 +23,28 @@ var (
 func init() {
 	pruneCmd := &cobra.Command{
 		Use:   "prune <target> [<target>...]",
-		Short: "Prune target(s)",
+		Short: "Prune Target(s)",
 		Run:   doPrune,
 		Args:  cobra.MinimumNArgs(1),
 		Example: `
-  # prune a single target by name:
+  # prune a single Target by name:
   fioctl targets prune intel-corei7-64-lmp-123
 
-  # prune all targets with the "custom.tags" set to ["devel"]:
+  # prune all Targets with the "custom.tags" set to ["devel"]:
   fioctl targets prune --by-tag devel
 
-  # prune all targets with the "custom.tags" set to ["devel"] except for the most recent 10:
+  # prune all Targets with the "custom.tags" set to ["devel"] except for the most recent 10:
   fioctl targets prune --by-tag devel --keep-last=10
 
-  # prune all targets with the "custom.tags" set to ["devel", "my-test"]:
+  # prune all Targets with the "custom.tags" set to ["devel", "my-test"]:
   fioctl targets prune --by-tag devel my-test
 
-  # see the list of targets to be pruned (based on the above example), don't prune them:
+  # see the list of Targets to be pruned (based on the above example), but don't prune them:
   fioctl targets prune --by-tag devel my-test --dryrun`,
 	}
 	cmd.AddCommand(pruneCmd)
 	pruneCmd.Flags().BoolVarP(&pruneNoTail, "no-tail", "", false, "Don't tail output of CI Job")
-	pruneCmd.Flags().BoolVarP(&pruneByTag, "by-tag", "", false, "Prune all targets by tags instead of name")
+	pruneCmd.Flags().BoolVarP(&pruneByTag, "by-tag", "", false, "Prune all Targets by tags instead of name")
 	pruneCmd.Flags().IntVarP(&pruneKeepLast, "keep-last", "", 0, "Keep the last X number of builds for a tag when pruning")
 	pruneCmd.Flags().BoolVarP(&pruneDryRun, "dryrun", "", false, "Only show what would be pruned")
 }
@@ -98,7 +98,7 @@ func doPrune(cmd *cobra.Command, args []string) {
 			for _, name := range target_names {
 				parts := strings.SplitN(name, "lmp-", 2)
 				if len(parts) != 2 {
-					fmt.Printf("Unable to decode target name: %s\n", name)
+					fmt.Printf("Unable to decode Target name: %s\n", name)
 					os.Exit(1)
 				}
 				custom, _ := api.TargetCustom(targets[name])
@@ -139,7 +139,7 @@ func doPrune(cmd *cobra.Command, args []string) {
 		target_names = args
 	}
 
-	fmt.Printf("Deleting targets:\n %s\n", strings.Join(target_names, "\n "))
+	fmt.Printf("Deleting Targets:\n %s\n", strings.Join(target_names, "\n "))
 	if pruneDryRun {
 		fmt.Println("Dry run, exiting")
 		return

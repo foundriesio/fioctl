@@ -18,7 +18,7 @@ var inactiveThreshold int
 func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "status",
-		Short: "Get dashboard view of a factory and its devices",
+		Short: "Get dashboard view of a Factory and its devices",
 		Run:   showStatus,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			api = subcommands.Login(cmd)
