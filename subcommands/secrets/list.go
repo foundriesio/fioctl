@@ -15,14 +15,14 @@ import (
 func init() {
 	cmd.AddCommand(&cobra.Command{
 		Use:   "list",
-		Short: "List secret credentials configured in the factory",
+		Short: "List secret credentials configured in the Factory",
 		Run:   doList,
 	})
 }
 
 func doList(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
-	logrus.Debugf("Listing factory secrets for: %s", factory)
+	logrus.Debugf("Listing Factory secrets for: %s", factory)
 
 	triggers, err := api.FactoryTriggers(factory)
 	subcommands.DieNotNil(err)

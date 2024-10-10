@@ -18,7 +18,7 @@ func NewCommand() *cobra.Command {
 		Short: "Show version information of this tool.",
 		Run:   doVersion,
 	}
-	cmd.Flags().StringVarP(&updateTo, "update-to", "", "", "Update to the given version of fioctl")
+	cmd.Flags().StringVarP(&updateTo, "update-to", "", "", "Update to the given version of Fioctl")
 	return cmd
 }
 
@@ -38,7 +38,7 @@ func doVersion(cmd *cobra.Command, args []string) {
 		}
 		if err := update.Do(); err != nil {
 			if os.IsPermission(err) {
-				DieNotNil(fmt.Errorf("there was a permission error while updating fioctl: %w. Please run again as an admin or root.", err))
+				DieNotNil(fmt.Errorf("There was a permission error while updating Fioctl: %w. Please run again as an admin or root.", err))
 			} else {
 				DieNotNil(err)
 			}
@@ -55,7 +55,7 @@ func doVersion(cmd *cobra.Command, args []string) {
 		fmt.Println("You can update by running:")
 		fmt.Println("\t", exe, "version", "--update-to", update.Version)
 	} else {
-		fmt.Println("This is the latest version of the tool.")
+		fmt.Println("This is the latest version.")
 	}
 }
 

@@ -14,7 +14,7 @@ import (
 func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "users [<user_id>]",
-		Short: "List users with access to a FoundriesFactory",
+		Short: "List users with access to a Factory",
 		Args:  cobra.RangeArgs(0, 1),
 		Run:   doUserCommand,
 	}
@@ -32,7 +32,7 @@ func doUserCommand(cmd *cobra.Command, args []string) {
 }
 
 func doList(api *client.Api, factory string) {
-	logrus.Debugf("Listing factory users for %s", factory)
+	logrus.Debugf("Listing users for %s", factory)
 
 	users, err := api.UsersList(factory)
 	subcommands.DieNotNil(err)

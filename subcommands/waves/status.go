@@ -14,40 +14,40 @@ import (
 func init() {
 	showCmd := &cobra.Command{
 		Use:   "status [<wave>]",
-		Short: "Show a status for a given wave by name",
-		Long: `Show a status for a given wave by name.
-When no wave name is provided - show a status for a currently active wave.
+		Short: "Show status for a given Wave by name",
+		Long: `Show status for a given Wave by name.
+When no Wave name is provided — show a status for a currently active Wave.
 
-For an active wave this command shows an overview of a wave,
-followed by an overview of device groups participating in a wave,
-and after that a detailed information for each rollout group.
+For an active Wave, this command shows an overview if it,
+followed by an overview of device groups participating in the Wave,
+and lastly, detailed information for each rollout group.
 
-For finished waves a detailed per group information is not shown as it is no more relevant.
+For finished Waves, detailed per group information is not shown as it is no longer relevant.
 
-When counting a total number of devices participating in a wave,
-each production device that has a tag equal to a wave tag counts.
+When counting the total number of devices participating in a Wave,
+each production device with a tag equal to a Wave tag counts.
 In particular, devices outside rollout groups also count if they satisfy this condition.
 
 All other numbers are calculated relative to this total number.
-For example, online devices in each group are counted among only those production devices,
+For example, online devices in each group are counted only among those production devices
 that belong to a given group and also have a tag equal to a group tag.
-This number can be lower than a total number of online devices in this group.
+This number can be lower than the total number of online devices in this group.
 
-In a device group overview all wave rollout groups are shown first in an order of rollout time.
-After that follow other groups that have devices with matching tag (if they contain at least one such device).
-The last row is for devices not belonging to any group (if at least one such device matches a wave tag).
+In a device group overview, all Wave rollout groups are shown first in the order of rollout time.
+Next is other groups that have devices with a matching tag — if they contain at least one such device.
+The last row is for devices not belonging to any group — if at least one such device matches a Wave tag.
 
-A number of updated devices depends onto a wave status:
-For active wave it is a number of devices in rollout groups with target version >= wave version.
-For finished waves it is a number of all devices with target version >= wave version.
+A number of updated devices depends onto a Wave status:
+For active Waves, it is a number of devices in rollout groups with Target version >= Wave version.
+For finished Waves, it is a number of all devices with Target version >= Wave version.
 
-Meaning of scheduled vs unscheduled (for update) device number also depends onto a wave status:
-For active wave, scheduled for update are devices in rollout groups with target version < wave version.
-For complete wave, scheduled are all devices (regardless a group) with target version < wave version.
-For canceled wave, all devices with target version < wave version are unscheduled (scheduled is always zero).
+Meaning of scheduled vs unscheduled (for updates) device number also depends on Wave status:
+For an active Wave, "scheduled for update" are devices in rollout groups with Target version < Wave version.
+For a completed Wave, "scheduled" are all devices (regardless of group) with Target version < Wave version.
+For a canceled Wave, all devices with Target version < Wave version are unscheduled (scheduled is always zero).
 
-For finished waves all numbers are calculated for a current date (not a date of a wave finishing).
-This can be used to monitor how an update progresses after a wave has been complete.
+For finished Waves, all numbers are calculated for a current date (not a date of a Wave finishing).
+This can be used to monitor how an update progresses after a Wave completes.
 `,
 		Run:  doShowWaveStatus,
 		Args: cobra.RangeArgs(0, 1),
@@ -62,9 +62,9 @@ func doShowWaveStatus(cmd *cobra.Command, args []string) {
 	name := "$active$"
 	if len(args) > 0 {
 		name = args[0]
-		logrus.Debugf("Showing a wave %s status for %s", name, factory)
+		logrus.Debugf("Showing Wave %s status for %s", name, factory)
 	} else {
-		logrus.Debugf("Showing an active wave status for %s", factory)
+		logrus.Debugf("Showing active Wave status for %s", factory)
 	}
 
 	status, err := api.FactoryWaveStatus(factory, name, offlineThreshold)
@@ -74,7 +74,7 @@ func doShowWaveStatus(cmd *cobra.Command, args []string) {
 		status.Name, status.Tag, status.Version, status.Status)
 	fmt.Println()
 	if status.Status != "active" {
-		fmt.Println("A device information is shown for a current time, not for a time when a wave was finished")
+		fmt.Println("Device information is shown for the current time, not for when a Wave finished")
 		fmt.Println()
 	}
 	fmt.Printf("Created At: \t%s\n", status.CreatedAt)
@@ -123,8 +123,8 @@ func doShowWaveStatus(cmd *cobra.Command, args []string) {
 	}
 
 	if hasTargets && status.Status == "active" {
-		fmt.Println("\nOrphan target versions below are marked with a star (*)")
-		fmt.Println("Wave target version below is marked with an arrow (<-)")
+		fmt.Println("\nOrphan Target versions below are marked with a star (*)")
+		fmt.Println("Wave Target version below is marked with an arrow (<-)")
 		for _, group := range status.RolloutGroups {
 			showGroupStatusTargets(group, status)
 		}
@@ -147,7 +147,7 @@ func showGroupStatusTargets(group client.RolloutGroupStatus, status *client.Wave
 			mark = "*"
 		}
 		if tgt.Version > 0 {
-			details = fmt.Sprintf("`fioctl targets show %d`", tgt.Version)
+			details = fmt.Sprintf("`fioctl Targets show %d`", tgt.Version)
 		}
 		t.AddLine(fmt.Sprintf("%-6d%2s", tgt.Version, mark), tgt.Devices, details)
 	}

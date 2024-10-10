@@ -16,7 +16,7 @@ import (
 func init() {
 	cmd.AddCommand(&cobra.Command{
 		Use:   "update secret_name=secret_val...",
-		Short: "Update secret(s) in a factory",
+		Short: "Update secret(s) in a Factory",
 		Example: `
   # Create or update a secret
   fioctl secrets update githubtok=foo
@@ -33,7 +33,7 @@ func init() {
 
 func doUpdate(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
-	logrus.Debugf("Updating factory secrets for: %s", factory)
+	logrus.Debugf("Updating Factory secrets for: %s", factory)
 
 	triggers, err := api.FactoryTriggers(factory)
 	subcommands.DieNotNil(err)

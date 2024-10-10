@@ -30,7 +30,7 @@ func init() {
 
 func doEdit(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
-	logrus.Debugf("Editing targets for %s", factory)
+	logrus.Debugf("Editing Targets for %s", factory)
 
 	// Get raw json
 	targets, err := api.TargetsList(factory)
@@ -83,7 +83,7 @@ func doEdit(cmd *cobra.Command, args []string) {
 	var newTargets tuf.Files
 	err = json.Unmarshal(content, &newTargets)
 	if err != nil {
-		fmt.Println("Unable to parse new targets: ", err)
+		fmt.Println("Unable to parse new Targets: ", err)
 		os.Exit(1)
 	}
 	type TargetsUp struct {
@@ -92,7 +92,7 @@ func doEdit(cmd *cobra.Command, args []string) {
 	upload := TargetsUp{newTargets}
 	content, err = json.Marshal(upload)
 	if err != nil {
-		fmt.Println("Unable to marshall targets data: ", err)
+		fmt.Println("Unable to marshal Targets data: ", err)
 		os.Exit(1)
 	}
 
