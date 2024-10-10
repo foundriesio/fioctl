@@ -14,7 +14,7 @@ func init() {
 		Short: "List device UUIDs that have been denied access to the device-gateway",
 		Run:   doListDenied,
 		Long: `Devices created using a factory-registration-reference server get created
-created on-demand. Because of this, devices are placed into a deny-list when
+on-demand. Because of this, devices are placed into a deny-list when
 they are deleted, so that they can't continue to access the system by getting 
 re-created.`,
 	}

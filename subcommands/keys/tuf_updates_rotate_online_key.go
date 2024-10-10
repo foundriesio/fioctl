@@ -20,15 +20,15 @@ func init() {
 The new online signing key will be used in both CI and production TUF root.
 
 When you rotate the TUF online signing key:
-- if there are CI or production targets in your factory, they are re-signed using the new key.
-- if there is an active wave in your factory, the TUF online key rotation is not allowed.
-- the new wave cannot be created until you apply the online keys rotation.
+- Any CI or production Targets are re-signed using the new key.
+- If there is an active Wave, the TUF online key rotation is not allowed.
+- The new Wave cannot be created until you apply the online keys rotation.
 
 When you apply the online key rotation, these features are temporarily disabled until it succeeds:
-- new CI targets upload (including the targets upload during CI builds).
-- automatic re-signing of expired TUF roles using online keys (both CI and production targets).`,
+- new CI targets upload (including the Targets upload during CI builds).
+- automatic re-signing of expired TUF roles using online keys (both CI and production Targets).`,
 		Example: `
-- Rotate online TUF targets key and re-sign the new TUF root:
+- Rotate online TUF Targets key and re-sign the new TUF root:
   fioctl keys tuf updates rotate-online-key \
     --txid=abc --role=targets --keys=tuf-root-keys.tgz --sign
 - Rotate all online TUF keys explicitly specifying new key type (and signing algorithm):

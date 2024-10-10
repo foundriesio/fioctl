@@ -26,7 +26,7 @@ var (
 )
 
 func RequireFactory(cmd *cobra.Command) {
-	cmd.PersistentFlags().StringP("factory", "f", "", "Factory to list targets for")
+	cmd.PersistentFlags().StringP("factory", "f", "", "Factory to list Targets for")
 	cmd.PersistentFlags().StringP("token", "t", "", "API token from https://app.foundries.io/settings/tokens/")
 }
 

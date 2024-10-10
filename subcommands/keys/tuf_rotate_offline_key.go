@@ -26,7 +26,7 @@ The new signing key is rotated in both CI and production TUF root transactionall
 
 When you rotate the TUF targets offline signing key:
 - if there are production targets in your factory, they are re-signed using the new key.
-- if there is an active wave in your factory, the TUF targets rotation is not allowed.`,
+- if there is an active Wave in your factory, the TUF targets rotation is not allowed.`,
 		Example: `
   # Take ownership of TUF root and targets keys for a new factory, keep them in separate files:
   fioctl keys tuf rotate-offline-key --role=root \
@@ -45,7 +45,7 @@ When you rotate the TUF targets offline signing key:
 	rotate.Flags().StringP("keys", "k", "", "Path to <offline-creds.tgz> used to sign TUF root.")
 	_ = rotate.MarkFlagRequired("keys")
 	_ = rotate.MarkFlagFilename("keys")
-	rotate.Flags().StringP("targets-keys", "K", "", "Path to <offline-targets-creds.tgz> used to sign prod & wave TUF targets.")
+	rotate.Flags().StringP("targets-keys", "K", "", "Path to <offline-targets-creds.tgz> used to sign prod & Wave TUF targets.")
 	_ = rotate.MarkFlagFilename("targets-keys")
 	rotate.Flags().BoolP("first-time", "", false, "Used for the first customer rotation. The command will download the initial root key.")
 	rotate.Flags().StringP("key-type", "y", tufKeyTypeNameEd25519, "Key type, supported: Ed25519, RSA.")
@@ -76,7 +76,7 @@ Instead, please, use a new approach to rotate TUF root key:
 		Long: `Rotate the offline target signing key for the Factory.
 
 If there are any production targets in your factory - they are re-signed using the new key.
-This command is not allowed if there is an active wave in your factory.`,
+This command is not allowed if there is an active Wave in your Factory.`,
 		Deprecated: `it has moved to a new place.
 Instead, please, use a new approach to rotate TUF targets key:
   fioctl keys tuf rotate-offline-key --role=targets

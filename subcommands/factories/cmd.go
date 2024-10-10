@@ -15,7 +15,7 @@ var (
 func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:    "factories",
-		Short:  "List factories a user is a member of.",
+		Short:  "List Factories a user is a member of.",
 		Hidden: true, // Only useful support work
 		Run:    doFactories,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {

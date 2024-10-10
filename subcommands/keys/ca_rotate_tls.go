@@ -35,7 +35,7 @@ func doRotateTls(cmd *cobra.Command, args []string) {
 	subcommands.DieNotNil(err)
 	x509.InitHsm(hsm)
 
-	fmt.Println("Requesting new Foundries TLS CSR")
+	fmt.Println("Requesting new Foundries.io TLS CSR")
 	csrs, err := api.FactoryCreateCA(factory, client.CaCreateOptions{CreateTlsCert: true})
 	subcommands.DieNotNil(err)
 
@@ -43,9 +43,9 @@ func doRotateTls(cmd *cobra.Command, args []string) {
 		fmt.Printf("Moving existing TLS cert file from %s to %s.bak", x509.TlsCertFile, x509.TlsCertFile)
 		subcommands.DieNotNil(os.Rename(x509.TlsCertFile, x509.TlsCertFile+".bak"))
 	}
-	fmt.Println("Signing Foundries TLS CSR")
+	fmt.Println("Signing Foundries.io TLS CSR")
 	certs := client.CaCerts{TlsCrt: x509.SignTlsCsr(csrs.TlsCsr)}
 
-	fmt.Println("Uploading signed certs to Foundries")
+	fmt.Println("Uploading signed certs to Foundries.io")
 	subcommands.DieNotNil(api.FactoryPatchCA(factory, certs))
 }

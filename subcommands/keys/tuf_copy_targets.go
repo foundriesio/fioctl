@@ -14,14 +14,14 @@ import (
 func init() {
 	copy := &cobra.Command{
 		Use:    "copy-targets <offline key archive> <new targets archive>",
-		Short:  "Copy the target signing credentials from the offline key archive",
+		Short:  "Copy the Target signing credentials from the offline key archive",
 		Hidden: true,
 		Run:    doCopyTargets,
 		Args:   cobra.ExactArgs(2),
-		Long: `This command extracts the target signing credentials required for initializing 
-waves into a new tarball so that the offline key archive isn't required for
-rolling out production updates. This should be run after each target key
-rotation and distributed to the operator in charge of production OTAs.`,
+		Long: `This command extracts the Target signing credentials required for initializing 
+waves into a new tarball so that the offline key archive is not required for
+rolling out production updates. Run after each Target key rotation and distribute
+to the operator in charge of production OTAs.`,
 		Deprecated: `it will be removed in the future.
 Please, use a new approach to rotate the targets key into a separate file:
 	fioctl keys tuf rotate-offline-key --role=targets \
@@ -69,5 +69,5 @@ func createTargetsCreds(factory string, root client.AtsTufRoot, creds OfflineCre
 			}
 		}
 	}
-	return targets, errors.New("Unable to find offline target key for factory")
+	return targets, errors.New("Unable to find offline Target key for Factory")
 }

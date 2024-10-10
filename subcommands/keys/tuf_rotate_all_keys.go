@@ -21,12 +21,12 @@ func init() {
 
 The new signing keys are rotated in both CI and production TUF root transactionally.
 
-When you rotate all TUF signing leys:
-- if there are CI or production targets in your factory, they are re-signed using the new keys.
-- if there is an active wave in your factory, this command is not allowed.
-- new CI targets upload is temporarily disabled for the duration of transaction.`,
+When you rotate all TUF signing keys:
+- CI or production Targets in your Factory are re-signed using the new keys.
+- If there is an active Wave in your Factory, this command is not allowed.
+- Uploading New CI Targets is temporarily disabled for the duration of the transaction.`,
 		Example: `
-Migrate an old factory to use Ed25519 key type for all TUF signing keys (online and offline):
+Migrate a Factory to use Ed25519 key type for all TUF signing keys (online and offline):
   fioctl keys tuf rotate-all-keys --key-type=ed25519 \
     --keys=offline-tuf-root-keys.tgz --targets-keys=offline-tuf-targets-keys.tgz`,
 		Run: doRotateAllKeys,
@@ -34,7 +34,7 @@ Migrate an old factory to use Ed25519 key type for all TUF signing keys (online 
 	rotate.Flags().StringP("keys", "k", "", "Path to <offline-creds.tgz> used to sign TUF root.")
 	_ = rotate.MarkFlagRequired("keys")
 	_ = rotate.MarkFlagFilename("keys")
-	rotate.Flags().StringP("targets-keys", "K", "", "Path to <offline-targets-creds.tgz> used to sign prod & wave TUF targets.")
+	rotate.Flags().StringP("targets-keys", "K", "", "Path to <offline-targets-creds.tgz> used to sign prod & Wave TUF Targets.")
 	_ = rotate.MarkFlagFilename("targets-keys")
 	rotate.Flags().BoolP("first-time", "", false, "Used for the first customer rotation. The command will download the initial root key.")
 	rotate.Flags().StringP("key-type", "y", tufKeyTypeNameEd25519, "Key type, supported: Ed25519, RSA.")

@@ -16,12 +16,12 @@ var (
 func init() {
 	appsStatesCmd := &cobra.Command{
 		Use:   "apps-states <name>",
-		Short: "List states of Apps reported by a device",
+		Short: "List the states of Apps reported by a device",
 		Run:   doListStates,
 		Args:  cobra.ExactArgs(1),
 	}
 	cmd.AddCommand(appsStatesCmd)
-	appsStatesCmd.Flags().IntVarP(&asListLimit, "limit", "n", 1, "Limit the number of Apps states to display.")
+	appsStatesCmd.Flags().IntVarP(&asListLimit, "limit", "n", 1, "Limit the number of App states to display.")
 }
 
 func doListStates(cmd *cobra.Command, args []string) {

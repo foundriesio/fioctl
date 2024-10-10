@@ -292,7 +292,7 @@ func loadSotaConfig(dcl *client.DeviceConfigList) (sota *toml.Tree, err error) {
 	}
 
 	if !found {
-		logrus.Debugf("Not found a FIO toml in the latest config")
+		logrus.Debugf("FIO toml not found in the latest config")
 	}
 	// In case if FIO TOML file is missing or an error - return an empty one.
 	// Let a caller decide what to do in case of an error.

@@ -31,7 +31,7 @@ var (
 func init() {
 	cmd := &cobra.Command{
 		Use:   "show",
-		Short: "Show what certificates are known to the factory",
+		Short: "Show certificates known to the Factory",
 		Run:   doShowCA,
 	}
 	caCmd.AddCommand(cmd)

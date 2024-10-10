@@ -26,7 +26,7 @@ func init() {
 		Use:   "show-root",
 		Short: "Show the Factory's TUF root metadata",
 		Deprecated: `it has moved to a new place.
-Instead, please, use the "fioctl keys tuf show-root".
+Instead, use "fioctl keys tuf show-root".
 `,
 		Hidden: true,
 		Run:    doShowRoot,

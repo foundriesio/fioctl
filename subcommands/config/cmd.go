@@ -13,7 +13,7 @@ var (
 
 var cmd = &cobra.Command{
 	Use:   "config",
-	Short: "Manage configuration common to all devices in a factory",
+	Short: "Manage configuration common to all devices in a Factory",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		api = subcommands.Login(cmd)
 	},

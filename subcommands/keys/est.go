@@ -15,7 +15,7 @@ import (
 func init() {
 	cmd := &cobra.Command{
 		Use:   "show",
-		Short: "Show the EST TLS certificate authorized for this factory",
+		Short: "Show the EST TLS certificate authorized for this Factory",
 		Run:   doShowEst,
 	}
 	estCmd.AddCommand(cmd)
@@ -28,9 +28,9 @@ func init() {
 		Args:  cobra.ExactArgs(1),
 		Long: `This command will initiate a transaction with api.foundries.io that:
 
-  * api.foundries.io will create a new private key and TLS certificate signing request
-  * This command will sign the request using the Factory's root key.
-  * Upload the resultant TLS certificate to api.foundries.io`,
+  * will have api.foundries.io create a new private key and TLS certificate signing request
+  * signs the request using the Factory's root key.
+  * Uploads the resultant TLS certificate to api.foundries.io`,
 	}
 	estCmd.AddCommand(cmd)
 	// HSM variables defined in ca_create.go
@@ -46,7 +46,7 @@ func doShowEst(cmd *cobra.Command, args []string) {
 	cert, err := api.FactoryGetCA(factory)
 	subcommands.DieNotNil(err)
 	if len(cert.EstCrt) == 0 {
-		fmt.Println("EST TLS certificate has not been configured for this factory.")
+		fmt.Println("EST TLS certificate has not been configured for this Factory.")
 	} else if prettyFormat {
 		prettyPrint(cert.EstCrt)
 	} else {

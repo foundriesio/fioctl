@@ -51,9 +51,9 @@ There are two options available for you now:
 - cancel the staged TUF root updates using the "fioctl keys tuf updates cancel"`
 		} else {
 			msg += `
-This is a critical error: Staged TUF root updates may be partially applied to your Factory.
-Please, re-run the "fioctl keys tuf updates apply" again after some time, but as soon as possible.
-If the error persists, please, contact the customer support.`
+This is a critical error: Staged TUF root updates may be only partially applied to your Factory.
+Please re-run the "fioctl keys tuf updates apply" soon after a short pause.
+If the error persists, please contact customer support.`
 		}
 		err = fmt.Errorf(msg, err)
 	}

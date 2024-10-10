@@ -13,28 +13,28 @@ var isTufUpdatesShortcut, isTufUpdatesInitialized bool
 
 var tufUpdatesCmd = &cobra.Command{
 	Use:   "updates",
-	Short: "Manage updates to the TUF root for your factory (expert mode)",
+	Short: "Manage updates to the TUF root for your Factory (expert mode)",
 	Long: `These sub-commands allow you to transactionally stage and apply changes
-to your Factory's TUF private keys in a granular way familiar for TUF experts.
+to your Factory's TUF private keys in a granular way, familiar to TUF experts.
 
-The TUF updates transaction starts by running the "fioctl keys tuf updates init" command.
-That command returns a unique secure Transaction ID which is then required for other actions.
-The admin initiating the transaction should save that TXID for the timespan of the transaction.
-It must only be shared with those Factory admins which will participate in the transaction.
+The TUF updates transaction starts by running "fioctl keys tuf updates init".
+This returns a unique secure Transaction ID which is then required for other actions.
+The admin initiating the transaction should save this TXID for the timespan of the transaction.
+It must only be shared with Factory admins which will participate in the transaction.
 
 Typically, admin(s) will run other subcommands to make changes to the TUF root (see examples).
-The staged changes can be checked using the "fioctl keys tuf updates review" command.
+The staged changes can be checked using "fioctl keys tuf updates review".
 
-Finally, the transaction can be applied using the "fioctl keys tuf updates apply" command.
-If admin decides to abandon the staged changes they can run "fioctl keys tuf updates cancel".
+Finally, the transaction can be applied using "fioctl keys tuf updates apply".
+If an admin decides to abandon the staged changes they can run "fioctl keys tuf updates cancel".
 
 For increased safety there can be only one active TUF updates transaction at a time.`,
 	Example: `
-- Take ownership of TUF root and targets keys for a new factory, keep them on separate machines:
+- Take ownership of TUF root and Target keys for a new Factory and keep them on separate machines:
   1. On TUF root admin's shell:
      fioctl keys tuf updates init --first-time --keys=tuf-root-keys.tgz
-  2. The above command prints a transaction ID (e.g. abcdef42) to be shared with TUF targets admin.
-  3. On TUF targets admin's shell:
+  2. The above command prints a transaction ID (e.g. abcdef42) to be shared with TUF Targets admin.
+  3. On TUF Targets admin's shell:
      fioctl keys tuf updates rotate-offline-key \
 	    --role=targets --txid=abcdef42 --targets-keys=tuf-targets-keys.tgz
   4. On TUF root admin's shell:

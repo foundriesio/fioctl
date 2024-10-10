@@ -12,7 +12,7 @@ import (
 func init() {
 	groupCmd := &cobra.Command{
 		Use:   "group <device> [<group>]",
-		Short: "Assign a device to an existing factory device group",
+		Short: "Assign a device to an existing Factory device group",
 		Run:   doConfigGroup,
 		Args:  cobra.RangeArgs(1, 2),
 	}

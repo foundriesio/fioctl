@@ -36,7 +36,7 @@ func NewCommand() *cobra.Command {
 		Long: `Configure a Git credential helper that allows Git to access
 source.foundries.io.
 
-This command will likely need to be run as root. It creates a symlink,
+This command likely needs to be run as root. It creates a symlink,
 git-credential-fio, in the same directory as the git client binary.
 
 NOTE: The credentials will need the "source:read-update" scope to work with Git`,

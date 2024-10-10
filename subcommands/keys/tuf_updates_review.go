@@ -108,7 +108,7 @@ func doTufUpdatesReview(cmd *cobra.Command, args []string) {
 			}
 		}
 	} else {
-		fmt.Println("The following TUF root updates are staged for your factory:")
+		fmt.Println("The following TUF root updates are staged for your Factory:")
 		for _, amendment := range updates.Amendments {
 			fmt.Printf(" - %s\n", amendment.Message)
 		}

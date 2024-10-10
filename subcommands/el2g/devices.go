@@ -28,7 +28,7 @@ func init() {
 
 	devicesCmd.AddCommand(&cobra.Command{
 		Use:   "show <device-id>",
-		Short: "Show the integrations details for a device",
+		Short: "Show the integration details for a device",
 		Args:  cobra.ExactArgs(1),
 		Run:   doShow,
 	})
@@ -39,7 +39,7 @@ func init() {
 		Args:  cobra.ExactArgs(2),
 		Run:   doAdd,
 		Example: `# Add a device with an SE050 (product ID: 935389312472)
-# The product IDs configured for you factory can be found by running
+# The product IDs configured for you Factory can be found by running
 #  fioctl el2g status
 # Device ID can be found on a device by running:
 #  $ ssscli se05x uid | grep "Unique ID:" | cut -d: -f2

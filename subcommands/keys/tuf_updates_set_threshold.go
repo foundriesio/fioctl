@@ -14,12 +14,12 @@ import (
 func init() {
 	setCmd := &cobra.Command{
 		Use:   "set-threshold --role=root|targets <num>",
-		Short: "Set signature threshold for the TUF root or production targets for your Factory",
-		Long: `Set signature threshold for the TUF root or production targets for your Factory
+		Short: "Set signature threshold for the TUF root or production Targets for your Factory",
+		Long: `Set signature threshold for the TUF root or production Targets for your Factory
 
 For the TUF root the signature threshold is set for both CI and production roles (default 1).
 For the TUF targets the signature threshold is only set for the production role (default 2).
-Signature threshold for the CI TUF targets is always set to 1.
+Signature threshold for the CI TUF Targets is always set to 1.
 
 Make sure to add enough offline signing keys, and add enough signatures to satisfy the new signature threshold.
 `,

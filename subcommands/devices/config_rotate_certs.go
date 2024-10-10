@@ -16,7 +16,7 @@ func init() {
 		Short: "Rotate a device's x509 keypair used to connect to the device gateway",
 		Args:  cobra.ExactArgs(1),
 		Run:   doConfigRotate,
-		Long: `This command will send a fioconfig change to a device to instruct it to perform
+		Long: `This command will send a fioconfig change to a device, instructing it to perform
 a certificate rotation using the EST server configured with "fioctl keys est".
 
 This command will only work for devices running LmP version 90 and later.`,
@@ -26,7 +26,7 @@ This command will only work for devices running LmP version 90 and later.`,
 	cmd.Flags().StringP("reason", "r", "", "The reason for changing the cert")
 	cmd.Flags().StringP("hsm-pkey-ids", "", "01,07", "Available PKCS11 slot IDs for the private key")
 	cmd.Flags().StringP("hsm-cert-ids", "", "03,09", "Available PKCS11 slot IDs for the client certificate")
-	cmd.Flags().StringP("server-name", "", "", "EST server name when not using the Foundries managed server. e.g. est.example.com")
+	cmd.Flags().StringP("server-name", "", "", "EST server name when not using the Foundries.io managed server. e.g. est.example.com")
 	cmd.Flags().BoolP("dryrun", "", false, "Show what the fioconfig entry will be and exit")
 	configCmd.AddCommand(cmd)
 	_ = cmd.MarkFlagRequired("reason")

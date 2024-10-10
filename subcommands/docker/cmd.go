@@ -44,8 +44,8 @@ func NewCommand() *cobra.Command {
 		Long: `Configure a Docker credential helper that allows Docker to access
 hub.foundries.io.
 
-This command will likely need to be run as root. It creates a symlink,
-docker-credential-fio, in the same directory as the docker client binary.
+This command likely needs to be run as root. It creates a symlink,
+docker-credential-fio, in the same directory as the Docker client binary.
 
 NOTE: The credentials will need the "containers:read" scope to work with Docker`,
 		Run: doDockerCreds,
@@ -97,7 +97,7 @@ func doDockerCreds(cmd *cobra.Command, args []string) {
 	if errors.Is(err, fs.ErrNotExist) {
 		dockerConfig := filepath.Dir(dockerConfigFile)
 		if _, err := os.Stat(dockerConfig); errors.Is(err, fs.ErrNotExist) {
-			fmt.Println("Creating docker config directory:", dockerConfig)
+			fmt.Println("Creating Docker config directory:", dockerConfig)
 			subcommands.DieNotNil(os.Mkdir(dockerConfig, 0o755))
 		}
 		config = make(map[string]interface{})

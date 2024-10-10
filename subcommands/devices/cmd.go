@@ -20,7 +20,7 @@ var (
 var cmd = &cobra.Command{
 	Use:     "devices",
 	Aliases: []string{"device"},
-	Short:   "Manage devices registered to a factory",
+	Short:   "Manage devices registered to a Factory",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		api = subcommands.Login(cmd)
 	},

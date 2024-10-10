@@ -105,7 +105,7 @@ func factoryIps(factory string) map[uint32]bool {
 func findVpnAddress(factory string) string {
 	wsc := config.LoadWireguardServerConfig(factory, api)
 	if len(wsc.VpnAddress) == 0 || !wsc.Enabled {
-		fmt.Println("ERROR: A wireguard server has not been configured for this factory")
+		fmt.Println("ERROR: A wireguard server has not been configured for this Factory")
 		os.Exit(1)
 	}
 	logrus.Debugf("VPN server address is: %s", wsc.VpnAddress)

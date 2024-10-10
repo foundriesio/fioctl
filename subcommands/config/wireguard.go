@@ -18,7 +18,7 @@ var wireguardDisable bool
 func init() {
 	wireguardCmd := &cobra.Command{
 		Use:   "wireguard",
-		Short: "Show current wireguard server config for factory",
+		Short: "Show current wireguard server config for Factory",
 		Run:   doWireguard,
 		Args:  cobra.MinimumNArgs(0),
 	}
