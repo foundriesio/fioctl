@@ -61,13 +61,13 @@ func init() {
 		Run:   doOfflineUpdate,
 		Args:  cobra.ExactArgs(2),
 		Example: `
-	# Download update content of the wave target #1451 for "intel-corei7-64" hardware type
+	# Download update content of the Wave Target #1451 for "intel-corei7-64" hardware type
 	fioctl targets offline-update intel-corei7-64-lmp-1451 /mnt/flash-drive/offline-update-content --wave wave-deployment-001
 
-	# Download update content of the production target #1451 tagged by "release-01" for "intel-corei7-64" hardware type
+	# Download update content of the production Target #1451 tagged by "release-01" for "intel-corei7-64" hardware type
 	fioctl targets offline-update intel-corei7-64-lmp-1451 /mnt/flash-drive/offline-update-content --tag release-01 --prod
 
-	# Download update content of the CI target #1451 tagged by "devel" for "raspberrypi4-64" hardware type
+	# Download update content of the CI Target #1451 tagged by "devel" for "raspberrypi4-64" hardware type
 	fioctl targets offline-update raspberrypi4-64-lmp-1448 /mnt/flash-drive/offline-update-content --tag devel --expires-in-days 15
 
 	`,
@@ -78,7 +78,7 @@ func init() {
 	offlineUpdateCmd.Flags().BoolVarP(&ouProd, "prod", "", false,
 		"Instruct to fetch content of production Target")
 	offlineUpdateCmd.Flags().StringVarP(&ouWave, "wave", "", "",
-		"Instruct to fetch content of wave Target; a wave name should be specified")
+		"Instruct to fetch content of Wave Target; a wave name should be specified")
 	offlineUpdateCmd.Flags().IntVarP(&ouExpiresIn, "expires-in-days", "e", 30,
 		"Desired metadata validity period in days")
 	offlineUpdateCmd.Flags().BoolVarP(&ouTufOnly, "tuf-only", "m", false,
@@ -86,7 +86,7 @@ func init() {
 	offlineUpdateCmd.Flags().BoolVarP(&ouNoApps, "no-apps", "", false,
 		"Skip fetching Target Apps")
 	offlineUpdateCmd.Flags().BoolVarP(&ouAllowMultipleTargets, "allow-multiple-targets", "", false,
-		"Allow multiple targets to be stored in the same <dst> directory")
+		"Allow multiple Targets to be stored in the same <dst> directory")
 	offlineUpdateCmd.MarkFlagsMutuallyExclusive("tag", "wave")
 	offlineUpdateCmd.MarkFlagsMutuallyExclusive("prod", "wave")
 	initSignCmd(offlineUpdateCmd)
@@ -96,11 +96,11 @@ func init() {
 func initSignCmd(parentCmd *cobra.Command) {
 	signCmd := &cobra.Command{
 		Use:   "sign <path to an offline bundle>",
-		Short: "Sign an offline bundle with a targets role offline key",
-		Long: `Sign an offline bundle with a targets role offline key.
+		Short: "Sign an offline bundle with a Targets role offline key",
+		Long: `Sign an offline bundle with a Targets role offline key.
 
-Run this command if your offline update bundle contains production/wave targets.
-In this case, the bundle has to be signed by one or more targets role offline keys.
+Run this command if your offline update bundle contains production/Wave targets.
+In this case, the bundle has to be signed by one or more Targets role offline key.
 The number of required signatures depends on the threshold number set in the current TUF root role metadata,
 and is printed by this command.`,
 		Run:  doSignBundle,
@@ -108,7 +108,7 @@ and is printed by this command.`,
 	}
 	signCmd.Flags().StringP("keys", "k", "",
 		"Path to the <tuf-targets-keys.tgz> key to sign the bundle metadata with. "+
-			"This is the same key used to sign prod & wave TUF targets.")
+			"This is the same key used to sign prod & Wave TUF Targets.")
 	_ = signCmd.MarkFlagRequired("keys")
 	parentCmd.AddCommand(signCmd)
 }
@@ -120,7 +120,7 @@ func initShowCmd(parentCmd *cobra.Command) {
 		Long: `Parse and print the specified bundle metadata.
 
 Run this command if you would like to get information about an offline bundle.
-Specifically, what targets it includes, what the type of the targets (CI or production),
+Specifically, what Targets it includes, what the type of the Targets (CI or production),
 a bundle's expiration time', etc.`,
 		Run:  doShowBundle,
 		Args: cobra.ExactArgs(1),
@@ -160,8 +160,8 @@ func doOfflineUpdate(cmd *cobra.Command, args []string) {
 		if !isDstDirClean(dstDir) {
 			if !ouAllowMultipleTargets {
 				subcommands.DieNotNil(errors.New(`Destination directory already has update data.
-Provide a clean destination directory or re-run with --allow-multiple-targets to add a new target to a directory which already has update data.
-Notice that multiple targets in the same directory is only supported in LmP >= v92.`))
+Provide a clean destination directory or re-run with --allow-multiple-targets to add a new Target to a directory which already has update data.
+Notice that multiple Targets in the same directory is only supported in LmP >= v92.`))
 			}
 		}
 
@@ -191,8 +191,8 @@ Notice that multiple targets in the same directory is only supported in LmP >= v
 					fmt.Printf("Downloading Apps fetched by the `publish-compose-apps` run; apps: %s, uri: %s...\n", ti.fetchedApps.Shortlist, ti.fetchedApps.Uri)
 					err = downloadAppsArchive(ti.fetchedApps.Uri, path.Join(dstDir, "apps"))
 				} else {
-					fmt.Println("No apps found to fetch for an offline update to a given target. " +
-						"The bundle will update only rootfs/ostree. Check your factory configuration if this is not your intention.")
+					fmt.Println("No apps found to fetch for an offline update to a given Target. " +
+						"The bundle will only update rootfs/ostree. Check your Factory configuration if this is not your intention.")
 				}
 			}
 			if herr := client.AsHttpError(err); herr != nil && herr.Response.StatusCode == 404 {
@@ -253,7 +253,7 @@ func getWaveTargetMeta(factory string, targetName string, wave string) (*tuf.Fil
 	if foundTargetMeta, ok := waveTargets[wave].Signed.Targets[targetName]; ok {
 		return &foundTargetMeta, nil
 	} else {
-		return nil, fmt.Errorf("The specified Target is not found among wave targets;"+
+		return nil, fmt.Errorf("The specified Target is not found among Wave Targets;"+
 			" target: %s, wave: %s", targetName, wave)
 	}
 }
@@ -262,14 +262,14 @@ func getProdTargetMeta(factory string, targetName string, tag string) (*tuf.File
 	targets, err := api.ProdTargetsGet(factory, tag, true)
 	if err != nil {
 		if herr := client.AsHttpError(err); herr != nil && herr.Response.StatusCode == 404 {
-			return nil, fmt.Errorf("No production targets were found for the specified tag `%s`", tag)
+			return nil, fmt.Errorf("No production Targets were found for the specified tag `%s`", tag)
 		}
 		return nil, fmt.Errorf("Failed to get production Target metadata: %s", err.Error())
 	}
 	if foundTargetMeta, ok := targets.Signed.Targets[targetName]; ok {
 		return &foundTargetMeta, nil
 	} else {
-		return nil, fmt.Errorf("No production target with the given tag is found;"+
+		return nil, fmt.Errorf("No production Target with the given tag found;"+
 			" target: %s, tag: %s", targetName, tag)
 	}
 }
@@ -278,7 +278,7 @@ func getCiTargetMeta(factory string, targetName string, tag string) (*tuf.FileMe
 	data, err := api.TufMetadataGet(factory, "targets.json", tag, false)
 	if err != nil {
 		if herr := client.AsHttpError(err); herr != nil && herr.Response.StatusCode == 404 {
-			return nil, fmt.Errorf("No CI targets were found for the specified tag `%s`", tag)
+			return nil, fmt.Errorf("No CI Targets found for the specified tag `%s`", tag)
 		}
 		return nil, fmt.Errorf("Failed to get CI Target metadata: %s", err.Error())
 	}
@@ -290,7 +290,7 @@ func getCiTargetMeta(factory string, targetName string, tag string) (*tuf.FileMe
 	if foundTargetMeta, ok := targets.Signed.Targets[targetName]; ok {
 		return &foundTargetMeta, nil
 	} else {
-		return nil, fmt.Errorf("No CI target with the given tag is found;"+
+		return nil, fmt.Errorf("No CI Target with the given tag found;"+
 			" target: %s, tag: %s", targetName, tag)
 	}
 }
@@ -541,7 +541,7 @@ func signBundleTargets(rootMeta *client.AtsTufRoot, bundleTargetsMeta *tuf.Signe
 	if bundleTargetsMeta.Signed == nil {
 		panic(fmt.Errorf("the input bundle metadata to sign is nil"))
 	}
-	fmt.Printf("Signing the bundle with a new key; ID: %s, type: %s\n", signer.Id, signer.Type.Name())
+	fmt.Printf("Signing the bundle with new key; ID: %s, type: %s\n", signer.Id, signer.Type.Name())
 	signatures, err := keys.SignTufMeta(*bundleTargetsMeta.Signed, signer)
 	if err != nil {
 		return err
@@ -556,7 +556,7 @@ func doShowBundle(cmd *cobra.Command, args []string) {
 	subcommands.DieNotNil(err)
 	bundleMeta := ouBundleTufMeta{}
 	subcommands.DieNotNil(json.Unmarshal(*bundleTufMeta.Signed, &bundleMeta))
-	fmt.Println("Bundle targets info:")
+	fmt.Println("Bundle Targets info:")
 	fmt.Printf("\tType:\t\t%s\n", bundleMeta.ouBundleMeta.Type)
 	fmt.Printf("\tTag:\t\t%s\n", bundleMeta.Tag)
 	fmt.Printf("\tExpires:\t%s\n", bundleMeta.SignedCommon.Expires)

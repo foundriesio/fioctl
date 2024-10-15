@@ -87,13 +87,13 @@ func init() {
 	cmd.AddCommand(listCmd)
 	listCmd.Flags().BoolVarP(&listRaw, "raw", "r", false, "Print raw targets.json")
 	listCmd.Flags().BoolVarP(&listProd, "production", "", false, "Show the production version targets.json")
-	listCmd.Flags().StringVarP(&listByTag, "by-tag", "", "", "Only list targets that match the given tag")
+	listCmd.Flags().StringVarP(&listByTag, "by-tag", "", "", "Only list Targets that match the given tag")
 	listCmd.Flags().StringSliceVarP(&showColumns, "columns", "", defCols, "Specify which columns to display")
 }
 
 func doList(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
-	logrus.Debugf("Listing targets for %s tag(%s)", factory, listByTag)
+	logrus.Debugf("Listing Targets for %s tag(%s)", factory, listByTag)
 
 	if listProd && len(listByTag) == 0 {
 		subcommands.DieNotNil(errors.New("--production flag requires --by-tag flag"))
