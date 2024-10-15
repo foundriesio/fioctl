@@ -25,7 +25,7 @@ func init() {
 		Run:   doDeltas,
 		Args:  cobra.MinimumNArgs(1),
 		Long: `In many cases OTA updates will have multiple OSTree changes. These updates
-can be downloaded faster by generating OSTree static
+can be downloaded significantly faster by generating OSTree static
 deltas. Static deltas are generated using "from(sha) -> to(sha)" type
 logic. This command takes the given Target version, and produces a
 number of static deltas to ensure devices are updated efficiently.`,
