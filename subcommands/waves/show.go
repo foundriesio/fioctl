@@ -18,14 +18,14 @@ func init() {
 		Args:  cobra.ExactArgs(1),
 	}
 	cmd.AddCommand(showCmd)
-	showCmd.Flags().BoolP("show-targets", "s", false, "Show wave targets")
+	showCmd.Flags().BoolP("show-targets", "s", false, "Show Wave Targets")
 }
 
 func doShowWave(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 	name := args[0]
 	showTargets, _ := cmd.Flags().GetBool("show-targets")
-	logrus.Debugf("Showing a wave %s for %s", name, factory)
+	logrus.Debugf("Showing Wave %s for %s", name, factory)
 
 	wave, err := api.FactoryGetWave(factory, name, showTargets)
 	subcommands.DieNotNil(err)
@@ -51,7 +51,7 @@ func doShowWave(cmd *cobra.Command, args []string) {
 			}
 
 			if rollout.IsFactoryWide {
-				line += fmt.Sprintf("%d devices in factory", rollout.DeviceNumber)
+				line += fmt.Sprintf("%d devices in Factory", rollout.DeviceNumber)
 			} else if rollout.IsFullGroup {
 				line += fmt.Sprintf("all devices in group %s", groupName)
 			} else {

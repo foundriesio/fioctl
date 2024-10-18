@@ -21,41 +21,41 @@ import (
 func init() {
 	initCmd := &cobra.Command{
 		Use:   "init <wave> <version> <tag>",
-		Short: "Create a new wave from targets of a given version",
-		Long: `Create a new wave from targets of a given version.
+		Short: "Create a new Wave from Targets of a given version",
+		Long: `Create a new Wave from Targets of a given version.
 
-This command only initializes a wave, but does not provision its updates to devices.
-Use a "fioctl wave rollout <wave> <group>" to trigger updates of this wave to a device group.
-Use a "fioctl wave complete <wave>" to update all devices (make it globally available).
-Use a "fioctl wave cancel <wave> to cancel a wave (make it no longer available).
+This command only initializes a Wave. It does not provision updates to devices.
+Use "fioctl wave rollout <wave> <group>" to trigger updates of this Wave to a device group.
+Use "fioctl wave complete <wave>" to update all devices (make it globally available).
+Use "fioctl wave cancel <wave> to cancel a Wave (make it no longer available).
 
-We recommend that you generate static deltas for your production targets to optimize OTA update download. 
-Consider generating a static delta for targets using:
+We recommend that you generate static deltas for your production Targets to optimize OTA update downloads. 
+Consider generating a static delta for Targets using:
 $ fioctl targets static-deltas
 `,
 		Run:  doInitWave,
 		Args: cobra.ExactArgs(3),
 		Example: `
-Start a new wave for the target version 4 and the 'production' device tag:
+Start a new Wave for the Target version 4 and the 'production' device tag:
 $ fioctl wave init -k ~/path/to/keys/targets.only.key.tgz wave-name 4 production
 
-Start a new wave for the target version 16 and also prune old production versions 1,2,3 and 4 in this case:
+Start a new Wave for the Target version 16 and also prune old production versions 1,2,3 and 4 in this case:
 $ fioctl wave init -k ~/path/to/keys/targets.only.key.tgz wave-name 16 production --prune 1,2,3,4
 
 `,
 	}
 	cmd.AddCommand(initCmd)
 	initCmd.Flags().IntP("expires-days", "e", 0, `Role expiration in days; default 365.
-The same expiration will be used for production targets when a wave is complete.`)
+The same expiration will be used for production Targets when a Wave is complete.`)
 	initCmd.Flags().StringP("expires-at", "E", "", `Role expiration date and time in RFC 3339 format.
-The same expiration will be used for production targets when a wave is complete.
+The same expiration will be used for production Targets when a Wave is complete.
 When set this value overrides an 'expires-days' argument.
 Example: 2020-01-01T00:00:00Z`)
-	initCmd.Flags().BoolP("dry-run", "d", false, "Don't create a wave, print it to standard output.")
+	initCmd.Flags().BoolP("dry-run", "d", false, "Don't create a Wave, print it to standard output.")
 	initCmd.Flags().StringSlice("prune", []string{}, `Prune old unused Target(s) from the production metadata.
 Example: 1,2,3`)
-	initCmd.Flags().StringP("keys", "k", "", "Path to <offline-creds.tgz> used to sign wave targets.")
-	initCmd.Flags().StringP("source-tag", "", "", "Match this tag when looking for target versions. Certain advanced tagging configurations may require this argument.")
+	initCmd.Flags().StringP("keys", "k", "", "Path to <offline-creds.tgz> used to sign Wave Targets.")
+	initCmd.Flags().StringP("source-tag", "", "", "Match this tag when looking for Target versions. Certain advanced tagging configurations may require this argument.")
 	_ = initCmd.MarkFlagRequired("keys")
 }
 
@@ -70,7 +70,7 @@ func doInitWave(cmd *cobra.Command, args []string) {
 	sourceTag, _ := cmd.Flags().GetString("source-tag")
 	offlineKeys := readOfflineKeys(cmd)
 
-	logrus.Debugf("Creating a wave %s for factory %s targets version %s and new tag %s expires %s",
+	logrus.Debugf("Creating a Wave %s for Tactory %s Targets version %s and new tag %s expires %s",
 		name, factory, version, tag, expires.Format(time.RFC3339))
 
 	new_targets, err := api.TargetsList(factory, version)
@@ -92,13 +92,13 @@ func doInitWave(cmd *cobra.Command, args []string) {
 		targets.Targets = current_targets.Signed.Targets
 		if targets.Version <= current_targets.Signed.Version {
 			subcommands.DieNotNil(fmt.Errorf(
-				"Cannot create a wave for a version lower than or equal to production targets for the same tag"))
+				"Cannot create a Wave for a version lower than or equal to production Targets for the same tag"))
 		}
 	}
 
 	for name, file := range new_targets {
 		if _, exists := targets.Targets[name]; exists {
-			subcommands.DieNotNil(fmt.Errorf("Target %s already exists in production targets for tag %s", name, tag))
+			subcommands.DieNotNil(fmt.Errorf("Target %s already exists in production Targets for tag %s", name, tag))
 		}
 
 		if len(sourceTag) > 0 {
@@ -115,7 +115,7 @@ func doInitWave(cmd *cobra.Command, args []string) {
 				continue
 			}
 		}
-		subcommands.DieNotNil(replaceTags(&file, tag), fmt.Sprintf("Malformed CI target custom field %s", name))
+		subcommands.DieNotNil(replaceTags(&file, tag), fmt.Sprintf("Malformed CI Target custom field %s", name))
 		targets.Targets[name] = file
 	}
 
@@ -127,7 +127,7 @@ func doInitWave(cmd *cobra.Command, args []string) {
 	}
 
 	meta, err := json.MarshalCanonical(targets)
-	subcommands.DieNotNil(err, "Failed to serialize new targets")
+	subcommands.DieNotNil(err, "Failed to serialize new Targets")
 	signatures := signTargets(meta, factory, offlineKeys)
 
 	signed := tuf.Signed{
@@ -145,22 +145,22 @@ func doInitWave(cmd *cobra.Command, args []string) {
 	}
 	if dryRun {
 		payload, err := subcommands.MarshalIndent(&wave, "", "  ")
-		subcommands.DieNotNil(err, "Failed to marshal a wave")
+		subcommands.DieNotNil(err, "Failed to marshal a Wave")
 		fmt.Println(string(payload))
 	} else {
-		subcommands.DieNotNil(api.FactoryCreateWave(factory, &wave), "Failed to create a wave")
+		subcommands.DieNotNil(api.FactoryCreateWave(factory, &wave), "Failed to create a Wave")
 	}
 
 	if !hasStaticDelta(new_targets) {
 
 		fmt.Print(`
-WARNING: You created a wave for a target version without static deltas.
+WARNING: You created a Wave for a Target version without static deltas.
 
-We recommend that you generate static deltas for your production targets to optimize OTA update download. 
-Consider generating a static delta for targets using: 
+We recommend that you generate static deltas for your production Targets to optimize OTA update downloads. 
+Consider generating a static delta for Targets using: 
 $ fioctl targets static-deltas
 
-You can then cancel this wave and create a new one for a target with a static delta.
+You can then cancel this Wave and create a new one for Target with a static delta.
 `)
 
 	}
@@ -194,7 +194,7 @@ func pruneTargets(currentTargets *client.AtsTargetsMeta, versions []string) clie
 		}
 	}
 	if len(missing) > 0 {
-		subcommands.DieNotNil(fmt.Errorf(""), fmt.Sprintf("Unable to prune following versions: %s", strings.Join(missing, ",")))
+		subcommands.DieNotNil(fmt.Errorf(""), fmt.Sprintf("Unable to prune the following versions: %s", strings.Join(missing, ",")))
 	}
 
 	return *currentTargets
@@ -204,7 +204,7 @@ func signTargets(meta []byte, factory string, offlineKeys keys.OfflineCreds) []t
 	root, err := api.TufRootGet(factory)
 	subcommands.DieNotNil(err, "Failed to fetch root role")
 	onlinePub, err := api.TufTargetsOnlineKey(factory)
-	subcommands.DieNotNil(err, "Failed to fetch online targets public key")
+	subcommands.DieNotNil(err, "Failed to fetch online Targets public key")
 
 	targetsKids := root.Signed.Roles["targets"].KeyIDs
 	signerKids := make([]string, 0, len(targetsKids)-1)
@@ -217,8 +217,8 @@ func signTargets(meta []byte, factory string, offlineKeys keys.OfflineCreds) []t
 	}
 
 	if len(signerKids) == 0 {
-		subcommands.DieNotNil(fmt.Errorf(`Root role is not configured to sign targets offline.
-Please, run "fioctl keys tuf rotate-offline-key --role=targets" in order to create offline targets keys.`))
+		subcommands.DieNotNil(fmt.Errorf(`Root role is not configured to sign Targets offline.
+Please, run "fioctl keys tuf rotate-offline-key --role=targets" in order to create offline Targets keys.`))
 	}
 
 	signer, err := keys.FindOneTufSigner(root, offlineKeys, signerKids)
