@@ -122,6 +122,9 @@ func doDockerCreds(cmd *cobra.Command, args []string) {
 	configBytes, err := subcommands.MarshalIndent(config, "", "  ")
 	subcommands.DieNotNil(err)
 
+	if strings.Contains(helperPath, "~/") {
+		subcommands.DieNotNil(fmt.Errorf("~ character is not supported in --creds-path=. Try to run it as --creds-path %s", helperPath))
+	}
 	dst := filepath.Join(helperPath, DOCKER_CREDS_HELPER)
 	if runtime.GOOS == "windows" {
 		dst += ".exe"
