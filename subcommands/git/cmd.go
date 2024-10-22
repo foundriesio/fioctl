@@ -19,9 +19,7 @@ import (
 
 const GIT_CREDS_HELPER = "git-credential-fio"
 
-var (
-	helperPath string
-)
+var helperPath string
 
 func NewCommand() *cobra.Command {
 	path, err := exec.LookPath("git")
@@ -74,6 +72,9 @@ func doGitCreds(cmd *cobra.Command, args []string) {
 	var gitHelperCommandArgs []string
 
 	helperName := "fio"
+	if strings.Contains(helperPath, "~/") {
+		subcommands.DieNotNil(fmt.Errorf("~ character is not supported in --creds-path=. Try to run it as --creds-path %s", helperPath))
+	}
 	dst := filepath.Join(helperPath, GIT_CREDS_HELPER)
 	if runtime.GOOS == "windows" {
 		// To get around edge cases with git on Windows we use the absolute path
