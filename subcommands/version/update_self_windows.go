@@ -27,7 +27,7 @@ func replaceSelf(curExe, newExe string) error {
 		return err
 	}
 	if err := os.Rename(newExe, curExe); err != nil {
-		msg := "unable to update to the new fioctl binary. "
+		msg := "Unable to update to the new Fioctl binary. "
 		msg += "The old version is located at %s. "
 		msg += "The new version is located at %s. %w"
 		return fmt.Errorf(msg, oldExe, newExe, err)
@@ -43,7 +43,7 @@ func replaceSelf(curExe, newExe string) error {
 		CreationFlags: syscall.CREATE_NEW_PROCESS_GROUP,
 	}
 	if err := cmd.Start(); err != nil {
-		msg := "the new version of fioctl is ready to use. "
+		msg := "the new version of Fioctl is ready to use. "
 		msg += "However, there was a failure removing the old version: %w"
 		return fmt.Errorf(msg, err)
 	}

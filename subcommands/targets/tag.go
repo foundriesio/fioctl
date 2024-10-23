@@ -22,10 +22,10 @@ var (
 func init() {
 	var tagCmd = &cobra.Command{
 		Use:   "tag <target> [<target>...]",
-		Short: "Apply a comma separated list of tags to one or more targets.",
+		Short: "Apply a comma separated list of tags to one or more Targets.",
 		Example: `
-  # Promote Target #42 currently tagged as master
-  fioctl targets tag --tags master,promoted --by-version 42
+  # Promote Target #42 currently tagged as main
+  fioctl targets tag --tags main,promoted --by-version 42
 
   # Tag a specific Target by name
   fioctl targets tag --tags master,testing intel-corei7-64-lmp-42`,
@@ -36,7 +36,7 @@ func init() {
 	tagCmd.Flags().StringVarP(&tagTags, "tags", "T", "", "comma,separate,list")
 	tagCmd.Flags().BoolVarP(&tagAppend, "append", "", false, "Append the given tags rather than set them")
 	tagCmd.Flags().BoolVarP(&tagNoTail, "no-tail", "", false, "Don't tail output of CI Job")
-	tagCmd.Flags().BoolVarP(&tagByVersion, "by-version", "", false, "Apply tags to all targets matching the given version(s)")
+	tagCmd.Flags().BoolVarP(&tagByVersion, "by-version", "", false, "Apply tags to all Targets matching the given version(s)")
 	tagCmd.Flags().BoolVarP(&dryRun, "dryrun", "", false, "Just show the changes that would be applied")
 }
 
@@ -87,7 +87,7 @@ func doTag(cmd *cobra.Command, args []string) {
 			}
 		}
 		if len(updates) == 0 {
-			fmt.Println("ERROR: no targets found matching the given versions")
+			fmt.Println("ERROR: no Targets found matching the given versions")
 			os.Exit(1)
 		}
 	} else {

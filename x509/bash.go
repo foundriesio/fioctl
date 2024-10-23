@@ -46,7 +46,7 @@ func run(script string, arg ...string) string {
 func CreateFactoryCa(ou string) string {
 	const script = `#!/bin/sh -e
 ## This script creates the offline private key, factory_ca.key, and x509 certficate, factory_ca.pem,
-## owned by the customer that provides a chain of trust for all other certficates used by this factory.
+## owned by the user that provides a chain of trust for all other certficates used by this Factory.
 
 if [ $# -ne 1 ] ; then
 	echo "ERROR: $0 <ou>"
@@ -101,10 +101,10 @@ func CreateDeviceCa(cn, ou string) string {
 
 func CreateDeviceCaExt(cn, ou, keyFile, certFile string) string {
 	const script = `#!/bin/sh -e
-## This is an optional script a customer can use to create a certificate
-## capable of signing a certicate signing request from an LMP device.
-## The certicate created here will be trusted by the Foundries device gateway.
-## This is useful for creating CA owned by the customer for use in a manufacturing facility.
+## This is an optional script used to create a certificate
+## capable of signing a certicate signing request from an LmP device.
+## The certicate created here will be trusted by the Foundries.io device gateway.
+## This is useful for creating CA owned by the user for use in a manufacturing facility.
 
 if [ $# -ne 3 ] ; then
 	echo "ERROR: $0 <key-create> <cn> <ou>"
@@ -169,7 +169,7 @@ func CreateCrl(serials map[string]int) string {
 func signTlsCsr(tmpFileMask, csrPem string) string {
 	const script = `#!/bin/sh -e
 ## This script signs the "tls-csr" returned when creating Factory certificates.
-## This certificate are signed so that the devices trust the TLS connection with the Foundries device gateway.
+## These certificates are signed so that the devices trust the TLS connection with the Foundries.io device gateway.
 
 if [ $# -ne 2 ] ; then
 	echo "ERROR: $0 <tls csr> <tls crt>"

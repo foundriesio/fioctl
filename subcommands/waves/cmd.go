@@ -12,7 +12,7 @@ var api *client.Api
 var cmd = &cobra.Command{
 	Use:     "waves",
 	Aliases: []string{"wave"},
-	Short:   "Manage factory's waves",
+	Short:   "Manage Factory Waves",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		api = subcommands.Login(cmd)
 	},

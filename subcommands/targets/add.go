@@ -26,10 +26,10 @@ type Targets map[string]*client.Target
 func init() {
 	addCmd := &cobra.Command{
 		Use:   "add",
-		Short: "Compose and add Targets to Factory's  TUF targets metadata",
+		Short: "Compose and add Targets to Factory's TUF Targets metadata",
 		Run:   doAdd,
 		Long: `
-Compose new Targets out of the latest Targets tagged with the specified source tag and the specified via the command arguments either OSTree commit hashes or App URIs.
+Compose new Targets out of the latest ones with the specified source tag via the command arguments — either OSTree commit hashes or App URIs.
 
 fioctl targets add --type <ostree | app> --tags <comma,separate,list of Target tags> --src-tag <source Target tag> [--targets-creator <something about Targets originator>]\ 
 	<hardware ID> <ostree commit hash> [<hardware ID> <ostree commit hash>]  (for ostree type)
@@ -45,7 +45,7 @@ Add new App Targets:
 	cmd.AddCommand(addCmd)
 	addCmd.Flags().StringVarP(&addTargetType, "type", "", "", "Target type")
 	addCmd.Flags().StringVarP(&addTags, "tags", "", "", "comma,separate,list of Target tags")
-	addCmd.Flags().StringVarP(&addSrcTag, "src-tag", "", "", "OSTree Target tag to base app targets on")
+	addCmd.Flags().StringVarP(&addSrcTag, "src-tag", "", "", "OSTree Target tag to base app Targets on")
 	addCmd.Flags().BoolVarP(&addQuiet, "quiet", "", false, "don't print generated new Targets to stdout")
 	addCmd.Flags().BoolVarP(&addDryRun, "dry-run", "", false, "don't post generated new Targets")
 	addCmd.Flags().StringVarP(&addTargetsCreator, "targets-creator", "", "fioctl", "optional name/comment/context about Targets origination")
@@ -169,11 +169,11 @@ func deriveTargets(factory string, hwIds map[string]interface{}, srcTag string, 
 	// We assume that the initial OSTree Target(s) is/are created by the OTA service during Factory creation,
 	// hence we don't need to create a new Target from scratch in this command, just derive Targets from existing one.
 	if len(latestTargetsPerHwId) == 0 {
-		return nil, fmt.Errorf("no any source Targets to derive new Targets from are found; source tag: %s", srcTag)
+		return nil, fmt.Errorf("Could not find source Target to derive new Target from; source tag: %s", srcTag)
 	}
 	for id := range hwIds {
 		if _, ok := latestTargetsPerHwId[id]; !ok {
-			return nil, fmt.Errorf("no source Target to derive new Target from is found"+
+			return nil, fmt.Errorf("Could not find source Target to derive new Target from"+
 				" for the source tag `%s` and the hardware ID `%s`", srcTag, id)
 		}
 	}
