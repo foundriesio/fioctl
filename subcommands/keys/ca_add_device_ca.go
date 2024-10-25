@@ -44,10 +44,7 @@ All such CAs will be added to the list of device CAs trusted by the device gatew
 	cmd.Flags().StringP("local-ca-filename", "", x509.DeviceCaCertFile,
 		fmt.Sprintf("A file name of the local CA (only needed if the %s file already exists)", x509.DeviceCaCertFile))
 	_ = cmd.MarkFlagFilename("local-ca-filename")
-	// HSM variables defined in ca_create.go
-	cmd.Flags().StringVarP(&hsmModule, "hsm-module", "", "", "Load a root CA key from a PKCS#11 compatible HSM using this module")
-	cmd.Flags().StringVarP(&hsmPin, "hsm-pin", "", "", "The PKCS#11 PIN to log into the HSM")
-	cmd.Flags().StringVarP(&hsmTokenLabel, "hsm-token-label", "", "", "The label of the HSM token containing the root CA key")
+	addStandardHsmFlags(cmd)
 }
 
 func assertFileName(flagName, value string) {
@@ -71,8 +68,7 @@ func doAddDeviceCa(cmd *cobra.Command, args []string) {
 	assertFileName("--local-ca-filename", localCaFilename)
 
 	subcommands.DieNotNil(os.Chdir(args[0]))
-	hsm, err := x509.ValidateHsmArgs(
-		hsmModule, hsmPin, hsmTokenLabel, "--hsm-module", "--hsm-pin", "--hsm-token-label")
+	hsm, err := validateStandardHsmArgs(hsmModule, hsmPin, hsmTokenLabel)
 	subcommands.DieNotNil(err)
 	x509.InitHsm(hsm)
 

@@ -16,9 +16,6 @@ import (
 var (
 	createOnlineCA bool
 	createLocalCA  bool
-	hsmModule      string
-	hsmPin         string
-	hsmTokenLabel  string
 )
 
 func init() {
@@ -60,6 +57,7 @@ This is optional.`,
 	caCmd.AddCommand(cmd)
 	cmd.Flags().BoolVarP(&createOnlineCA, "online-ca", "", true, "Create an online CA owned by Foundries.io that works with lmp-device-register")
 	cmd.Flags().BoolVarP(&createLocalCA, "local-ca", "", true, "Create a local CA that you can use for signing your own device certificates")
+	// HSM variable descriptions differ from the standard defined in addStandardHsmFlags
 	cmd.Flags().StringVarP(&hsmModule, "hsm-module", "", "", "Create a root CA key on a PKCS#11 compatible HSM using this module")
 	cmd.Flags().StringVarP(&hsmPin, "hsm-pin", "", "", "The PKCS#11 PIN to log into the HSM")
 	cmd.Flags().StringVarP(&hsmTokenLabel, "hsm-token-label", "", "", "The label of the HSM token created for the root CA key")
@@ -76,8 +74,7 @@ func doCreateCA(cmd *cobra.Command, args []string) {
 	certsDir := args[0]
 
 	subcommands.DieNotNil(os.Chdir(certsDir))
-	hsm, err := x509.ValidateHsmArgs(
-		hsmModule, hsmPin, hsmTokenLabel, "--hsm-module", "--hsm-pin", "--hsm-token-label")
+	hsm, err := validateStandardHsmArgs(hsmModule, hsmPin, hsmTokenLabel)
 	subcommands.DieNotNil(err)
 	x509.InitHsm(hsm)
 

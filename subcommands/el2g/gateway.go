@@ -38,7 +38,7 @@ func doDeviceGateway(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 
 	subcommands.DieNotNil(os.Chdir(pkiDir))
-	hsm, err := x509.ValidateHsmArgs(
+	hsm, err := validateHsmArgs(
 		hsmModule, hsmPin, hsmTokenLabel, "--hsm-module", "--hsm-pin", "--hsm-token-label")
 	subcommands.DieNotNil(err)
 	x509.InitHsm(hsm)
@@ -62,4 +62,17 @@ func doDeviceGateway(cmd *cobra.Command, args []string) {
 	newCa := ca.CaCrt + "\n" + generatedCa
 	certs := client.CaCerts{CaCrt: newCa}
 	subcommands.DieNotNil(api.FactoryPatchCA(factory, certs))
+}
+
+func validateHsmArgs(hsmModule, hsmPin, hsmTokenLabel, moduleArg, pinArg, tokenArg string) (*x509.HsmInfo, error) {
+	if len(hsmModule) > 0 {
+		if len(hsmPin) == 0 {
+			return nil, fmt.Errorf("%s is required with %s", pinArg, moduleArg)
+		}
+		if len(hsmTokenLabel) == 0 {
+			return nil, fmt.Errorf("%s is required with %s", tokenArg, moduleArg)
+		}
+		return &x509.HsmInfo{Module: hsmModule, Pin: hsmPin, TokenLabel: hsmTokenLabel}, nil
+	}
+	return nil, nil
 }
