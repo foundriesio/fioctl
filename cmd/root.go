@@ -17,7 +17,6 @@ import (
 	cfgcmd "github.com/foundriesio/fioctl/subcommands/config"
 	"github.com/foundriesio/fioctl/subcommands/devices"
 	"github.com/foundriesio/fioctl/subcommands/docker"
-	"github.com/foundriesio/fioctl/subcommands/el2g"
 	"github.com/foundriesio/fioctl/subcommands/events"
 	"github.com/foundriesio/fioctl/subcommands/factories"
 	"github.com/foundriesio/fioctl/subcommands/git"
@@ -83,7 +82,6 @@ func init() {
 	rootCmd.AddCommand(devices.NewCommand())
 	rootCmd.AddCommand(docker.NewCommand())
 	rootCmd.AddCommand(git.NewCommand())
-	rootCmd.AddCommand(el2g.NewCommand())
 	rootCmd.AddCommand(events.NewCommand())
 	rootCmd.AddCommand(factories.NewCommand())
 	rootCmd.AddCommand(keys.NewCommand())
