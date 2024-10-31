@@ -3,6 +3,7 @@ package targets
 import (
 	"archive/tar"
 	"compress/bzip2"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -32,6 +33,7 @@ type (
 		hardwareID    string
 		buildTag      string
 		fetchedApps   *client.FetchedApps
+		sha256        []byte
 	}
 
 	ouBundleMeta struct {
@@ -180,6 +182,14 @@ Notice that multiple Targets in the same directory is only supported in LmP >= v
 			fmt.Printf("Downloading an ostree repo from the Target's OE build %d...\n", ti.ostreeVersion)
 			subcommands.DieNotNil(downloadOstree(factory, ti.ostreeVersion, ti.hardwareID, dstDir), "Failed to download Target's ostree repo:")
 		}
+
+		sha256String := base64.StdEncoding.EncodeToString(ti.sha256)
+		expectedCommit := path.Join(dstDir, "ostree_repo", "objects", sha256String[0:2], sha256String[2:]+".commit")
+		if _, err := os.Stat(expectedCommit); errors.Is(err, os.ErrNotExist) {
+			fmt.Printf("ERROR: ostree repo does not contain target's hash %s. If the target references a custom ostree repo, re-run specifying --ostree-repo-source.\n", sha256String)
+			os.Exit(1)
+		}
+
 		if !ouNoApps {
 			if (len(ouWave) > 0 || ouProd) && ti.fetchedApps == nil {
 				// Get the specified target from the list of factory targets to obtain the "original" tag/branch that produced
@@ -233,6 +243,13 @@ func getTargetInfo(targetFile *tuf.FileMeta) (*ouTargetInfo, error) {
 	}
 	info.hardwareID = custom.HardwareIds[0]
 	info.fetchedApps = custom.FetchedApps
+	sha256, ok := targetFile.Hashes["sha256"]
+	if ok {
+		info.sha256 = sha256
+	} else {
+		fmt.Printf("ERROR: Target has no sha256 hash set")
+		os.Exit(1)
+	}
 	if info.fetchedApps == nil {
 		info.buildTag = custom.Tags[0] // See the assemble.py script in ci-scripts https://github.com/foundriesio/ci-scripts/blob/18b4fb154c37b6ad1bc6e7b7903a540b7a758f5d/assemble.py#L300
 	}
