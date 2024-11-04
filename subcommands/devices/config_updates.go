@@ -21,12 +21,29 @@ currently configured and reporting.`,
   # Make a device start taking updates from Targets tagged with "devel"
   fioctl devices config updates <device> --tag devel
 
-  # Set the docker apps a device will run:
+  # Set the Compose apps a device will run:
   fioctl devices config updates <device> --apps shellhttpd
 
-  # Set the docker apps and the tag:
+  # Set the Compose apps and the tag:
   fioctl devices config updates <device> --apps shellhttpd --tag master
-`,
+
+  # There are two special characters: "," and "-".
+  # Providing a "," sets the Compose apps to "none", meaning it will run no apps:
+  fioctl devices config updates <device> --apps ,
+
+  # Providing a "-" sets the Compose apps to "preset-apps" (all apps on most devices).
+  # The system looks in the following locations to get the complete config:
+       - /usr/lib/sota/conf.d/
+       - /var/sota/sota.toml
+       - /etc/sota/conf.d/
+  fioctl devices config updates <device> --apps -
+  
+  # Set the device tag to a preset-tag,
+  # and the system will look in the following locations in order to get the complete config:
+       - /usr/lib/sota/conf.d/
+       - /var/sota/sota.toml
+       - /etc/sota/conf.d/
+  fioctl devices config updates <device> --tag -`,
 	}
 	configCmd.AddCommand(configUpdatesCmd)
 	configUpdatesCmd.Flags().StringP("tag", "", "", "Target tag for device to follow")
