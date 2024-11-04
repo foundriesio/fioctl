@@ -232,9 +232,19 @@ func SetUpdatesConfig(opts *SetUpdatesConfigOptions, reportedTag string, reporte
 		if reportedApps != nil {
 			fmt.Printf("Apps reported as installed on device: [%s]\n", strings.Join(reportedApps, ","))
 		}
-		fmt.Printf("Setting apps to [%s]\n", opts.UpdateApps)
-		sota.Set("pacman.docker_apps", opts.UpdateApps)
-		sota.Set("pacman.compose_apps", opts.UpdateApps)
+		if strings.TrimSpace(opts.UpdateApps) == "-" {
+			fmt.Printf("Setting apps to system default.\n")
+			if sota.Has("pacman.docker_apps") {
+				DieNotNil(sota.Delete("pacman.docker_apps"))
+			}
+			if sota.Has("pacman.compose_apps") {
+				DieNotNil(sota.Delete("pacman.compose_apps"))
+			}
+		} else {
+			fmt.Printf("Setting apps to [%s]\n", opts.UpdateApps)
+			sota.Set("pacman.docker_apps", opts.UpdateApps)
+			sota.Set("pacman.compose_apps", opts.UpdateApps)
+		}
 		changed = true
 	}
 	if opts.UpdateTag != "" && configuredTag != opts.UpdateTag {
@@ -245,8 +255,15 @@ func SetUpdatesConfig(opts *SetUpdatesConfigOptions, reportedTag string, reporte
 		if len(reportedTag) > 0 {
 			fmt.Printf("Tag reported by device: %s\n", reportedTag)
 		}
-		fmt.Printf("Setting tag to %s\n", opts.UpdateTag)
-		sota.Set("pacman.tags", opts.UpdateTag)
+		if strings.TrimSpace(opts.UpdateTag) == "-" {
+			fmt.Printf("Setting tag to system default.\n")
+			if sota.Has("pacman.tags") {
+				DieNotNil(sota.Delete("pacman.tags"))
+			}
+		} else {
+			fmt.Printf("Setting tag to %s\n", opts.UpdateTag)
+			sota.Set("pacman.tags", opts.UpdateTag)
+		}
 		changed = true
 	}
 

@@ -20,11 +20,30 @@ in a device group. When run without options, prints out the current configuratio
   # Make devices start taking updates from Targets tagged with "devel":
   fioctl config updates --group beta --tag devel
 
-  # Set the docker apps that devices will run:
+  # Set the Compose apps that devices will run:
   fioctl config updates --group beta --apps shellhttpd
 
-  # Set the docker apps and the tag for devices:
-  fioctl config updates --group beta --apps shellhttpd --tag master`,
+  # Set the Compose apps and the tag for devices:
+  fioctl config updates --group beta --apps shellhttpd --tag master
+
+  # There are two special characters: "," and "-".
+  # Providing a "," sets the Compose apps to "none" for devices.
+  # This will make the device run no apps:
+  fioctl config updates --apps ,
+
+  # Providing a "-" sets the Compose apps to "preset-apps" (all apps on most devices).
+  # The system looks in the following locations to get the complete config:
+       - /usr/lib/sota/conf.d/
+       - /var/sota/sota.toml
+       - /etc/sota/conf.d/
+  fioctl config updates --apps -
+
+  # Set the device tag to a "preset-tag",
+  # and the system will look in the following locations to get the complete config:
+       - /usr/lib/sota/conf.d/
+       - /var/sota/sota.toml
+       - /etc/sota/conf.d/
+  fioctl config updates --tag -`,
 	}
 	cmd.AddCommand(configUpdatesCmd)
 	configUpdatesCmd.Flags().StringP("group", "g", "", "Device group to use")
