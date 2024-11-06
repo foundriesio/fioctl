@@ -77,7 +77,7 @@ func (f *FioctlUpdateFinder) FindLatest() (*FioctlUpdate, error) {
 			return nil, fmt.Errorf("unable to parse TUF data for %s: %s", name, err)
 		}
 		if target.Length == 0 {
-			return nil, fmt.Errorf("target %s has invalid length: %d", name, target.Length)
+			return nil, fmt.Errorf("Target %s has invalid length: %d", name, target.Length)
 		}
 		if custom.Platform == f.platform {
 			v, err := version.NewVersion(custom.Version)
@@ -134,7 +134,7 @@ func (u FioctlUpdate) Do() error {
 		return err
 	}
 	if res.StatusCode == 200 && res.ContentLength != u.len {
-		return fmt.Errorf("target size mismatch: %d != %d", res.ContentLength, u.len)
+		return fmt.Errorf("Target size mismatch: %d != %d", res.ContentLength, u.len)
 	}
 	defer res.Body.Close()
 	reader := io.LimitReader(res.Body, u.len)

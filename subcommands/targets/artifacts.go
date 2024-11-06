@@ -113,7 +113,7 @@ func doArtifacts(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 
 	if len(args) == 0 {
-		logrus.Debugf("Showing all testing done for factory: %s", factory)
+		logrus.Debugf("Showing all testing done for Factory: %s", factory)
 		listAll(factory)
 		os.Exit(0)
 	}
@@ -123,7 +123,7 @@ func doArtifacts(cmd *cobra.Command, args []string) {
 		subcommands.DieNotNil(fmt.Errorf("Invalid Target number: %s", args[0]))
 	}
 	if len(args) == 1 {
-		logrus.Debugf("Showing target artifacts for %s %d", factory, target)
+		logrus.Debugf("Showing Target artifacts for %s %d", factory, target)
 		listArtifacts(factory, target)
 	} else {
 		artifact := args[1]

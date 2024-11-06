@@ -21,14 +21,14 @@ var (
 func init() {
 	var deltas = &cobra.Command{
 		Use:   "static-deltas <target-version> [<from-version>...]",
-		Short: "Generate static deltas to the given target version to make OTAs faster",
+		Short: "Generate static deltas to the given Target version to make OTAs faster",
 		Run:   doDeltas,
 		Args:  cobra.MinimumNArgs(1),
-		Long: `In many cases OTA updates will have many OSTree changes. These updates
-can be downloaded significantly faster by generating OSTree static
-deltas. Static deltas are generated with a "from(sha) -> to(sha)" type
-logic. This command takes the given Target version and will produce a
-number of static deltas to ensure devices will be updated efficiently.`,
+		Long: `In many cases OTA updates will have multiple OSTree changes. These updates
+can be downloaded faster by generating OSTree static
+deltas. Static deltas are generated using "from(sha) -> to(sha)" type
+logic. This command takes the given Target version, and produces a
+number of static deltas to ensure devices are updated efficiently.`,
 		Example: `
   # There are two ways to run this command:
 
@@ -43,7 +43,7 @@ number of static deltas to ensure devices will be updated efficiently.`,
 	deltas.Flags().StringVarP(&byTag, "by-tag", "", "", "Find from-versions devices on the given tag")
 	deltas.Flags().BoolVarP(&noTail, "no-tail", "", false, "Don't tail output of CI Job")
 	deltas.Flags().BoolVarP(&dryRun, "dryrun", "", false, "Only show what deltas would be produced")
-	deltas.Flags().StringVarP(&hwId, "hw-id", "", "", "Filter from and to targets by the given hardware ID")
+	deltas.Flags().StringVarP(&hwId, "hw-id", "", "", "Filter from and to Targets by the given hardware ID")
 }
 
 func findVersions(maxVer int, forTag string, tags []client.TagStatus) (bool, []int) {
@@ -97,13 +97,13 @@ func doDeltas(cmd *cobra.Command, args []string) {
 		}
 	}
 	if len(froms) == 0 {
-		subcommands.DieNotNil(errors.New("No targets found to generate deltas for."))
+		subcommands.DieNotNil(errors.New("No Targets found to generate deltas for."))
 	}
 	if dryRun {
 		if len(hwId) > 0 {
-			fmt.Printf("Dry run: Would be generated static deltas for targets with hardware ID %s and versions:\n", hwId)
+			fmt.Printf("Dry run: Would generate static deltas for Targets with hardware ID %s and versions:\n", hwId)
 		} else {
-			fmt.Println("Dry run: Would be generated static deltas for target versions:")
+			fmt.Println("Dry run: Would generate static deltas for Target versions:")
 		}
 		for _, v := range froms {
 			fmt.Println("  ", v, "->", toVer)
