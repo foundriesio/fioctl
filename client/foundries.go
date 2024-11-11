@@ -141,6 +141,8 @@ type TufCustom struct {
 	UpdatedAt      string                `json:"updatedAt,omitempty"`
 	LmpVer         string                `json:"lmp-ver,omitempty"`
 	FetchedApps    *FetchedApps          `json:"fetched-apps,omitempty"`
+	Arch           string                `json:"arch,omitempty"`
+	ImageFile      string                `json:"image-file,omitempty"`
 }
 
 type Target struct {
