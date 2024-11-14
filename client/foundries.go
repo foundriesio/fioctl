@@ -137,6 +137,7 @@ type TufCustom struct {
 	OverridesSha   string                `json:"meta-subscriber-overrides-sha,omitempty"`
 	Uri            string                `json:"uri,omitempty"`
 	OrigUri        string                `json:"origUri,omitempty"`
+	OrigUriApps    string                `json:"origUriApps,omitempty"`
 	CreatedAt      string                `json:"createdAt,omitempty"`
 	UpdatedAt      string                `json:"updatedAt,omitempty"`
 	LmpVer         string                `json:"lmp-ver,omitempty"`

@@ -107,6 +107,11 @@ func createAppTargets(factory string, tags []string, srcTag string, appUris []st
 	return deriveTargets(factory, nil, srcTag, func(target *client.Target) error {
 		target.Custom.Tags = tags
 		target.Custom.ComposeApps = newTargetApps
+		if target.Custom.OrigUri == "" {
+			target.Custom.OrigUri = target.Custom.Uri
+		}
+		target.Custom.Uri = ""
+		target.Custom.OrigUriApps = ""
 		return nil
 	})
 }
@@ -134,6 +139,11 @@ func createOstreeTarget(factory string, tags []string, srcTag string, hwIdToHash
 	return deriveTargets(factory, hwIdToHash, srcTag, func(target *client.Target) error {
 		target.Custom.Tags = tags
 		err := target.SetHash(hwIdToHash[target.HardwareId()].(string))
+		if target.Custom.OrigUriApps == "" {
+			target.Custom.OrigUriApps = target.Custom.Uri
+		}
+		target.Custom.Uri = ""
+		target.Custom.OrigUri = ""
 		return err
 	})
 }
