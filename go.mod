@@ -7,7 +7,7 @@ require (
 	github.com/ThalesIgnite/crypto11 v1.2.5
 	github.com/cheynewallace/tabby v1.1.1
 	github.com/docker/go v1.5.1-1.0.20160303222718-d30aec9fd63c
-	github.com/fatih/color v1.17.0
+	github.com/fatih/color v1.18.0
 	github.com/foundriesio/go-ecies v0.3.0
 	github.com/hashicorp/go-version v1.7.0
 	github.com/karrick/godiff v0.0.2
@@ -21,7 +21,7 @@ require (
 	github.com/theupdateframework/go-tuf v0.7.0
 	github.com/theupdateframework/notary v0.7.0
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9
-	golang.org/x/sys v0.24.0
+	golang.org/x/sys v0.25.0
 	google.golang.org/api v0.181.0
 	gopkg.in/yaml.v2 v2.4.0
 )
