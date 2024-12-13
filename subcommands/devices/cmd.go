@@ -31,6 +31,11 @@ var configCmd = &cobra.Command{
 	Short: "Device configuration",
 }
 
+var triggersCmd = &cobra.Command{
+	Use:   "triggers",
+	Short: "List and execute remote actions on a device",
+}
+
 var updatesCmd = &cobra.Command{
 	Use:   "updates <device> [<update-id>]",
 	Short: "Show updates performed on a device",
@@ -63,6 +68,7 @@ func NewCommand() *cobra.Command {
 	updatesCmd.Flags().IntVarP(&listLimit, "limit", "n", 0, "Limit the number of updates displayed.")
 
 	cmd.AddCommand(configCmd)
+	cmd.AddCommand(triggersCmd)
 	cmd.AddCommand(updatesCmd)
 
 	addUuidFlagToChildren(cmd)
