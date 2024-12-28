@@ -14,6 +14,8 @@ on:
 jobs:
   resign:
     if: github.repository == 'foundriesio/fioctl'
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
