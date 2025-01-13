@@ -84,6 +84,9 @@ func doGitCreds(cmd *cobra.Command, args []string) {
 	}
 
 	apiUrl := viper.GetString("server.url")
+	if len(apiUrl) == 0 {
+		apiUrl = "https://api.foundries.io"
+	}
 	parts, err := url.Parse(apiUrl)
 	subcommands.DieNotNil(err)
 	sourceUrl := strings.Replace(parts.Host, "api.", "source.", 1)
