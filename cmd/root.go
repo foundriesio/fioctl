@@ -82,6 +82,7 @@ func init() {
 	rootCmd.AddCommand(devices.NewCommand())
 	rootCmd.AddCommand(docker.NewCommand())
 	rootCmd.AddCommand(git.NewCommand())
+	rootCmd.AddCommand(git.NewGetCredsCommand())
 	rootCmd.AddCommand(events.NewCommand())
 	rootCmd.AddCommand(factories.NewCommand())
 	rootCmd.AddCommand(keys.NewCommand())

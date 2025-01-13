@@ -50,6 +50,21 @@ NOTE: The credentials will need the "source:read-update" scope to work with Git`
 	return cmd
 }
 
+func NewGetCredsCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:    "git-credential-helper",
+		Hidden: true, // its used as a git-credential helper and is not user facing
+		Args:   cobra.ExactArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			if args[0] != "get" {
+				subcommands.DieNotNil(fmt.Errorf("This credential helper only supports 'get' and not '%s'", args[0]))
+			}
+			os.Exit(RunCredsHelper())
+		},
+	}
+	return cmd
+}
+
 func findSelf() string {
 	self := os.Args[0]
 	if !filepath.IsAbs(self) {
