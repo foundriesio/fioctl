@@ -6,7 +6,6 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
-	"os/user"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -19,15 +18,7 @@ import (
 
 const GIT_CREDS_HELPER = "git-credential-fio"
 
-var helperPath string
-
 func NewCommand() *cobra.Command {
-	path, err := exec.LookPath("git")
-	if err == nil {
-		helperPath = filepath.Dir(path)
-	}
-	helperPath = subcommands.FindWritableDirInPath(helperPath)
-
 	cmd := &cobra.Command{
 		Use:   "configure-git",
 		Short: "Configure a source.foundries.io Git credential helper",
@@ -40,12 +31,9 @@ git-credential-fio, in the same directory as the git client binary.
 NOTE: The credentials will need the "source:read-update" scope to work with Git`,
 		Run: doGitCreds,
 		PreRun: func(cmd *cobra.Command, args []string) {
+			_, err := exec.LookPath("git")
 			subcommands.DieNotNil(err, "Git not found on system")
 		},
-	}
-	cmd.Flags().StringVarP(&helperPath, "creds-path", "", helperPath, "Path to install credential helper. This needs to be writable and in $PATH")
-	if len(helperPath) == 0 {
-		_ = cmd.MarkFlagRequired("creds-path")
 	}
 	return cmd
 }
@@ -81,23 +69,6 @@ func findSelf() string {
 func doGitCreds(cmd *cobra.Command, args []string) {
 	self := findSelf()
 
-	sudoer := os.Getenv("SUDO_USER")
-	var execCommand string
-	var gitUsernameCommandArgs []string
-	var gitHelperCommandArgs []string
-
-	helperName := "fio"
-	if strings.Contains(helperPath, "~/") {
-		subcommands.DieNotNil(fmt.Errorf("~ character is not supported in --creds-path=. Try to run it as --creds-path %s", helperPath))
-	}
-	dst := filepath.Join(helperPath, GIT_CREDS_HELPER)
-	if runtime.GOOS == "windows" {
-		// To get around edge cases with git on Windows we use the absolute path
-		// So for example the following path will be used: C:/Program\\ Files/Git/bin/git-credential-fio.exe
-		dst += ".exe"
-		helperName = strings.ReplaceAll(filepath.ToSlash(dst), " ", "\\ ")
-	}
-
 	apiUrl := viper.GetString("server.url")
 	if len(apiUrl) == 0 {
 		apiUrl = "https://api.foundries.io"
@@ -106,32 +77,32 @@ func doGitCreds(cmd *cobra.Command, args []string) {
 	subcommands.DieNotNil(err)
 	sourceUrl := strings.Replace(parts.Host, "api.", "source.", 1)
 
-	if len(sudoer) > 0 {
-		u, err := user.Lookup(sudoer)
-		subcommands.DieNotNil(err)
-		execCommand = "su"
-		gitUsernameCommandArgs = []string{u.Username, "-c", fmt.Sprintf("git config --global credential.%s.username fio-oauth2", sourceUrl)}
-		gitHelperCommandArgs = []string{u.Username, "-c", fmt.Sprintf("git config --global credential.https://%s.helper %s", sourceUrl, helperName)}
-	} else {
-		execCommand = "git"
-		gitUsernameCommandArgs = []string{"config", "--global", fmt.Sprintf("credential.https://%s.username", sourceUrl), "fio-oauth2"}
-		gitHelperCommandArgs = []string{"config", "--global", fmt.Sprintf("credential.https://%s.helper", sourceUrl), helperName}
+	cfgFile, err := filepath.Abs(viper.GetViper().ConfigFileUsed())
+	subcommands.DieNotNil(err)
+
+	if runtime.GOOS == "windows" {
+		// To get around edge cases with git on Windows we use the absolute path
+		// So for example the following path will be used: C:/Program\\ Files/Git/bin/git-credential-fio.exe
+		self = strings.ReplaceAll(filepath.ToSlash(self), " ", "\\ ")
+		cfgFile = strings.ReplaceAll(filepath.ToSlash(cfgFile), " ", "\\ ")
 	}
-	c := exec.Command(execCommand, gitUsernameCommandArgs...)
+
+	helper := fmt.Sprintf("%s git-credential-helper -c %s", self, cfgFile)
+	gitUsernameCommandArgs := []string{"config", "--global", fmt.Sprintf("credential.https://%s.username", sourceUrl), "fio-oauth2"}
+	gitHelperCommandArgs := []string{"config", "--global", fmt.Sprintf("credential.https://%s.helper", sourceUrl), helper}
+
+	c := exec.Command("git", gitUsernameCommandArgs...)
 	out, err := c.CombinedOutput()
 	if len(out) > 0 {
 		fmt.Printf("%s\n", string(out))
 	}
 	subcommands.DieNotNil(err)
-	c = exec.Command(execCommand, gitHelperCommandArgs...)
+	c = exec.Command("git", gitHelperCommandArgs...)
 	out, err = c.CombinedOutput()
 	if len(out) > 0 {
 		fmt.Printf("%s\n", string(out))
 	}
 	subcommands.DieNotNil(err)
-
-	fmt.Println("Symlinking", self, "to", dst)
-	subcommands.DieNotNil(os.Symlink(self, dst))
 }
 
 func RunCredsHelper() int {
