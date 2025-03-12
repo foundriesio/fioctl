@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	var tagCmd = &cobra.Command{
+	tagCmd := &cobra.Command{
 		Use:   "tag <target> [<target>...]",
 		Short: "Apply a comma separated list of tags to one or more Targets.",
 		Example: `
@@ -57,6 +57,9 @@ func Set(a, b []string) []string {
 func doTag(cmd *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 	tags := strings.Split(tagTags, ",")
+	if !tagAppend && len(tags) == 0 {
+		subcommands.DieNotNil(fmt.Errorf("Tags list cannot be empty when setting tags"))
+	}
 
 	// Make sure all tags are unique, no accidental repeats/typos
 	if len(tags) != len(Set(tags, nil)) {
