@@ -104,6 +104,9 @@ func init() {
 }
 
 func rootArgValidation(cmd *cobra.Command, args []string) error {
+	if strings.HasPrefix(cmd.Name(), "__complete") {
+		return nil
+	}
 	for pos, val := range args {
 		if len(strings.TrimSpace(val)) == 0 {
 			return fmt.Errorf("Empty values or values containing only white space are not allowed for positional argument at %d\n", pos)
