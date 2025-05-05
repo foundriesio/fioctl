@@ -16,7 +16,7 @@ jobs:
       - name: Install linter
         uses: golangci/golangci-lint-action@v8
         with:
-          version: v1.51.2
+          version: v2.1.6
           args: --version
       - name: Run linter
         env:
