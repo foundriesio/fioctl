@@ -19,6 +19,19 @@ linters:
     presets:
       - common-false-positives
       - std-error-handling
+    rules:
+      - linters:
+        - staticcheck
+        text: "ST1005: error strings should not"  # We use punctuation and capital letters in errors
+      - linters:
+        - staticcheck
+        text: "QF1003: could use tagged switch"  # Using if statements is as good.
+      - linters:
+        - staticcheck
+        text: "ST1023: should omit type"  # We explicitly declare inferred types sometimes.
+      - linters:
+        - staticcheck
+        text: "QF1011: could omit type"  # Same as above; no idea why two checks for the same.
 formatters:
   enable:
     - gofmt
