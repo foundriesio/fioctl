@@ -1,21 +1,25 @@
+version: "2"
 run:
-  deadline: 5m
+  timeout: 5m
   allow-parallel-runners: true
 
 linters:
   enable:
     - dupl
     - errcheck
-    - exportloopref
     - gocyclo
-    - gofmt
-    - gosimple
     - govet
     - ineffassign
     - staticcheck
-    - typecheck
     - unparam
     - unused
     - misspell
-    - goimports
     - unconvert
+  exclusions:
+    presets:
+      - common-false-positives
+      - std-error-handling
+formatters:
+  enable:
+    - gofmt
+    - goimports
