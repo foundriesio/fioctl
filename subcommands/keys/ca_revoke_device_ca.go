@@ -187,7 +187,7 @@ func prettyPrintCrl(crlPem string) {
 	fmt.Println("\tSignature Algorithm:", c.SignatureAlgorithm)
 	fmt.Println("\tSignature:", hex.EncodeToString(c.Signature))
 	fmt.Println("\tRevoked Certificates:")
-	for _, crt := range c.RevokedCertificates {
+	for _, crt := range c.RevokedCertificateEntries {
 		fmt.Println("\t\tSerial:", crt.SerialNumber.Text(10))
 		fmt.Println("\t\t\tRevocation Date:", crt.RevocationTime)
 		if len(crt.Extensions) > 0 {
