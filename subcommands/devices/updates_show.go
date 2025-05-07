@@ -40,7 +40,7 @@ func doShowUpdate(cmd *cobra.Command, args []string) {
 		}
 		if len(event.Detail.Details) > 0 {
 			fmt.Println(" Details:")
-			indented := " | " + strings.Replace(event.Detail.Details, "\n", "\n | ", -1)
+			indented := " | " + strings.ReplaceAll(event.Detail.Details, "\n", "\n | ")
 			fmt.Println(indented)
 		}
 	}

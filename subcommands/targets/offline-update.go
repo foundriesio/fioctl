@@ -644,7 +644,7 @@ func doShowBundle(cmd *cobra.Command, args []string) {
 	fmt.Println("Bundle Targets info:")
 	fmt.Printf("\tType:\t\t%s\n", bundleMeta.ouBundleMeta.Type)
 	fmt.Printf("\tTag:\t\t%s\n", bundleMeta.Tag)
-	fmt.Printf("\tExpires:\t%s\n", bundleMeta.SignedCommon.Expires)
+	fmt.Printf("\tExpires:\t%s\n", bundleMeta.Expires)
 	fmt.Println("\tTargets:")
 	for _, target := range bundleMeta.Targets {
 		fmt.Printf("\t\t\t%s\n", target)
