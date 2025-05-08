@@ -13,7 +13,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/hashicorp/go-version"
+	version "github.com/hashicorp/go-version"
 	"github.com/sirupsen/logrus"
 	tuf "github.com/theupdateframework/go-tuf/client"
 	"github.com/theupdateframework/go-tuf/data"

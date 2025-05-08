@@ -202,11 +202,11 @@ func runTest(t *testing.T, verifyFiles func(factoryCa, tlsCert, onlineCa, offlin
 		require.Nil(t, err)
 		require.NotNil(t, crl)
 		assert.Equal(t, factoryCa.Subject.String(), crl.Issuer.String())
-		assert.Equal(t, 2, len(crl.RevokedCertificates))
+		assert.Equal(t, 2, len(crl.RevokedCertificateEntries))
 		assert.Nil(t, crl.CheckSignatureFrom(factoryCa))
 
 		var revokedReason asn1.Enumerated
-		onlineRevoked, offlineRevoked := crl.RevokedCertificates[0], crl.RevokedCertificates[1]
+		onlineRevoked, offlineRevoked := crl.RevokedCertificateEntries[0], crl.RevokedCertificateEntries[1]
 		if onlineCa.SerialNumber.Cmp(onlineRevoked.SerialNumber) != 0 {
 			onlineRevoked, offlineRevoked = offlineRevoked, onlineRevoked
 		}

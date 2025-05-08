@@ -2,7 +2,6 @@ package keys
 
 import (
 	"crypto/ecdsa"
-	"crypto/elliptic"
 	"crypto/x509"
 	"encoding/asn1"
 	"encoding/hex"
@@ -190,7 +189,9 @@ func prettyPrint(cert string) {
 		case *ecdsa.PublicKey:
 			fmt.Println("\t\tNIST CURVE:", pub.Curve.Params().Name)
 			fmt.Print("\t\t\t")
-			for idx, b := range elliptic.Marshal(pub.Curve, pub.X, pub.Y) {
+			ecdh, err := pub.ECDH()
+			subcommands.DieNotNil(err)
+			for idx, b := range ecdh.Bytes() {
 				fmt.Printf("%02x:", b)
 				if (idx+1)%15 == 0 {
 					fmt.Println()

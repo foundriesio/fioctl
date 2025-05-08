@@ -28,8 +28,8 @@ fioctl-%:
 	@if [ "$@" = "fioctl-windows-amd64" ]; then mv bin/$@ bin/$@.exe; fi
 
 install-linter:
-	echo "[WARN] Installing golangci binary version v1.51.2 at $(HOME)/go/bin/golangci-lint"
-	@curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell dirname $(linter)) v1.51.2
+	echo "[WARN] Installing golangci binary version v2.1.6 at $(HOME)/go/bin/golangci-lint"
+	@curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell dirname $(linter)) v2.1.6
 
 has-linter:
 	@test -x $(linter) || (echo '[ERROR] Please install go linter using "make install-linter"' && exit 1)

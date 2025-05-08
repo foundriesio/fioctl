@@ -136,8 +136,6 @@ func SignEstCsr(csrPem string) string {
 	return genTlsCert(csr.Subject, csr.DNSNames, csr.PublicKey)
 }
 
-var oidExtensionReasonCode = []int{2, 5, 29, 21}
-
 func CreateCrl(serials map[string]int) string {
 	factoryKey := factoryCaKeyStorage.loadKey()
 	factoryCa := LoadCertFromFile(FactoryCaCertFile)
@@ -153,14 +151,10 @@ func CreateCrl(serials map[string]int) string {
 			// We expect a valid input here
 			panic("Value is not a valid base 10 serial:" + serial)
 		}
-		// This would be easier with RevokedCertificateEntries, but it is not yet available in Golang 1.20.
-		reasonBytes, err := asn1.Marshal(asn1.Enumerated(reason))
-		subcommands.DieNotNil(err)
-
-		crl.RevokedCertificates = append(crl.RevokedCertificates, pkix.RevokedCertificate{
+		crl.RevokedCertificateEntries = append(crl.RevokedCertificateEntries, x509.RevocationListEntry{
 			SerialNumber:   num,
 			RevocationTime: now,
-			Extensions:     []pkix.Extension{{Id: oidExtensionReasonCode, Value: reasonBytes}},
+			ReasonCode:     reason,
 		})
 	}
 	// Our old root CAs are missing this bit; it's OK to add this here, and the API will accept it.

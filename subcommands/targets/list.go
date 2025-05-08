@@ -48,8 +48,8 @@ func (t byTargetKey) Swap(i, j int) {
 func (t byTargetKey) Less(i, j int) bool {
 	var tagsI, tagsJ string
 	var verI, verJ int
-	fmt.Sscanf(t[i], "%d-%s", &verI, &tagsI)
-	fmt.Sscanf(t[j], "%d-%s", &verJ, &tagsJ)
+	_, _ = fmt.Sscanf(t[i], "%d-%s", &verI, &tagsI)
+	_, _ = fmt.Sscanf(t[j], "%d-%s", &verJ, &tagsJ)
 	if verI == verJ {
 		return tagsI < tagsJ
 	}
