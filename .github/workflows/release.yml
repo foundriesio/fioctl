@@ -18,7 +18,7 @@ jobs:
       - name: Set up golang
         uses: actions/setup-go@v5
         with:
-          go-version: "1.20"
+          go-version: "1.24"
       - name: Hack around https://github.com/actions/checkout/issues/290
         run: |
           git fetch --tags --force
