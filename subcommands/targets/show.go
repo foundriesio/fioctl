@@ -40,6 +40,7 @@ func init() {
 	}
 	cmd.AddCommand(showCmd)
 	showCmd.PersistentFlags().String("production-tag", "", "Look up Target from the production tag")
+	showCmd.PersistentFlags().BoolP("raw", "r", false, "Print raw target custom json")
 
 	showAppCmd := &cobra.Command{
 		Use:   "compose-app <version> <app>",
@@ -109,46 +110,55 @@ func doShow(cmd *cobra.Command, args []string) {
 	logrus.Debugf("Showing Targets for %s %s", factory, version)
 
 	prodTag, _ := cmd.Flags().GetString("production-tag")
+	raw, _ := cmd.Flags().GetBool("raw")
 
 	shownCiUrl := false
 	sortedTargetNames, hashes, targets := getTargets(factory, prodTag, version)
 	for _, targetName := range sortedTargetNames {
 		target := targets[targetName]
 		hash := hashes[targetName]
-		if !shownCiUrl {
-			shownCiUrl = true
-			fmt.Printf("CI:\thttps://app.foundries.io/factories/%s/targets/%s/\n", factory, target.Version)
+		if !raw {
+			if !shownCiUrl {
+				shownCiUrl = true
+				fmt.Printf("CI:\thttps://app.foundries.io/factories/%s/targets/%s/\n", factory, target.Version)
+			}
+			fmt.Println("\n## Target:", targetName)
+			fmt.Printf("\tCreated:       %s\n", target.CreatedAt)
+			fmt.Printf("\tTags:          %s\n", strings.Join(target.Tags, ","))
+			fmt.Printf("\tOSTree Hash:   %s\n", hash)
+			if len(target.OrigUri) > 0 {
+				parts := strings.Split(target.OrigUri, "/")
+				fmt.Printf("\tOrigin Target: %s\n", parts[len(parts)-1])
+			}
+			if len(target.LmpVer) > 0 {
+				fmt.Printf("\tLmP Version:   %s\n", target.LmpVer)
+			}
+			fmt.Println()
+			fmt.Println("\tSource:")
+			if len(target.LmpManifestSha) > 0 {
+				fmt.Printf("\t\thttps://source.foundries.io/factories/%s/lmp-manifest.git/commit/?id=%s\n", factory, target.LmpManifestSha)
+			}
+			if len(target.OverridesSha) > 0 {
+				fmt.Printf("\t\thttps://source.foundries.io/factories/%s/meta-subscriber-overrides.git/commit/?id=%s\n", factory, target.OverridesSha)
+			}
+			if len(target.ContainersSha) > 0 {
+				fmt.Printf("\t\thttps://source.foundries.io/factories/%s/containers.git/commit/?id=%s\n", factory, target.ContainersSha)
+			}
+			fmt.Println()
+			t := subcommands.Tabby(1, "APP", "HASH")
+			sortedApps := sortedAppsNames(target)
+			for _, name := range sortedApps {
+				app := target.ComposeApps[name]
+				t.AddLine(name, app.Hash())
+			}
+			t.Print()
+		} else {
+			jsonBytes, err := json.MarshalIndent(target, "\t", "\t")
+			subcommands.DieNotNil(err)
+			fmt.Println("\n## Target:", targetName)
+			fmt.Printf("   Hash:   %s\n", hash)
+			fmt.Printf("\t%s\n", string(jsonBytes))
 		}
-		fmt.Println("\n## Target:", targetName)
-		fmt.Printf("\tCreated:       %s\n", target.CreatedAt)
-		fmt.Printf("\tTags:          %s\n", strings.Join(target.Tags, ","))
-		fmt.Printf("\tOSTree Hash:   %s\n", hash)
-		if len(target.OrigUri) > 0 {
-			parts := strings.Split(target.OrigUri, "/")
-			fmt.Printf("\tOrigin Target: %s\n", parts[len(parts)-1])
-		}
-		if len(target.LmpVer) > 0 {
-			fmt.Printf("\tLmP Version:   %s\n", target.LmpVer)
-		}
-		fmt.Println()
-		fmt.Println("\tSource:")
-		if len(target.LmpManifestSha) > 0 {
-			fmt.Printf("\t\thttps://source.foundries.io/factories/%s/lmp-manifest.git/commit/?id=%s\n", factory, target.LmpManifestSha)
-		}
-		if len(target.OverridesSha) > 0 {
-			fmt.Printf("\t\thttps://source.foundries.io/factories/%s/meta-subscriber-overrides.git/commit/?id=%s\n", factory, target.OverridesSha)
-		}
-		if len(target.ContainersSha) > 0 {
-			fmt.Printf("\t\thttps://source.foundries.io/factories/%s/containers.git/commit/?id=%s\n", factory, target.ContainersSha)
-		}
-		fmt.Println()
-		t := subcommands.Tabby(1, "APP", "HASH")
-		sortedApps := sortedAppsNames(target)
-		for _, name := range sortedApps {
-			app := target.ComposeApps[name]
-			t.AddLine(name, app.Hash())
-		}
-		t.Print()
 	}
 }
 
