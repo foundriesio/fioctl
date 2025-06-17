@@ -5,7 +5,7 @@ LDFLAGS=-ldflags "-X=github.com/foundriesio/fioctl/subcommands/version.Commit=$(
 
 linter:=$(shell which golangci-lint 2>/dev/null || echo $(HOME)/go/bin/golangci-lint)
 
-build: fioctl-linux-amd64 fioctl-linux-arm64 fioctl-windows-amd64.exe fioctl-darwin-amd64 fioctl-darwin-arm64
+build: fioctl-linux-amd64 fioctl-linux-arm64 fioctl-windows-amd64.exe fioctl-windows-arm64.exe fioctl-darwin-amd64 fioctl-darwin-arm64
 	@true
 
 # Allows building a dyn-linked fioctl on platforms without pkcs11-tool (not built by default)
@@ -18,6 +18,7 @@ fioctl-cgo-pkcs11:
 fioctl-linux-amd64:
 fioctl-linux-arm64:
 fioctl-windows-amd64.exe:
+fioctl-windows-arm64.exe:
 fioctl-darwin-amd64:
 fioctl-darwin-arm64:
 fioctl-%:
