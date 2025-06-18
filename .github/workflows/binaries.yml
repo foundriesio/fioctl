@@ -40,6 +40,8 @@ jobs:
             qemu-platform: aarch64
           - os: windows-latest
             binary: fioctl-windows-amd64.exe
+          - os: windows-11-arm
+            binary: fioctl-windows-arm64.exe
           - os: macos-latest
             binary: fioctl-darwin-amd64
     runs-on: ${{ matrix.os }}
