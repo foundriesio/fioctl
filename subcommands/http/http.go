@@ -23,6 +23,12 @@ func NewCommand() *cobra.Command {
 		Hidden: true,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			api = subcommands.Login(cmd)
+			follow, _ := cmd.Flags().GetBool("follow-redirects")
+			if !follow {
+				api.GetHttpClient().CheckRedirect = func(req *http.Request, via []*http.Request) error {
+					return http.ErrUseLastResponse
+				}
+			}
 		},
 	}
 	httpCmd.PersistentFlags().StringP("token", "t", "", "API token from https://app.foundries.io/settings/tokens/")
@@ -69,6 +75,7 @@ fioctl %s -d @/tmp/tmp.json  https://...
 echo '{"key": "value"}' | fioctl %s -d - https://...
 `, cmd.Name(), cmd.Name(), cmd.Name(), cmd.Name(), cmd.Name(), cmd.Name())
 		cmd.Flags().StringP("data", "d", "", "HTTP POST data")
+		cmd.Flags().BoolP("follow-redirects", "f", true, "Follow HTTP redirects")
 	}
 
 	return httpCmd

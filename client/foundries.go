@@ -363,6 +363,12 @@ func NewApiClient(serverUrl string, config Config, caCertPath string, version st
 	return &api
 }
 
+// GetHttpClient returns a reference to the object's underlying http.Client so that callers may
+// customize default behaviour
+func (a *Api) GetHttpClient() *http.Client {
+	return &a.client
+}
+
 func httpLogger(req *http.Request) logrus.FieldLogger {
 	return logrus.WithFields(logrus.Fields{"url": req.URL.String(), "method": req.Method})
 }
