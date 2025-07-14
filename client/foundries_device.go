@@ -401,7 +401,8 @@ func (d *DeviceApi) GetAppsStates() (*AppsStates, error) {
 func (d *DeviceApi) Tests() (*TargetTestList, error) {
 	url := d.url("/tests/")
 	logrus.Debugf("Device.Tests with url: %s", url)
-	return d.api.TargetTestsCont(url)
+	ttl := TargetTestList{api: *d.api, Next: &url}
+	return ttl.NextPage()
 }
 
 func (d *DeviceApi) TestGet(testId string) (*TargetTest, error) {

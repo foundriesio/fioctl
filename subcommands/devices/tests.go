@@ -8,7 +8,6 @@ import (
 	"github.com/cheynewallace/tabby"
 	"github.com/spf13/cobra"
 
-	"github.com/foundriesio/fioctl/client"
 	"github.com/foundriesio/fioctl/subcommands"
 )
 
@@ -51,23 +50,15 @@ func doTestList(cmd *cobra.Command, args []string) {
 	t := tabby.New()
 	t.AddHeader("NAME", "STATUS", "ID", "CREATED AT")
 
-	var tl *client.TargetTestList
-	for {
-		var err error
-		if tl == nil {
-			tl, err = d.Api.Tests()
-		} else {
-			if tl.Next != nil {
-				tl, err = api.TargetTestsCont(*tl.Next)
-			} else {
-				break
-			}
-		}
-		subcommands.DieNotNil(err)
+	tl, err := d.Api.Tests()
+	subcommands.DieNotNil(err)
+	for tl != nil {
 		for _, test := range tl.Tests {
 			created := timestamp(test.CreatedOn)
 			t.AddLine(test.Name, test.Status, test.Id, created)
 		}
+		tl, err = tl.NextPage()
+		subcommands.DieNotNil(err)
 	}
 	t.Print()
 }

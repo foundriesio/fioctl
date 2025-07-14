@@ -11,7 +11,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"github.com/foundriesio/fioctl/client"
 	"github.com/foundriesio/fioctl/subcommands"
 )
 
@@ -60,19 +59,9 @@ func list(factory string, target int) {
 	t := tabby.New()
 	t.AddHeader("NAME", "STATUS", "ID", "CREATED AT", "DEVICE")
 
-	var tl *client.TargetTestList
-	for {
-		var err error
-		if tl == nil {
-			tl, err = tapi.Tests(target)
-		} else {
-			if tl.Next != nil {
-				tl, err = api.TargetTestsCont(*tl.Next)
-			} else {
-				break
-			}
-		}
-		subcommands.DieNotNil(err)
+	tl, err := tapi.Tests(target)
+	subcommands.DieNotNil(err)
+	for tl != nil {
 		for _, test := range tl.Tests {
 			created := timestamp(test.CreatedOn)
 			name := test.DeviceUUID
@@ -81,6 +70,8 @@ func list(factory string, target int) {
 			}
 			t.AddLine(test.Name, test.Status, test.Id, created, name)
 		}
+		tl, err = tl.NextPage()
+		subcommands.DieNotNil(err)
 	}
 	t.Print()
 }

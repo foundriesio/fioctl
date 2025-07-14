@@ -27,6 +27,8 @@ type TargetTest struct {
 }
 
 type TargetTestList struct {
+	api Api
+
 	Tests []TargetTest `json:"tests"`
 	Total int          `json:"total"`
 	Next  *string      `json:"next"`
@@ -64,11 +66,15 @@ func (a TargetTestingApi) Versions() ([]int, error) {
 func (a TargetTestingApi) Tests(target int) (*TargetTestList, error) {
 	url := a.api.serverUrl + "/ota/factories/" + a.factory + "/targets/" + strconv.Itoa(target) + "/testing/"
 	logrus.Debugf("TargetTests with url: %s", url)
-	return a.api.TargetTestsCont(url)
+	ttl := TargetTestList{api: a.api, Next: &url}
+	return ttl.NextPage()
 }
 
-func (a Api) TargetTestsCont(url string) (*TargetTestList, error) {
-	body, err := a.Get(url)
+func (t TargetTestList) NextPage() (*TargetTestList, error) {
+	if t.Next == nil {
+		return nil, nil
+	}
+	body, err := t.api.Get(*t.Next)
 	if err != nil {
 		return nil, err
 	}
