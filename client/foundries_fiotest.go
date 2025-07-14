@@ -32,12 +32,21 @@ type TargetTestList struct {
 	Next  *string      `json:"next"`
 }
 
+type TargetTestingApi struct {
+	api     Api
+	factory string
+}
+
+func (a Api) TargetTestingApi(factory string) TargetTestingApi {
+	return TargetTestingApi{api: a, factory: factory}
+}
+
 // Return a list of Targets that have been tested
-func (a *Api) TargetTesting(factory string) ([]int, error) {
-	url := a.serverUrl + "/ota/factories/" + factory + "/testing/"
+func (a TargetTestingApi) Versions() ([]int, error) {
+	url := a.api.serverUrl + "/ota/factories/" + a.factory + "/testing/"
 	logrus.Debugf("TargetTesting with url: %s", url)
 
-	body, err := a.Get(url)
+	body, err := a.api.Get(url)
 	if err != nil {
 		return nil, err
 	}
@@ -52,13 +61,13 @@ func (a *Api) TargetTesting(factory string) ([]int, error) {
 	return r.Versions, nil
 }
 
-func (a *Api) TargetTests(factory string, target int) (*TargetTestList, error) {
-	url := a.serverUrl + "/ota/factories/" + factory + "/targets/" + strconv.Itoa(target) + "/testing/"
+func (a TargetTestingApi) Tests(target int) (*TargetTestList, error) {
+	url := a.api.serverUrl + "/ota/factories/" + a.factory + "/targets/" + strconv.Itoa(target) + "/testing/"
 	logrus.Debugf("TargetTests with url: %s", url)
-	return a.TargetTestsCont(url)
+	return a.api.TargetTestsCont(url)
 }
 
-func (a *Api) TargetTestsCont(url string) (*TargetTestList, error) {
+func (a Api) TargetTestsCont(url string) (*TargetTestList, error) {
 	body, err := a.Get(url)
 	if err != nil {
 		return nil, err
@@ -72,10 +81,10 @@ func (a *Api) TargetTestsCont(url string) (*TargetTestList, error) {
 	return &tests, nil
 }
 
-func (a *Api) TargetTestResults(factory string, target int, testId string) (*TargetTest, error) {
-	url := a.serverUrl + "/ota/factories/" + factory + "/targets/" + strconv.Itoa(target) + "/testing/" + testId + "/"
+func (a TargetTestingApi) TestResults(target int, testId string) (*TargetTest, error) {
+	url := a.api.serverUrl + "/ota/factories/" + a.factory + "/targets/" + strconv.Itoa(target) + "/testing/" + testId + "/"
 	logrus.Debugf("TargetTests with url: %s", url)
-	body, err := a.Get(url)
+	body, err := a.api.Get(url)
 	if err != nil {
 		return nil, err
 	}
@@ -88,8 +97,8 @@ func (a *Api) TargetTestResults(factory string, target int, testId string) (*Tar
 	return &test, nil
 }
 
-func (a *Api) TargetTestArtifact(factory string, target int, testId string, artifact string) (*[]byte, error) {
-	url := a.serverUrl + "/ota/factories/" + factory + "/targets/" + strconv.Itoa(target) + "/testing/" + testId + "/" + artifact
+func (a TargetTestingApi) TestArtifact(target int, testId string, artifact string) (*[]byte, error) {
+	url := a.api.serverUrl + "/ota/factories/" + a.factory + "/targets/" + strconv.Itoa(target) + "/testing/" + testId + "/" + artifact
 	logrus.Debugf("TargetTests with url: %s", url)
-	return a.Get(url)
+	return a.api.Get(url)
 }

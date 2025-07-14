@@ -47,7 +47,7 @@ func timestamp(ts float32) string {
 }
 
 func listAll(factory string) {
-	versions, err := api.TargetTesting(factory)
+	versions, err := api.TargetTestingApi(factory).Versions()
 	subcommands.DieNotNil(err)
 	fmt.Println("Tested Targets:")
 	for _, ver := range versions {
@@ -56,6 +56,7 @@ func listAll(factory string) {
 }
 
 func list(factory string, target int) {
+	tapi := api.TargetTestingApi(factory)
 	t := tabby.New()
 	t.AddHeader("NAME", "STATUS", "ID", "CREATED AT", "DEVICE")
 
@@ -63,7 +64,7 @@ func list(factory string, target int) {
 	for {
 		var err error
 		if tl == nil {
-			tl, err = api.TargetTests(factory, target)
+			tl, err = tapi.Tests(target)
 		} else {
 			if tl.Next != nil {
 				tl, err = api.TargetTestsCont(*tl.Next)
@@ -85,7 +86,7 @@ func list(factory string, target int) {
 }
 
 func show(factory string, target int, testId string) {
-	test, err := api.TargetTestResults(factory, target, testId)
+	test, err := api.TargetTestingApi(factory).TestResults(target, testId)
 	subcommands.DieNotNil(err)
 	fmt.Println("Name:     ", test.Name)
 	fmt.Println("Status:   ", test.Status)
@@ -140,7 +141,7 @@ func doShowTests(cmd *cobra.Command, args []string) {
 		testId := args[1]
 		artifact := args[2]
 		logrus.Debugf("Showing Target test artifacts for %s %d - %s / %s", factory, target, testId, artifact)
-		content, err := api.TargetTestArtifact(factory, target, testId, artifact)
+		content, err := api.TargetTestingApi(factory).TestArtifact(target, testId, artifact)
 		subcommands.DieNotNil(err)
 		os.Stdout.Write(*content)
 	}
