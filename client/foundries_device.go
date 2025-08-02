@@ -397,3 +397,32 @@ func (d *DeviceApi) GetAppsStates() (*AppsStates, error) {
 	}
 	return &states, nil
 }
+
+func (d *DeviceApi) Tests() (*TargetTestList, error) {
+	url := d.url("/tests/")
+	logrus.Debugf("Device.Tests with url: %s", url)
+	ttl := TargetTestList{api: *d.api, Next: &url}
+	return ttl.NextPage()
+}
+
+func (d *DeviceApi) TestGet(testId string) (*TargetTest, error) {
+	url := d.url("/tests/" + testId)
+	logrus.Debugf("DeviceTriggerResults with url: %s", url)
+	body, err := d.api.Get(url)
+	if err != nil {
+		return nil, err
+	}
+
+	test := TargetTest{}
+	err = json.Unmarshal(*body, &test)
+	if err != nil {
+		return nil, err
+	}
+	return &test, nil
+}
+
+func (d *DeviceApi) TestResultArtifact(testId, artifact string) (*[]byte, error) {
+	url := d.url("/tests/" + testId + "/" + artifact)
+	logrus.Debugf("DeviceTriggerResults with url: %s", url)
+	return d.api.Get(url)
+}

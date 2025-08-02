@@ -11,7 +11,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"github.com/foundriesio/fioctl/client"
 	"github.com/foundriesio/fioctl/subcommands"
 )
 
@@ -47,7 +46,7 @@ func timestamp(ts float32) string {
 }
 
 func listAll(factory string) {
-	versions, err := api.TargetTesting(factory)
+	versions, err := api.TargetTestingApi(factory).Versions()
 	subcommands.DieNotNil(err)
 	fmt.Println("Tested Targets:")
 	for _, ver := range versions {
@@ -56,22 +55,13 @@ func listAll(factory string) {
 }
 
 func list(factory string, target int) {
+	tapi := api.TargetTestingApi(factory)
 	t := tabby.New()
 	t.AddHeader("NAME", "STATUS", "ID", "CREATED AT", "DEVICE")
 
-	var tl *client.TargetTestList
-	for {
-		var err error
-		if tl == nil {
-			tl, err = api.TargetTests(factory, target)
-		} else {
-			if tl.Next != nil {
-				tl, err = api.TargetTestsCont(*tl.Next)
-			} else {
-				break
-			}
-		}
-		subcommands.DieNotNil(err)
+	tl, err := tapi.Tests(target)
+	subcommands.DieNotNil(err)
+	for tl != nil {
 		for _, test := range tl.Tests {
 			created := timestamp(test.CreatedOn)
 			name := test.DeviceUUID
@@ -80,12 +70,14 @@ func list(factory string, target int) {
 			}
 			t.AddLine(test.Name, test.Status, test.Id, created, name)
 		}
+		tl, err = tl.NextPage()
+		subcommands.DieNotNil(err)
 	}
 	t.Print()
 }
 
 func show(factory string, target int, testId string) {
-	test, err := api.TargetTestResults(factory, target, testId)
+	test, err := api.TargetTestingApi(factory).TestResults(target, testId)
 	subcommands.DieNotNil(err)
 	fmt.Println("Name:     ", test.Name)
 	fmt.Println("Status:   ", test.Status)
@@ -140,7 +132,7 @@ func doShowTests(cmd *cobra.Command, args []string) {
 		testId := args[1]
 		artifact := args[2]
 		logrus.Debugf("Showing Target test artifacts for %s %d - %s / %s", factory, target, testId, artifact)
-		content, err := api.TargetTestArtifact(factory, target, testId, artifact)
+		content, err := api.TargetTestingApi(factory).TestArtifact(target, testId, artifact)
 		subcommands.DieNotNil(err)
 		os.Stdout.Write(*content)
 	}
