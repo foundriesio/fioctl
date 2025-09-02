@@ -11,17 +11,7 @@ import (
 	"github.com/foundriesio/fioctl/subcommands"
 )
 
-func init() {
-	updatesCmd.AddCommand(&cobra.Command{
-		Use:    "show <name> <update-id>",
-		Short:  "[DEPRECATED] Please use: fioctl devices updates <device> <update-id>",
-		Hidden: true,
-		Run:    doShowUpdate,
-		Args:   cobra.ExactArgs(2),
-	})
-}
-
-func doShowUpdate(cmd *cobra.Command, args []string) {
+func doShowUpdate(_ *cobra.Command, args []string) {
 	factory := viper.GetString("factory")
 	logrus.Debug("Showing device update")
 	d := api.DeviceApiByName(factory, args[0])
