@@ -25,6 +25,14 @@ const (
 	FIO_TOML_ONCHANGED   = "/usr/share/fioconfig/handlers/aktualizr-toml-update"
 )
 
+var (
+	// Validate the inputs: Must be alphanumeric, a dash, underscore, or comma
+	reAppPattern = regexp.MustCompile(`^[a-zA-Z0-9-_,]+$`)
+
+	// Validate the inputs: Must be alphanumeric, a underscore, dash, or dot
+	reTagPattern = regexp.MustCompile(`^[a-zA-Z0-9_\-\.\+]+$`)
+)
+
 type SetConfigOptions struct {
 	Reason      string
 	FileArgs    []string
@@ -320,14 +328,11 @@ func loadSotaConfig(dcl *client.DeviceConfigList) (sota *toml.Tree, err error) {
 }
 
 func validateUpdateArgs(opts *SetUpdatesConfigOptions) error {
-	// Validate the inputs: Must be alphanumeric, a dash, underscore, or comma
-	pattern := `^[a-zA-Z0-9-_,]+$`
-	re := regexp.MustCompile(pattern)
-	if len(opts.UpdateApps) > 0 && !re.MatchString(opts.UpdateApps) {
-		return fmt.Errorf("Invalid value for apps: %s\nMust be %s", opts.UpdateApps, pattern)
+	if len(opts.UpdateApps) > 0 && !reAppPattern.MatchString(opts.UpdateApps) {
+		return fmt.Errorf("Invalid value for apps: %s\nMust be %s", opts.UpdateApps, reAppPattern.String())
 	}
-	if len(opts.UpdateTag) > 0 && !re.MatchString(opts.UpdateTag) {
-		return fmt.Errorf("Invalid value for tag: %s\nMust be %s", opts.UpdateTag, pattern)
+	if len(opts.UpdateTag) > 0 && !reTagPattern.MatchString(opts.UpdateTag) {
+		return fmt.Errorf("Invalid value for tag: %s\nMust be %s", opts.UpdateTag, reTagPattern.String())
 	}
 	return nil
 }
