@@ -13,7 +13,7 @@ import (
 
 func init() {
 	cmd := &cobra.Command{
-		Use:   "run",
+		Use:   "run <device> <action>",
 		Short: "Trigger remote actions on device",
 		Long: `*NOTE*: Requires devices running LmP version 97 or later.
 
