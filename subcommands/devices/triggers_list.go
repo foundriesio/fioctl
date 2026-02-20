@@ -12,7 +12,7 @@ import (
 
 func init() {
 	cmd := &cobra.Command{
-		Use:   "list-configured",
+		Use:   "list-configured <device>",
 		Short: "List remote actions configured on a device",
 		Long:  "*NOTE*: Requires devices running LmP version 97 or later.",
 		Run:   doListTriggers,
