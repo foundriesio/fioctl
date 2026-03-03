@@ -6,6 +6,7 @@
 package x509
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 
@@ -248,4 +249,10 @@ func signCsr(script, tmpFileMask, csrPem string) string {
 
 	run(script, csrFile.Name(), crtFile.Name())
 	return readFile(crtFile.Name())
+}
+
+func SignCsr(csrPem string) string {
+	fmt.Println("---- The Bash implementation of SignCsr only works for TLS CSRs and not for CAs. ----")
+	crtPem := signTlsCsr("tls-*", csrPem)
+	return crtPem
 }

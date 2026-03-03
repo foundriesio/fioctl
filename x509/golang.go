@@ -203,3 +203,55 @@ func genCaCert(subject pkix.Name, pubkey crypto.PublicKey) string {
 	}
 	return genCertificate(&crtTemplate, factoryCa, pubkey, factoryKey)
 }
+
+// SignCsr signs a CSR by inspecting its requested extensions to determine the
+// certificate type. If the CSR contains a Basic Constraints extension with
+// CA:TRUE, a CA certificate is produced. Otherwise, a TLS certificate is
+// produced, honoring SANs from the CSR.
+func SignCsr(csrPem string) string {
+	csr := parsePemCertificateRequest(csrPem)
+	factoryKey := factoryCaKeyStorage.loadKey()
+	factoryCa := LoadCertFromFile(FactoryCaCertFile)
+
+	crtTemplate := x509.Certificate{
+		SerialNumber: genRandomSerialNumber(),
+		Subject:      csr.Subject,
+		Issuer:       factoryCa.Subject,
+		NotBefore:    time.Now(),
+		NotAfter:     time.Now().AddDate(10, 0, 0),
+	}
+
+	if csrRequestsCA(csr) {
+		crtTemplate.BasicConstraintsValid = true
+		crtTemplate.IsCA = true
+		crtTemplate.MaxPathLenZero = true
+		crtTemplate.KeyUsage = x509.KeyUsageCertSign
+	} else {
+		crtTemplate.KeyUsage = x509.KeyUsageDigitalSignature
+		crtTemplate.ExtKeyUsage = []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}
+		crtTemplate.DNSNames = csr.DNSNames
+		crtTemplate.IPAddresses = csr.IPAddresses
+		crtTemplate.URIs = csr.URIs
+		crtTemplate.EmailAddresses = csr.EmailAddresses
+	}
+
+	return genCertificate(&crtTemplate, factoryCa, csr.PublicKey, factoryKey)
+}
+
+// csrRequestsCA checks the CSR's requested extensions for a Basic Constraints
+// extension (OID 2.5.29.19) with CA:TRUE.
+func csrRequestsCA(csr *x509.CertificateRequest) bool {
+	oidBasicConstraints := asn1.ObjectIdentifier{2, 5, 29, 19}
+	for _, ext := range csr.Extensions {
+		if ext.Id.Equal(oidBasicConstraints) {
+			var bc struct {
+				IsCA       bool `asn1:"optional"`
+				MaxPathLen int  `asn1:"optional"`
+			}
+			if _, err := asn1.Unmarshal(ext.Value, &bc); err == nil {
+				return bc.IsCA
+			}
+		}
+	}
+	return false
+}
