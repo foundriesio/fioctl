@@ -1093,11 +1093,14 @@ func (a *Api) JobservTail(url string) {
 		headers := map[string]string{"X-OFFSET": strconv.Itoa(offset)}
 		resp, err := a.RawGet(url, &headers)
 		if err != nil {
-			fmt.Printf("TODO LOG ERROR OR SOMETHING: %s\n", err)
+			fmt.Printf("Unable to get '%s': %s\n", url, err)
+			return
 		}
 		body, err := io.ReadAll(resp.Body)
+		resp.Body.Close()
 		if err != nil {
-			fmt.Printf("Unable to read body resp: %s", err)
+			fmt.Printf("Unable to read response body: %s", err)
+			return
 		}
 		if resp.StatusCode != 200 {
 			fmt.Printf("Unable to get '%s': HTTP_%d\n=%s", url, resp.StatusCode, body)
