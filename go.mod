@@ -1,6 +1,6 @@
 module github.com/foundriesio/fioctl
 
-go 1.24.4
+go 1.25.0
 
 require (
 	cloud.google.com/go/pubsub v1.49.0
@@ -21,7 +21,7 @@ require (
 	github.com/theupdateframework/go-tuf v0.7.0
 	github.com/theupdateframework/notary v0.7.0
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9
-	golang.org/x/sys v0.39.0
+	golang.org/x/sys v0.43.0
 	google.golang.org/api v0.227.0
 	gopkg.in/yaml.v2 v2.4.0
 )
