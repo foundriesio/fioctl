@@ -9,12 +9,12 @@ require (
 	github.com/docker/go v1.5.1-1.0.20160303222718-d30aec9fd63c
 	github.com/fatih/color v1.18.0
 	github.com/foundriesio/go-ecies v0.3.0
-	github.com/hashicorp/go-version v1.7.0
+	github.com/hashicorp/go-version v1.9.0
 	github.com/karrick/godiff v0.0.2
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/pelletier/go-toml v1.9.5
-	github.com/shurcooL/go v0.0.0-20200502201357-93f07166e636
-	github.com/sirupsen/logrus v1.9.3
+	github.com/shurcooL/go v0.0.0-20230706063926-5fe729b41b3a
+	github.com/sirupsen/logrus v1.9.4
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.21.0
 	github.com/stretchr/testify v1.11.1
