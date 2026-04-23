@@ -19,10 +19,7 @@ var cmd = &cobra.Command{
 	},
 	Long: `Event queues provide a way to receive notifications about events
 happening in a Factory, such as when a device is first seen or an
-over-the-air update starts.
-
-There are two types of event queues: push and pull. A pull queue works like a
-traditional message queue system. Push queues are synonymous with web hooks.`,
+over-the-air update starts.`,
 }
 
 func NewCommand() *cobra.Command {

@@ -12,17 +12,19 @@ import (
 
 func init() {
 	cmd.AddCommand(&cobra.Command{
-		Use:   "mk-push <label> <url>",
-		Short: "Create an event queue that will ingest events at the URL",
-		Args:  cobra.ExactArgs(2),
-		Run:   doCreatePush,
+		Use:     "mk <label> <url>",
+		Aliases: []string{"mk-push"},
+		Short:   "Create an event queue that will ingest events at the URL",
+		Args:    cobra.ExactArgs(2),
+		Run:     doCreatePush,
 	})
 
 	cmd.AddCommand(&cobra.Command{
-		Use:   "mk-pull <label> <pubsub creds file>",
-		Short: "Create a message queue that can be polled for events",
-		Args:  cobra.ExactArgs(2),
-		Run:   doCreatePull,
+		Use:        "mk-pull <label> <pubsub creds file>",
+		Short:      "Create a message queue that can be polled for events",
+		Deprecated: "and will be removed in a future release.",
+		Args:       cobra.ExactArgs(2),
+		Run:        doCreatePull,
 		Long: `Create a message queue that can be polled for events via the Google PubSub API:
 
   https://cloud.google.com/pubsub/docs/reference/libraries 
