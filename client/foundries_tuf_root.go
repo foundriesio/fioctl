@@ -121,6 +121,10 @@ func (a *Api) TufProdRootGet(factory string) (*AtsTufRoot, error) {
 	return a.tufRootGet(factory, true, -1)
 }
 
+func (a *Api) TufProdRootGetVer(factory string, version int) (*AtsTufRoot, error) {
+	return a.tufRootGet(factory, true, version)
+}
+
 func (a *Api) TufRootPost(factory string, root []byte) (string, error) {
 	return a.tufRootPost(factory, false, root)
 }
