@@ -1,12 +1,12 @@
 module github.com/foundriesio/fioctl
 
-go 1.24.4
+go 1.26.5
 
 require (
 	github.com/ThalesIgnite/crypto11 v1.2.5
 	github.com/cheynewallace/tabby v1.1.1
 	github.com/docker/go v1.5.1-1.0.20160303222718-d30aec9fd63c
-	github.com/fatih/color v1.18.0
+	github.com/fatih/color v1.19.0
 	github.com/foundriesio/go-ecies v0.3.0
 	github.com/hashicorp/go-version v1.9.0
 	github.com/karrick/godiff v0.0.2
@@ -20,7 +20,7 @@ require (
 	github.com/theupdateframework/go-tuf v0.7.0
 	github.com/theupdateframework/notary v0.7.0
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9
-	golang.org/x/sys v0.39.0
+	golang.org/x/sys v0.46.0
 	gopkg.in/yaml.v2 v2.4.0
 )
 
@@ -31,7 +31,7 @@ require (
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
-	github.com/mattn/go-colorable v0.1.13 // indirect
+	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/miekg/pkcs11 v1.0.3-0.20190429190417-a667d056470f // indirect
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
@@ -48,8 +48,8 @@ require (
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/thales-e-security/pool v0.0.2 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/crypto v0.46.0 // indirect
-	golang.org/x/text v0.32.0 // indirect
+	golang.org/x/crypto v0.52.0 // indirect
+	golang.org/x/text v0.37.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
