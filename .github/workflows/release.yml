@@ -20,7 +20,7 @@ jobs:
       - name: Set up golang
         uses: actions/setup-go@v6
         with:
-          go-version: "1.24"
+          go-version: "1.26.5"
       - name: Hack around https://github.com/actions/checkout/issues/290
         run: |
           git fetch --tags --force

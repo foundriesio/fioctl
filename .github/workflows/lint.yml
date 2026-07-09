@@ -10,12 +10,12 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v6
         with:
-          go-version: '~1.24'
+          go-version: '1.26.5'
       - name: Clone the code
         uses: actions/checkout@v7
       - name: Install linter
         uses: golangci/golangci-lint-action@v9
         with:
-          version: v2.1.6
+          version: v2.12.2
       - name: Run linter
         run: make check

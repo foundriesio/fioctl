@@ -1,6 +1,6 @@
 module github.com/foundriesio/fioctl
 
-go 1.24.4
+go 1.26.5
 
 require (
 	github.com/ThalesIgnite/crypto11 v1.2.5
