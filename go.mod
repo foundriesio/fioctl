@@ -17,7 +17,7 @@ require (
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.21.0
 	github.com/stretchr/testify v1.12.1
-	github.com/theupdateframework/go-tuf v0.7.0
+	github.com/theupdateframework/go-tuf v0.7.1
 	github.com/theupdateframework/notary v0.7.0
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9
 	golang.org/x/sys v0.48.0
@@ -38,7 +38,7 @@ require (
 	github.com/rogpeppe/go-internal v1.14.1 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/sagikazarmark/locafero v0.11.0 // indirect
-	github.com/secure-systems-lab/go-securesystemslib v0.7.0 // indirect
+	github.com/secure-systems-lab/go-securesystemslib v0.8.0 // indirect
 	github.com/sourcegraph/conc v0.3.1-0.20240121214520-5f936abd7ae8 // indirect
 	github.com/spf13/afero v1.15.0 // indirect
 	github.com/spf13/cast v1.10.0 // indirect
